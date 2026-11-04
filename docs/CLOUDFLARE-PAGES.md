@@ -37,3 +37,5 @@ Cloudflare가 반환한 실제 `pages.dev` 주소와 배포 성공을 확인한 
 - https://developers.cloudflare.com/pages/get-started/direct-upload/
 - https://developers.cloudflare.com/pages/platform/limits/
 - https://developers.cloudflare.com/pages/functions/pricing/#static-asset-requests
+
+이 설정으로 게시하는 것은 정적 기능 미리보기입니다. Cloudflare 주소 생성만으로 7일 체험·회원 인증·정기 결제가 활성화되는 것은 아닙니다. 서버의 회원 기록·이용권·결제 검증 연결은 `server/README.md`의 별도 단계입니다.
