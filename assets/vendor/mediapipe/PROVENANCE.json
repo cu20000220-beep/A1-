@@ -1,0 +1,19 @@
+{
+  "package": "@mediapipe/pose",
+  "version": "0.5.1675469404",
+  "source": "https://registry.npmjs.org/@mediapipe/pose/-/pose-0.5.1675469404.tgz",
+  "license": "Apache-2.0",
+  "tarballIntegrity": "sha512-DFZsNWTsSphRIZppnUCuunzBiHP2FdJXR9ehc7mMi4KG+oPaOH0Em3d6kr7Py+TSyTXC1doH88KcF28k2sBxsQ==",
+  "files": {
+    "pose.js": "fcb703afcce65d0a1c540f6a70c3bb45fc84521498c21a9d4160265dde648ab4",
+    "pose_web.binarypb": "dc8efd1c2d62007b34278467407fda5f70847f41310e0e39f0f59fc17b1d01f7",
+    "pose_solution_packed_assets_loader.js": "d7aa29b7d8e11b5c97a58d719e982dd15c2de72995d95112d60492b854840a36",
+    "pose_solution_packed_assets.data": "a63c614bef30d35947f13be361820b1e4e3bec9cfeebf4d11216a18373108e85",
+    "pose_landmark_lite.tflite": "f17bfbecadb61c3be1baa8b8d851cc6619c870a87167b32848ad20db306b9d61",
+    "pose_solution_simd_wasm_bin.js": "3983d1dca31d945d81abb70b18dd61f28ef4736e112463d7cfb1cbadef588127",
+    "pose_solution_simd_wasm_bin.wasm": "195a929430e2ce130b3efb82e64ba27c8e68cb0f6bad870b715688060ea6f7e2",
+    "pose_solution_simd_wasm_bin.data": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pose_solution_wasm_bin.js": "3fcfd9574a04fcf4a0b9271b9b4429c6b9a70278300a5e54c45ddf2001e41422",
+    "pose_solution_wasm_bin.wasm": "a5589369289e1f1e007c106e8ffb26e85a5be762c6db9551ed36213f8f58378d"
+  }
+}
