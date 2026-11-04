@@ -27,8 +27,13 @@ function collect(relative) {
 // Only these assets are public. Adding a file to assets/ must not accidentally
 // expose a subscriber catalog, recommendation rules, or shopping URL templates.
 const publicEntries = [
+  '_headers',
   'index.html',
   'credits.html',
+  'account.html',
+  'privacy.html',
+  'assets/account.js',
+  'assets/account.css',
   'assets/app.js',
   'assets/body-analysis.js',
   'assets/premium-client.js',

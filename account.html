@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7f6f2"><title>회원가입·로그인 — A1 FASHION</title><meta name="description" content="A1 FASHION 무료 회원가입과 이메일 로그인. 회원가입과 유료 구독은 별개입니다."><link rel="icon" href="assets/placeholder.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/style.css?v=account-1"><link rel="stylesheet" href="assets/account.css?v=account-1"><script src="assets/account.js?v=account-1" defer></script></head>
+<body class="account-page">
+<header><a class="logo" href="index.html" aria-label="A1 FASHION 홈">A1<span>FASHION</span></a><a class="text-button" href="index.html#ai-studio">무료 사진 분석으로 ↗</a></header>
+<main class="account-layout">
+<aside class="account-editorial"><img src="assets/photos/woman.jpg" alt="차분한 색상의 옷으로 연출한 패션 스타일"><div><p class="eyebrow">A LITTLE MORE YOU.</p><h1>나만의 스타일,<br>나의 계정에서.</h1><p>사진 분석은 누구에게나 무료.<br>회원가입은 구독 결제와 별개입니다.</p></div></aside>
+<section class="account-panel" aria-labelledby="account-title">
+<div class="account-heading"><p class="eyebrow">WELCOME TO A1</p><h2 id="account-title">다시 만나 반가워요.</h2><p id="auth-intro">이메일로 로그인하고 나의 계정을 확인하세요.</p></div>
+<p id="auth-config-status" class="account-connection" role="status">회원 서비스 연결을 확인하고 있습니다.</p><button id="auth-retry" class="text-button" type="button" hidden>연결 상태 다시 확인 ↗</button>
+<div id="auth-guest">
+<div class="account-tabs" role="group" aria-label="계정 메뉴"><button id="auth-tab-login" type="button" aria-pressed="true">로그인</button><button id="auth-tab-signup" type="button" aria-pressed="false">회원가입</button></div>
+<form id="auth-form"><fieldset id="auth-fields" disabled><legend class="sr-only">이메일 계정 정보</legend>
+<label for="auth-email">이메일<input id="auth-email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="254" required placeholder="you@example.com" spellcheck="false" autocapitalize="none"></label>
+<label id="auth-password-label" for="auth-password">비밀번호<input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="1" maxlength="128" required></label>
+<p id="auth-password-guide" class="account-help" hidden>12자 이상으로 설정해주세요. 다른 서비스에서 쓰지 않는 비밀번호를 권합니다.</p>
+<label id="auth-confirm-label" for="auth-confirm" hidden>비밀번호 확인<input id="auth-confirm" name="password-confirm" type="password" autocomplete="new-password" maxlength="128" disabled></label>
+<label class="account-consent" id="auth-consent-label" for="auth-consent" hidden><input id="auth-consent" type="checkbox" disabled><span><a href="privacy.html" target="_blank" rel="noopener">회원 개인정보 안내</a>를 읽고 계정 생성에 필요한 이메일·계정 정보 처리에 동의합니다. <small>(필수)</small></span></label>
+<button id="auth-submit" class="dark-button" type="submit">로그인</button>
+</fieldset></form>
+<div class="account-secondary"><button id="auth-reset" class="text-button" type="button">비밀번호를 잊으셨나요?</button><button id="auth-resend" class="text-button" type="button">인증 메일 다시 보내기</button><button id="auth-back-login" class="text-button" type="button" hidden>로그인으로 돌아가기</button></div>
+</div>
+<div id="auth-member" hidden><p class="account-member-label">MY A1 / 로그인됨</p><h3 id="auth-user-email"></h3><p id="auth-session-note" class="account-help"></p><div class="account-member-info"><strong>회원가입과 구독은 별개예요.</strong><p>사진 분석은 계속 무료입니다. 의류 추천과 판매처 연결에는 별도의 유효한 구독이 필요하며, 현재 구독 가입·결제는 준비 중입니다.</p></div><a id="auth-continue" class="dark-link" href="index.html#premium">사이트로 돌아가기 <span>↗</span></a><button id="auth-logout" class="account-logout text-button" type="button">로그아웃</button>
+<details class="account-delete"><summary id="auth-delete-toggle">회원 탈퇴</summary><form id="auth-delete-form"><p>계정을 삭제하면 로그인할 수 없으며 되돌릴 수 없습니다. 현재 비밀번호를 입력해 본인임을 확인해주세요.</p><label for="auth-delete-password">현재 비밀번호<input id="auth-delete-password" type="password" autocomplete="current-password" maxlength="128" required></label><label class="account-consent" for="auth-delete-confirm"><input id="auth-delete-confirm" type="checkbox" required><span>내 회원 계정 삭제에 동의합니다.</span></label><button id="auth-delete-submit" type="submit">회원 계정 삭제</button></form></details></div>
+<p id="auth-status" class="account-status" role="status" aria-live="polite"></p>
+<p class="account-footnote">회원가입은 무료입니다. 카드 등록이나 자동 결제를 시작하지 않습니다. 비밀번호는 A1 데이터베이스에 저장하지 않으며 Firebase 인증으로 처리합니다.</p>
+<a class="account-privacy" href="privacy.html">회원 개인정보 안내 ↗</a>
+</section></main><footer class="account-footer"><span>© 2026 A1 FASHION</span><a href="index.html">Everyday, elevated.</a></footer>
+</body></html>

@@ -6,6 +6,7 @@
   function lock(text){allowed=false;$('#premium-controls').hidden=true;$('#premium-lock').hidden=false;$('#premium-badge').textContent='구독자 전용';window.A1UI.clearPremium();$('#premium-login').hidden=true;if(text)status(text);}
   function buttons(){ $('#premium-check').disabled=busy;$('#premium-recommend').disabled=busy||!allowed||!metrics; }
   function reset(){revision++;metrics=null;busy=false;lock('무료 분석 결과는 구독 없이 볼 수 있습니다. 의류 추천과 판매처 연결은 유효한 구독 확인 후 제공합니다.');buttons();}
+  function changedSession(){revision++;busy=false;lock('로그인 상태가 바뀌었습니다. 의류 추천과 판매처 연결을 이용하려면 구독 상태를 다시 확인해주세요.');buttons();}
   async function api(path,options={}){
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
     try{
@@ -15,7 +16,7 @@
     }finally{clearTimeout(timer)}
   }
   function rejected(response,data){
-    const message=response.status===401?'추천을 이용하려면 먼저 로그인하고 유효한 구독을 확인해주세요.':response.status===403?'유효한 구독 이용권을 확인하지 못했습니다. 무료 사진 분석은 계속 이용할 수 있습니다.':'회원·구독 연결을 준비 중입니다. 지금은 무료 사진 분석 결과까지 이용할 수 있습니다.';
+    const message=response.status===401?'회원가입·로그인 후 유효한 구독을 확인해주세요. 회원가입 자체로 추천 권한이 열리지는 않습니다.':response.status===403?'유효한 구독 이용권을 확인하지 못했습니다. 무료 사진 분석은 계속 이용할 수 있습니다.':'구독 서비스 연결을 준비 중입니다. 지금은 무료 사진 분석 결과까지 이용할 수 있습니다.';
     lock(message);
     if(response.status===401&&typeof data.loginUrl==='string'){
       try{const u=new URL(data.loginUrl);if(u.protocol==='https:'&&!u.username&&!u.password){$('#premium-login').href=u.href;$('#premium-login').hidden=false}}catch{}
@@ -41,6 +42,8 @@
     finally{if(token===revision){busy=false;buttons()}}
   });
   document.addEventListener('a1:analysis-cleared',reset);
+  document.addEventListener('a1:auth-changed',changedSession);
+  window.addEventListener('storage',event=>{if(event.key==='a1-fashion:auth-event')changedSession()});
   document.addEventListener('a1:analysis-ready',event=>{
     revision++;busy=false;metrics={shoulderHipRatio:event.detail.metrics.shoulderHipRatio,legTorsoRatio:event.detail.metrics.legTorsoRatio};
     lock('무료 분석을 완료했습니다. 분석 결과는 구독 없이 볼 수 있습니다. 의류 추천과 판매처 연결은 로그인·구독 확인 후 열립니다.');buttons();

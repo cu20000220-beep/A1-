@@ -49,6 +49,6 @@ const assert = require('node:assert/strict');
     assert.equal(requests.filter(r => r.url().includes('/api/recommendations')).length, 0);
     assert.equal(requests.filter(r => /\/(products|style-advisor|shop-search|own-products|catalog-rules)\.js/.test(r.url())).length, 0);
     assert.deepEqual(errors, []);
-    console.log('PASS: free-analysis/paid-style policy, no signup or billing claim, legacy client flags/catalog cannot grant access, 401/403/503 stay locked, no automatic paid request.');
+    console.log('PASS: free-analysis/paid-style policy, no billing activation, legacy client flags/catalog cannot grant access, 401/403/503 stay locked, no automatic paid request.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
