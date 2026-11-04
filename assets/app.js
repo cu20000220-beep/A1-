@@ -18,7 +18,7 @@
       catch { return false; }
     }
   };
-  const state = { gender:'전체', query:'', category:'전체', price:'all', style:'전체', source:'all', sort:'curated', onlyWishes:false, wishes:wishlist.load() };
+  const state = { gender:'전체', query:'', category:'전체', price:'all', style:'전체', sort:'curated', onlyWishes:false, wishes:wishlist.load() };
   let toastTimer, lastTrigger;
 
   function toast(message) {
@@ -49,7 +49,6 @@
   function list() {
     const rows = catalog.products.filter(p =>
       (state.gender === '전체' || p.gender === state.gender) &&
-      (state.source === 'all' || p.source === state.source) &&
       (state.category === '전체' || p.category === state.category) &&
       (state.style === '전체' || p.style === state.style) &&
       (!state.onlyWishes || state.wishes.has(p.id)) &&
@@ -59,18 +58,13 @@
     if (state.sort !== 'curated') rows.sort((a,b) => state.sort === 'low' ? a.price-b.price : b.price-a.price);
     return rows;
   }
-  function availability(p) {
-    if (p.source !== 'own') return '참고용 예시';
-    return p.availability === 'soldOut' ? '품절' : p.availability === 'available' ? '상품 정보 공개' : '출시 준비 중';
-  }
   function render() {
     const rows = list();
-    $('#cards').innerHTML = rows.map(p => `<article class="card"><div class="card-photo"><button class="image-button" data-detail="${p.id}" aria-label="${escapeHTML(p.name)} 상세보기"><img src="${escapeHTML(catalog.image(p.photo))}" alt="${escapeHTML(p.name)} ${p.source === 'own' ? '상품 사진' : '스타일 참고 사진'}" loading="lazy" decoding="async" width="600" height="800"></button>${heart(p.id)}<span class="card-tag">${rules.sourceLabel(p)} / ${availability(p)}</span></div><div class="card-info"><p class="brand">${p.source === 'own' ? 'A1 ORIGINAL' : 'A1 EDIT'} · ${escapeHTML(p.style)}</p><h3 class="product-title"><button data-detail="${p.id}">${escapeHTML(p.name)}</button></h3><span class="price">${money(p.price)}</span><div class="product-meta"><span>${escapeHTML(p.gender)}</span><span>${escapeHTML(p.category)}</span><span>${escapeHTML(p.color || '컬러 등록 예정')}</span></div></div></article>`).join('');
+    $('#cards').innerHTML = rows.map(p => `<article class="card"><div class="card-photo"><button class="image-button" data-detail="${p.id}" aria-label="${escapeHTML(p.name)} 상세보기"><img src="${escapeHTML(catalog.image(p.photo))}" alt="${escapeHTML(p.name)} 스타일 참고 사진" loading="lazy" decoding="async" width="600" height="800"></button>${heart(p.id)}<span class="card-tag">${rules.sourceLabel(p)} / ${p.gender}</span></div><div class="card-info"><p class="brand">A1 EDIT · ${escapeHTML(p.style)}</p><h3 class="product-title"><button data-detail="${p.id}">${escapeHTML(p.name)}</button></h3><span class="price">${money(p.price)}</span><div class="product-meta"><span>${escapeHTML(p.gender)}</span><span>${escapeHTML(p.category)}</span><span>${escapeHTML(p.color || '컬러 등록 예정')}</span></div></div></article>`).join('');
     $('#cards').querySelectorAll('img').forEach(guardImage);
     $('#empty').hidden = rows.length > 0;
-    const ownEmpty = state.source === 'own' && catalog.ownProducts.length === 0;
-    $('#empty-title').textContent = ownEmpty ? 'A1 자사 컬렉션을 준비하고 있습니다.' : '아직 발견하지 못한 스타일';
-    $('#empty-description').textContent = ownEmpty ? '촬영과 상품 정보가 준비되면 등록합니다. 현재 실제 주문·결제는 받지 않습니다.' : '검색어나 필터를 바꿔보세요. 찜한 상품이 없다면 마음에 드는 스타일의 하트를 눌러주세요.';
+    $('#empty-title').textContent = '아직 발견하지 못한 스타일';
+    $('#empty-description').textContent = '검색어나 필터를 바꿔보세요. 찜한 상품이 없다면 마음에 드는 스타일의 하트를 눌러주세요.';
     $('#result-count').textContent = `${state.onlyWishes ? '찜한 스타일 · ' : ''}${rows.length}개의 스타일`;
     $('#wish-count').textContent = state.wishes.size;
     $('#wish-nav').setAttribute('aria-pressed', String(state.onlyWishes));
@@ -79,7 +73,7 @@
     document.dispatchEvent(new CustomEvent('a1:catalog-rendered', {detail:{wishes:[...state.wishes]}}));
   }
   function reset() {
-    Object.assign(state, {gender:'전체', query:'', category:'전체', price:'all', style:'전체', source:'all', sort:'curated', onlyWishes:false});
+    Object.assign(state, {gender:'전체', query:'', category:'전체', price:'all', style:'전체', sort:'curated', onlyWishes:false});
     HTMLFormElement.prototype.reset.call($('#filters'));
     $('#sort').value = 'curated';
     render();
@@ -102,9 +96,8 @@
     const p = catalog.products.find(product => product.id === id);
     if (!p) return;
     lastTrigger = trigger;
-    const own = p.source === 'own';
-    const referenceLink = own ? '<a href="#ai-studio" data-own-analysis>내 사진으로 분석 ↗</a>' : `<a href="#studio" data-look="${p.look}">착장 참고 ↗</a>`;
-    $('#detail-content').innerHTML = `<div class="detail-grid"><div class="detail-photo"><img src="${escapeHTML(catalog.image(p.photo))}" alt="${escapeHTML(p.name)} ${own ? '상품 사진' : '스타일 참고 사진'}"></div><div class="detail-copy"><p class="brand">${rules.sourceLabel(p)} / ${escapeHTML(p.gender)} / ${escapeHTML(p.style)}</p><h2 id="detail-title">${escapeHTML(p.name)}</h2><p class="price">${money(p.price)} <small style="font-size:10px">${own ? '등록 가격' : '예시 가격'}</small></p><p>${escapeHTML(p.description || '상세 설명 등록 예정입니다.')}</p><dl><dt>컬러</dt><dd>${escapeHTML(p.color || '등록 예정')}</dd><dt>${own ? '소재' : '소재 예시'}</dt><dd>${escapeHTML(p.material || '등록 예정')}</dd><dt>${own ? '사이즈' : '사이즈 예시'}</dt><dd>${escapeHTML(p.sizes || '등록 예정')}</dd>${own ? `<dt>공개 상태</dt><dd>${availability(p)}</dd>` : ''}</dl><div class="detail-actions"><button data-detail-wish="${p.id}" aria-pressed="${state.wishes.has(p.id)}">${state.wishes.has(p.id) ? '♥ 찜한 스타일' : '♡ 찜하기'}</button>${referenceLink}</div><p class="detail-note">${escapeHTML(rules.detailNotice(p))}</p></div></div>`;
+    const referenceLink = `<a href="#studio" data-look="${p.look}">착장 참고 ↗</a>`;
+    $('#detail-content').innerHTML = `<div class="detail-grid"><div class="detail-photo"><img src="${escapeHTML(catalog.image(p.photo))}" alt="${escapeHTML(p.name)} 스타일 참고 사진"></div><div class="detail-copy"><p class="brand">${rules.sourceLabel(p)} / ${escapeHTML(p.gender)} / ${escapeHTML(p.style)}</p><h2 id="detail-title">${escapeHTML(p.name)}</h2><p class="price">${money(p.price)} <small style="font-size:10px">예시 가격</small></p><p>${escapeHTML(p.description || '상세 설명 등록 예정입니다.')}</p><dl><dt>컬러</dt><dd>${escapeHTML(p.color || '등록 예정')}</dd><dt>소재 예시</dt><dd>${escapeHTML(p.material || '등록 예정')}</dd><dt>사이즈 예시</dt><dd>${escapeHTML(p.sizes || '등록 예정')}</dd></dl><div class="detail-actions"><button data-detail-wish="${p.id}" aria-pressed="${state.wishes.has(p.id)}">${state.wishes.has(p.id) ? '♥ 찜한 스타일' : '♡ 찜하기'}</button>${referenceLink}</div><p class="detail-note">${escapeHTML(rules.detailNotice(p))}</p></div></div>`;
     guardImage($('#detail-content img'));
     $('#detail').showModal();
     document.body.style.overflow = 'hidden';
@@ -129,11 +122,10 @@
     if (dw) toggleWish(dw.dataset.detailWish);
     const look = event.target.closest('[data-look]');
     if (look) { chooseLook(Number(look.dataset.look)); closeDetail(); }
-    if (event.target.closest('[data-own-analysis]')) closeDetail();
   });
   $('#filters').addEventListener('submit', event => event.preventDefault());
   $('#search').addEventListener('input', event => { state.query = event.target.value.trim(); render(); });
-  for (const key of ['category','price','style','source','sort']) $('#' + key).addEventListener('change', event => { state[key] = event.target.value; render(); });
+  for (const key of ['category','price','style','sort']) $('#' + key).addEventListener('change', event => { state[key] = event.target.value; render(); });
   $('#reset').addEventListener('click', reset);
   $('#empty-reset').addEventListener('click', reset);
   $('#wish-nav').addEventListener('click', () => { state.onlyWishes = !state.onlyWishes; render(); $('#shop').scrollIntoView({behavior:'smooth'}); });
@@ -157,18 +149,6 @@
       if (button) updateDetailWish(button.dataset.detailWish);
     }
   });
-  $('#own-collection-link').addEventListener('click', () => {
-    state.source = catalog.ownProducts.length ? 'own' : 'example';
-    $('#source').value = state.source;
-    state.onlyWishes = false;
-    render();
-  });
-  if (catalog.ownProducts.length) {
-    $('#own-launch-status').textContent = `등록된 A1 자사 상품 ${catalog.ownProducts.length}개의 정보를 먼저 살펴보세요. 현재 주문·결제 접수는 준비 중입니다.`;
-    $('#own-collection-link').textContent = 'A1 자사 컬렉션 둘러보기 ↗';
-    $('#catalog-status').textContent = '자사 상품 + 참고용 예시 · 현재 주문·결제 접수 없음';
-    $('#catalog-note').textContent = 'A1 자사 상품과 참고용 예시를 구분해 표시합니다. 예시 사진·가격·소재·사이즈는 실제 판매 정보가 아닙니다. 현재 주문·결제는 받지 않습니다.';
-  }
   setImage($('#hero-image'), 'hero');
   chooseLook(0);
   render();

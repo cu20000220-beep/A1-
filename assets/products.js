@@ -25,10 +25,9 @@ window.A1Catalog = (() => {
     {id:'a1-011',name:'그래픽 데일리 스웨트',gender:'여성',category:'상의',style:'미니멀',price:69000,photo:'coat',color:'레드',material:'코튼 혼방',sizes:'S / M / L',description:'부드러운 색감으로 만드는 미니멀 스타일. 비슷한 톤의 하의와 함께 입어보세요.',look:0},
     {id:'a1-012',name:'에센셜 데님 팬츠',gender:'여성',category:'하의',style:'캐주얼',price:39000,photo:'denim',color:'빈티지 블루',material:'코튼 데님',sizes:'24 / 26 / 28 / 30',description:'매일의 옷차림에 편안함을 더하는 데님 스타일. 베이직한 티셔츠로 간결하게 마무리해보세요.',look:1}
   ].map(product => ({...product, source:'example', availability:'preview'}));
-  const registration = window.A1CatalogRules.prepareOwnProducts(window.A1OwnProducts || []);
-  const ownProducts = registration.products;
-  const products = [...ownProducts, ...examples];
+  // Discovery service: no own inventory, checkout or unverified external feed.
+  const products = examples;
   const looks=[{photo:'woman',text:'파우더 블루 코트에 같은 계열의 색을 겹쳐, 부드럽고 차분한 인상을 만들어보세요.'},{photo:'casual',text:'편안한 기본 아이템의 조합. 상의와 하의의 여유를 달리하면 실루엣에 자연스러운 리듬이 생깁니다.'},{photo:'man',text:'정돈된 셋업과 심플한 이너. 액세서리를 최소화해 옷의 선과 비율을 살펴보세요.'}];
   function image(key){return key.startsWith('assets/photos/') ? key : 'assets/photos/'+key+'.jpg'}
-  return Object.freeze({products,ownProducts,photos,looks,image,registrationErrors:registration.errors});
+  return Object.freeze({products,photos,looks,image});
 })();

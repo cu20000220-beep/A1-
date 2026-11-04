@@ -105,12 +105,38 @@ test('ranking uses pose-derived category order, stays deterministic, and does no
   assert.equal(JSON.stringify(products), snapshot);
 });
 
-test('matching own products come first without bypassing budget/style/gender or recommending sold-out items', () => {
-  const own = {id:'own-shirt', source:'own', availability:'preparing', gender:'여성', style:'미니멀', category:'상의', price:45000};
-  const catalog = [...products, own, {...own,id:'own-sold',availability:'soldOut'}, {...own,id:'own-expensive',price:70000}, {...own,id:'own-men',gender:'남성'}];
+test('source never changes ranking and unavailable or mismatching products stay excluded', () => {
+  const base = {availability:'available', gender:'여성', style:'미니멀', category:'상의', price:45000};
+  const catalog = [
+    {...base,id:'external-first',source:'external'},
+    {...base,id:'example-second',source:'example'},
+    {...base,id:'own-third',source:'own'},
+    {...base,id:'sold-out',source:'own',availability:'soldOut'},
+    {...base,id:'over-budget',source:'external',price:70000},
+    {...base,id:'other-gender',source:'own',gender:'남성'},
+    {...base,id:'other-style',source:'own',style:'클래식'}
+  ];
+  const preferences = {gender:'여성',style:'미니멀',budget:50000};
+  const picks = recommend(catalog, analyze(pose()), preferences);
+  assert.deepEqual(picks.map(p => p.product.id), ['external-first','example-second','own-third']);
+  const swapped = catalog.map(p => ({...p,source:p.source==='own'?'external':'own'}));
+  assert.deepEqual(recommend(swapped, analyze(pose()), preferences).map(p => p.product.id), picks.map(p => p.product.id));
+  assert.ok(picks.every(p => !/자사|우선 제안|주문|결제 접수/.test(p.reasons.join(' '))));
+});
+
+test('budget copy distinguishes registered external prices from illustrative prices', () => {
+  const base = {gender:'여성',style:'미니멀',category:'상의',price:45000};
+  const catalog = [
+    {...base,id:'external',source:'external'},
+    {...base,id:'example',source:'example'},
+    {...base,id:'unspecified'},
+    {...base,id:'legacy-own',source:'own'}
+  ];
   const picks = recommend(catalog, analyze(pose()), {gender:'여성',style:'미니멀',budget:50000});
-  assert.equal(picks[0].product.id, 'own-shirt');
-  assert.match(picks[0].reasons.join(' '), /자사 상품/);
-  assert.match(picks[0].reasons.join(' '), /주문·결제 접수는 준비 중/);
-  assert.ok(picks.every(p => !['own-sold','own-expensive','own-men'].includes(p.product.id)));
+  assert.match(picks[0].reasons.join(' '), /외부 등록 가격/);
+  assert.match(picks[0].reasons.join(' '), /판매처에서 확인/);
+  for (const pick of picks.slice(1)) {
+    assert.match(pick.reasons.join(' '), /예시 가격/);
+    assert.doesNotMatch(pick.reasons.join(' '), /외부 등록 가격|주문|결제/);
+  }
 });

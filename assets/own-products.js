@@ -1,5 +1,3 @@
-/* A1's real collection is being photographed and prepared.
-   Add only confirmed own products with authorized photos and accurate details.
-   Empty is intentional: sample products must never be relabeled as own stock.
-   This file is published through GitHub review; there is no public admin upload. */
+/* Archived own-inventory plan. Not loaded by the current discovery service.
+   The active catalog must not treat these legacy records as offered goods. */
 window.A1OwnProducts = [];

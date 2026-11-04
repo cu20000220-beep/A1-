@@ -157,7 +157,7 @@
       // Only trusted catalog strings enter this template; filenames/user inputs do not.
       const article = document.createElement('article');
       article.className = 'card';
-      article.innerHTML = `<div class="card-photo"><button class="image-button" data-detail="${p.id}" aria-label="${p.name} 상세보기"><img src="${catalog.image(p.photo)}" alt="${p.name} ${p.source === 'own' ? '상품 사진' : '스타일 참고 사진'}" loading="lazy" width="600" height="800"></button><button class="wish-button" data-wish="${p.id}" aria-label="찜하기" aria-pressed="false">♡</button><span class="card-tag">${window.A1CatalogRules.sourceLabel(p)} / ${p.gender}</span></div><div class="card-info"><p class="brand">${p.source === 'own' ? 'A1 ORIGINAL' : 'A1 EDIT'} · ${p.style}</p><h4 class="product-title"><button data-detail="${p.id}">${p.name}</button></h4><span class="price">${p.price.toLocaleString('ko-KR')}원 <small>${p.source === 'own' ? '등록 가격' : '예시'}</small></span><ul class="ai-reasons"></ul></div>`;
+      article.innerHTML = `<div class="card-photo"><button class="image-button" data-detail="${p.id}" aria-label="${p.name} 상세보기"><img src="${catalog.image(p.photo)}" alt="${p.name} 스타일 참고 사진" loading="lazy" width="600" height="800"></button><button class="wish-button" data-wish="${p.id}" aria-label="찜하기" aria-pressed="false">♡</button><span class="card-tag">${window.A1CatalogRules.sourceLabel(p)} / ${p.gender}</span></div><div class="card-info"><p class="brand">A1 EDIT · ${p.style}</p><h4 class="product-title"><button data-detail="${p.id}">${p.name}</button></h4><span class="price">${p.price.toLocaleString('ko-KR')}원 <small>예시</small></span><ul class="ai-reasons"></ul></div>`;
       for (const reason of reasons) {
         const li = document.createElement('li');
         li.textContent = reason;
@@ -175,16 +175,9 @@
     $('#ai-recommendations').hidden = false;
     $('#ai-no-matches').hidden = rows.length > 0;
     $('#ai-recommendation-count').textContent = `${rows.length}개 제안 · AI 기준점 + 선택 조건 매칭`;
-    const ownCount = rows.filter(row => row.product.source === 'own').length;
-    $('#ai-recommendation-title').textContent = ownCount ? 'A1 자사 상품부터 제안합니다.' : 'A1 예시 컬렉션에서 제안';
-    $('#ai-own-status').textContent = ownCount
-      ? `선택한 조건에 맞는 자사 상품 ${ownCount}개를 먼저 제안합니다. 함께 표시되는 예시는 참고용이며 현재 주문·결제는 받지 않습니다.`
-      : catalog.ownProducts.length
-        ? '선택한 조건에 맞는 자사 상품이 없습니다. 아래는 구매할 수 없는 예시 스타일입니다.'
-        : '자사 상품은 촬영·등록 준비 중입니다. 아래는 구매할 수 없는 예시 스타일입니다.';
-    $('#ai-catalog-note').textContent = ownCount
-      ? '자사 상품과 참고용 예시를 구분해 표시합니다. 추천은 실제 착용 적합성이나 사이즈를 보장하지 않으며 현재 주문·결제를 받지 않습니다.'
-      : '예시 상품에 대한 스타일 탐색용 제안입니다. 실제 착용 적합성이나 사이즈를 보장하지 않습니다.';
+    $('#ai-recommendation-title').textContent = 'A1 예시 컬렉션에서 제안';
+    $('#ai-catalog-status').textContent = '아래는 실제 판매 상품이 아닌 스타일 참고용 예시입니다. 실제 쇼핑은 별도의 외부몰 검색 연결을 이용하세요.';
+    $('#ai-catalog-note').textContent = '예시 상품에 대한 스타일 탐색용 제안입니다. 실제 착용 적합성이나 사이즈를 보장하지 않습니다.';
     renderShopSearch(preferences);
   }
 
