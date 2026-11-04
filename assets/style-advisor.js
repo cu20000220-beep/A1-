@@ -99,7 +99,7 @@
 
     return products
       .map((product, index) => ({ product, index }))
-      .filter(({ product: p }) => p && Number.isFinite(p.price) && p.price >= 0 &&
+      .filter(({ product: p }) => p && p.availability !== 'soldOut' && Number.isFinite(p.price) && p.price >= 0 &&
         p.price <= budget && (style === '전체' || p.style === style) &&
         (gender === '전체' || p.gender === gender ||
           (gender !== '유니섹스' && p.gender === '유니섹스')))
@@ -114,10 +114,12 @@
             ? `사진 속 기준점 간격을 참고해 ${product.category} 아이템부터 비교하도록 제안합니다.`
             : `${product.category} 아이템을 함께 코디해보는 참고 제안입니다.`
         ];
-        if (budget !== Infinity) reasons.push('입력한 예산 이내의 예시 가격입니다.');
-        return { product, reasons, priority: priority < 0 ? 99 : priority, index };
+        if (product.source === 'own') reasons.unshift('선택한 조건에 맞는 A1 자사 상품을 우선 제안합니다.');
+        if (budget !== Infinity) reasons.push(product.source === 'own' ? '입력한 예산 이내의 등록 가격입니다. 주문·결제 접수는 준비 중입니다.' : '입력한 예산 이내의 예시 가격입니다.');
+        const sourcePriority = product.source === 'own' ? 0 : 1;
+        return { product, reasons, sourcePriority, priority: priority < 0 ? 99 : priority, index };
       })
-      .sort((a, b) => a.priority - b.priority || a.index - b.index)
+      .sort((a, b) => a.sourcePriority - b.sourcePriority || a.priority - b.priority || a.index - b.index)
       .slice(0, 4)
       .map(({ product, reasons }) => ({ product, reasons }));
   }

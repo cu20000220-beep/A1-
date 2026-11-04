@@ -11,7 +11,7 @@ window.A1Catalog = (() => {
     denim: {id:'photo-1542272604-787c3835535d',source:'Unsplash',page:'https://unsplash.com'},
     bag: {id:'photo-1553062407-98eeb64c6a62',source:'Unsplash',page:'https://unsplash.com'}
   };
-  const products = [
+  const examples = [
     {id:'a1-001',name:'블루 테일러드 코트',gender:'여성',category:'아우터',style:'미니멀',price:129000,photo:'woman',color:'파우더 블루',material:'폴리에스터 혼방',sizes:'S / M / L',description:'힘을 뺀 실루엣에 차분한 색감을 더한 시티 룩. 가벼운 이너와 함께 여유롭게 연출해보세요.',look:0},
     {id:'a1-002',name:'모던 시티 셋업',gender:'남성',category:'아우터',style:'클래식',price:159000,photo:'man',color:'네이비',material:'울 혼방',sizes:'M / L / XL',description:'정돈된 선과 자연스러운 여유. 출근길부터 주말의 약속까지 어울리는 클래식한 분위기입니다.',look:2},
     {id:'a1-003',name:'패턴 코튼 셔츠',gender:'유니섹스',category:'상의',style:'캐주얼',price:59000,photo:'casual',color:'플로럴 믹스',material:'코튼',sizes:'S / M / L / XL',description:'옷장의 기본이 되는 담백한 셔츠 스타일. 단독으로 또는 아우터 안에 겹쳐 입어보세요.',look:1},
@@ -24,8 +24,11 @@ window.A1Catalog = (() => {
     {id:'a1-010',name:'라이트 데님 재킷',gender:'유니섹스',category:'아우터',style:'스트리트',price:119000,photo:'casual',color:'라이트 블루',material:'코튼 혼방',sizes:'S / M / L / XL',description:'경쾌한 레이어링을 위한 가벼운 아우터 스타일. 여유로운 하의와 자유롭게 조합해보세요.',look:1},
     {id:'a1-011',name:'그래픽 데일리 스웨트',gender:'여성',category:'상의',style:'미니멀',price:69000,photo:'coat',color:'레드',material:'코튼 혼방',sizes:'S / M / L',description:'부드러운 색감으로 만드는 미니멀 스타일. 비슷한 톤의 하의와 함께 입어보세요.',look:0},
     {id:'a1-012',name:'에센셜 데님 팬츠',gender:'여성',category:'하의',style:'캐주얼',price:39000,photo:'denim',color:'빈티지 블루',material:'코튼 데님',sizes:'24 / 26 / 28 / 30',description:'매일의 옷차림에 편안함을 더하는 데님 스타일. 베이직한 티셔츠로 간결하게 마무리해보세요.',look:1}
-  ];
+  ].map(product => ({...product, source:'example', availability:'preview'}));
+  const registration = window.A1CatalogRules.prepareOwnProducts(window.A1OwnProducts || []);
+  const ownProducts = registration.products;
+  const products = [...ownProducts, ...examples];
   const looks=[{photo:'woman',text:'파우더 블루 코트에 같은 계열의 색을 겹쳐, 부드럽고 차분한 인상을 만들어보세요.'},{photo:'casual',text:'편안한 기본 아이템의 조합. 상의와 하의의 여유를 달리하면 실루엣에 자연스러운 리듬이 생깁니다.'},{photo:'man',text:'정돈된 셋업과 심플한 이너. 액세서리를 최소화해 옷의 선과 비율을 살펴보세요.'}];
-  function image(key){return 'assets/photos/'+key+'.jpg'}
-  return Object.freeze({products,photos,looks,image});
+  function image(key){return key.startsWith('assets/photos/') ? key : 'assets/photos/'+key+'.jpg'}
+  return Object.freeze({products,ownProducts,photos,looks,image,registrationErrors:registration.errors});
 })();

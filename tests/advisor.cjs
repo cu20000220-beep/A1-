@@ -104,3 +104,13 @@ test('ranking uses pose-derived category order, stays deterministic, and does no
   assert.equal(recommend(products, lower)[0].product.id, 'w');
   assert.equal(JSON.stringify(products), snapshot);
 });
+
+test('matching own products come first without bypassing budget/style/gender or recommending sold-out items', () => {
+  const own = {id:'own-shirt', source:'own', availability:'preparing', gender:'여성', style:'미니멀', category:'상의', price:45000};
+  const catalog = [...products, own, {...own,id:'own-sold',availability:'soldOut'}, {...own,id:'own-expensive',price:70000}, {...own,id:'own-men',gender:'남성'}];
+  const picks = recommend(catalog, analyze(pose()), {gender:'여성',style:'미니멀',budget:50000});
+  assert.equal(picks[0].product.id, 'own-shirt');
+  assert.match(picks[0].reasons.join(' '), /자사 상품/);
+  assert.match(picks[0].reasons.join(' '), /주문·결제 접수는 준비 중/);
+  assert.ok(picks.every(p => !['own-sold','own-expensive','own-men'].includes(p.product.id)));
+});
