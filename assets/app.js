@@ -1,155 +1,71 @@
 'use strict';
 (() => {
-  const catalog = window.A1Catalog;
-  const rules = window.A1CatalogRules;
-  const $ = selector => document.querySelector(selector);
+  const $ = s => document.querySelector(s);
+  const records = new Map();
   const storageKey = 'a1-fashion:wishlist:v1';
-  const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const money = price => price.toLocaleString('ko-KR') + '원';
-  const wishlist = {
-    load() {
-      try {
-        const data = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        return new Set(Array.isArray(data) ? data.filter(id => catalog.products.some(p => p.id === id)) : []);
-      } catch { return new Set(); }
-    },
-    save(ids) {
-      try { localStorage.setItem(storageKey, JSON.stringify([...ids])); return true; }
-      catch { return false; }
-    }
-  };
-  const state = { gender:'전체', query:'', category:'전체', price:'all', style:'전체', sort:'curated', onlyWishes:false, wishes:wishlist.load() };
-  let toastTimer, lastTrigger;
-
-  function toast(message) {
-    $('#toast').textContent = message;
-    $('#toast').classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => $('#toast').classList.remove('show'), 2600);
+  let lastTrigger, toastTimer;
+  function loadWishes() {
+    try { const v=JSON.parse(localStorage.getItem(storageKey)||'[]');return new Set(Array.isArray(v)?v.filter(id=>typeof id==='string'&&/^[a-z0-9-]{1,64}$/i.test(id)):[]); }
+    catch { return new Set(); }
+  }
+  let wishes=loadWishes();
+  function node(tag,text,className) {
+    const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;
   }
   function guardImage(img) {
-    img.addEventListener('error', () => {
-      if (img.dataset.fallback) return;
-      img.dataset.fallback = 'true';
-      img.src = 'assets/placeholder.svg';
-      img.classList.add('image-fallback');
-      img.alt = '사진을 불러오지 못했습니다. 상품 설명을 참고해주세요.';
-    }, {once:true});
+    const fallback=()=>{img.removeEventListener('error',fallback);img.src='assets/placeholder.svg';img.classList.add('image-fallback');img.alt='사진을 불러오지 못했습니다. 스타일 설명을 참고해주세요.'};
+    img.addEventListener('error',fallback,{once:true});
+    if(img.complete&&!img.naturalWidth)fallback();
   }
-  function setImage(img, key) {
-    img.classList.remove('image-fallback');
-    delete img.dataset.fallback;
-    guardImage(img);
-    img.src = catalog.image(key);
+  function toast(text) {$('#toast').textContent=text;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),2300)}
+  function imagePath(value) { return typeof value==='string'&&/^assets\/photos\/[a-z0-9_/-]+\.(jpg|jpeg|png|webp)$/i.test(value)&&!value.includes('..') ? value : 'assets/placeholder.svg'; }
+  function productValid(p) {return p&&typeof p.id==='string'&&/^[a-z0-9-]{1,64}$/i.test(p.id)&&typeof p.name==='string'&&p.name.length<=160&&Number.isSafeInteger(p.price)&&p.price>=0&&p.source==='example';}
+  function wishButton(p) {
+    const b=node('button',wishes.has(p.id)?'♥':'♡','wish-button');b.type='button';b.dataset.wish=p.id;b.setAttribute('aria-label',wishes.has(p.id)?'찜 해제':'찜하기');b.setAttribute('aria-pressed',String(wishes.has(p.id)));return b;
   }
-  function heart(id) {
-    const saved = state.wishes.has(id);
-    return `<button class="wish-button" data-wish="${id}" aria-label="${saved ? '찜 해제' : '찜하기'}" aria-pressed="${saved}">${saved ? '♥' : '♡'}</button>`;
+  function syncWishes() {
+    document.querySelectorAll('[data-wish]').forEach(b=>{const saved=wishes.has(b.dataset.wish);b.textContent=saved?'♥':'♡';b.setAttribute('aria-pressed',String(saved));b.setAttribute('aria-label',saved?'찜 해제':'찜하기')});
   }
-  function list() {
-    const rows = catalog.products.filter(p =>
-      (state.gender === '전체' || p.gender === state.gender) &&
-      (state.category === '전체' || p.category === state.category) &&
-      (state.style === '전체' || p.style === state.style) &&
-      (!state.onlyWishes || state.wishes.has(p.id)) &&
-      (`${p.name} ${p.gender} ${p.category} ${p.style} ${p.color} ${p.material}`.toLocaleLowerCase().includes(state.query.toLocaleLowerCase())) &&
-      (state.price === 'all' || state.price === 'under50' && p.price < 50000 || state.price === '50to100' && p.price >= 50000 && p.price < 100000 || state.price === 'over100' && p.price >= 100000)
-    );
-    if (state.sort !== 'curated') rows.sort((a,b) => state.sort === 'low' ? a.price-b.price : b.price-a.price);
-    return rows;
+  function showDetail(id,trigger) {
+    const p=records.get(id);if(!p)return;lastTrigger=trigger;
+    const grid=node('div',undefined,'detail-grid'),photo=node('div',undefined,'detail-photo'),img=node('img');img.src=imagePath(p.photo);img.alt=p.name+' 스타일 참고 사진';guardImage(img);photo.append(img);
+    const copy=node('div',undefined,'detail-copy');copy.append(node('p','A1 EDIT · 참고용 예시','brand'));
+    const title=node('h2',p.name);title.id='detail-title';copy.append(title,node('p',p.price.toLocaleString('ko-KR')+'원 · 예시 가격','price'),node('p',p.description||'스타일 참고용 예시입니다.'));
+    const dl=node('dl');for(const [label,value] of [['컬러',p.color],['소재 예시',p.material],['사이즈 예시',p.sizes]])dl.append(node('dt',label),node('dd',value||'안내 없음'));copy.append(dl);
+    copy.append(node('p','사진 속 실제 제품과 상품 정보는 다를 수 있습니다. 의류 주문이나 결제를 받지 않으며 실제 사이즈를 보장하지 않습니다.','detail-note'));
+    grid.append(photo,copy);$('#detail-content').replaceChildren(grid);$('#detail').showModal();document.body.style.overflow='hidden';$('#close-detail').focus();
   }
-  function render() {
-    const rows = list();
-    $('#cards').innerHTML = rows.map(p => `<article class="card"><div class="card-photo"><button class="image-button" data-detail="${p.id}" aria-label="${escapeHTML(p.name)} 상세보기"><img src="${escapeHTML(catalog.image(p.photo))}" alt="${escapeHTML(p.name)} 스타일 참고 사진" loading="lazy" decoding="async" width="600" height="800"></button>${heart(p.id)}<span class="card-tag">${rules.sourceLabel(p)} / ${p.gender}</span></div><div class="card-info"><p class="brand">A1 EDIT · ${escapeHTML(p.style)}</p><h3 class="product-title"><button data-detail="${p.id}">${escapeHTML(p.name)}</button></h3><span class="price">${money(p.price)}</span><div class="product-meta"><span>${escapeHTML(p.gender)}</span><span>${escapeHTML(p.category)}</span><span>${escapeHTML(p.color || '컬러 등록 예정')}</span></div></div></article>`).join('');
-    $('#cards').querySelectorAll('img').forEach(guardImage);
-    $('#empty').hidden = rows.length > 0;
-    $('#empty-title').textContent = '아직 발견하지 못한 스타일';
-    $('#empty-description').textContent = '검색어나 필터를 바꿔보세요. 찜한 상품이 없다면 마음에 드는 스타일의 하트를 눌러주세요.';
-    $('#result-count').textContent = `${state.onlyWishes ? '찜한 스타일 · ' : ''}${rows.length}개의 스타일`;
-    $('#wish-count').textContent = state.wishes.size;
-    $('#wish-nav').setAttribute('aria-pressed', String(state.onlyWishes));
-    $('#wish-nav').style.color = state.onlyWishes ? '#874737' : '';
-    document.querySelectorAll('.gender-tabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.gender === state.gender)));
-    document.dispatchEvent(new CustomEvent('a1:catalog-rendered', {detail:{wishes:[...state.wishes]}}));
+  function clearPremium() {
+    records.clear();$('#ai-cards').replaceChildren();$('#ai-shopping-queries').replaceChildren();$('#ai-shopping').hidden=true;$('#premium-results').hidden=true;
+    if($('#detail').open)$('#detail').close();$('#detail-content').replaceChildren();
   }
-  function reset() {
-    Object.assign(state, {gender:'전체', query:'', category:'전체', price:'all', style:'전체', sort:'curated', onlyWishes:false});
-    HTMLFormElement.prototype.reset.call($('#filters'));
-    $('#sort').value = 'curated';
-    render();
-  }
-  function toggleWish(id) {
-    if (state.wishes.has(id)) state.wishes.delete(id); else state.wishes.add(id);
-    const saved = wishlist.save(state.wishes);
-    toast(saved ? state.wishes.has(id) ? '나의 컬렉션에 담았습니다.' : '찜한 스타일에서 삭제했습니다.' : '브라우저 저장이 제한되어 이번 방문에서만 보관합니다.');
-    render();
-    if ($('#detail').open) updateDetailWish(id);
-  }
-  function updateDetailWish(id) {
-    const button = $('#detail-content [data-detail-wish]');
-    if (button && button.dataset.detailWish === id) {
-      button.textContent = state.wishes.has(id) ? '♥ 찜한 스타일' : '♡ 찜하기';
-      button.setAttribute('aria-pressed', String(state.wishes.has(id)));
+  function renderPremium(payload) {
+    clearPremium();
+    if(!payload||payload.catalogMode!=='examples-only'||!Array.isArray(payload.recommendations)||payload.recommendations.length>4||!Array.isArray(payload.shopSearches)||payload.shopSearches.length>2)throw new Error('추천 응답 형식이 올바르지 않습니다.');
+    for(const row of payload.recommendations){
+      const p=row.product;if(!productValid(p)||!Array.isArray(row.reasons))continue;records.set(p.id,p);
+      const card=node('article',undefined,'card'),photo=node('div',undefined,'card-photo'),open=node('button',undefined,'image-button');open.type='button';open.dataset.detail=p.id;open.setAttribute('aria-label',p.name+' 상세보기');
+      const img=node('img');img.src=imagePath(p.photo);img.alt=p.name+' 스타일 참고 사진';img.loading='lazy';guardImage(img);open.append(img);photo.append(open,wishButton(p),node('span','참고용 예시 / '+p.gender,'card-tag'));
+      const info=node('div',undefined,'card-info');info.append(node('p','A1 EDIT · '+p.style,'brand'));const h=node('h3',undefined,'product-title'),b=node('button',p.name);b.type='button';b.dataset.detail=p.id;h.append(b);info.append(h,node('span',p.price.toLocaleString('ko-KR')+'원 · 예시','price'));
+      const reasons=node('ul',undefined,'ai-reasons');for(const reason of row.reasons.slice(0,6))if(typeof reason==='string')reasons.append(node('li',reason));info.append(reasons);card.append(photo,info);$('#ai-cards').append(card);
     }
-  }
-  function showDetail(id, trigger) {
-    const p = catalog.products.find(product => product.id === id);
-    if (!p) return;
-    lastTrigger = trigger;
-    const referenceLink = `<a href="#studio" data-look="${p.look}">착장 참고 ↗</a>`;
-    $('#detail-content').innerHTML = `<div class="detail-grid"><div class="detail-photo"><img src="${escapeHTML(catalog.image(p.photo))}" alt="${escapeHTML(p.name)} 스타일 참고 사진"></div><div class="detail-copy"><p class="brand">${rules.sourceLabel(p)} / ${escapeHTML(p.gender)} / ${escapeHTML(p.style)}</p><h2 id="detail-title">${escapeHTML(p.name)}</h2><p class="price">${money(p.price)} <small style="font-size:10px">예시 가격</small></p><p>${escapeHTML(p.description || '상세 설명 등록 예정입니다.')}</p><dl><dt>컬러</dt><dd>${escapeHTML(p.color || '등록 예정')}</dd><dt>소재 예시</dt><dd>${escapeHTML(p.material || '등록 예정')}</dd><dt>사이즈 예시</dt><dd>${escapeHTML(p.sizes || '등록 예정')}</dd></dl><div class="detail-actions"><button data-detail-wish="${p.id}" aria-pressed="${state.wishes.has(p.id)}">${state.wishes.has(p.id) ? '♥ 찜한 스타일' : '♡ 찜하기'}</button>${referenceLink}</div><p class="detail-note">${escapeHTML(rules.detailNotice(p))}</p></div></div>`;
-    guardImage($('#detail-content img'));
-    $('#detail').showModal();
-    document.body.style.overflow = 'hidden';
-    $('#close-detail').focus();
-  }
-  function closeDetail() { if ($('#detail').open) $('#detail').close(); }
-  function chooseLook(index) {
-    const look = catalog.looks[index];
-    $('#look-image').style.setProperty('--crop', [.32,.44,.27][index]);
-    setImage($('#look-image'), look.photo);
-    $('#look-select').value = String(index);
-    $('#look-note').textContent = look.text;
-  }
-  document.addEventListener('click', event => {
-    const gender = event.target.closest('[data-gender]');
-    if (gender) { state.gender = gender.dataset.gender; state.onlyWishes = false; render(); }
-    const wish = event.target.closest('[data-wish]');
-    if (wish) toggleWish(wish.dataset.wish);
-    const detail = event.target.closest('[data-detail]');
-    if (detail) showDetail(detail.dataset.detail, detail);
-    const dw = event.target.closest('[data-detail-wish]');
-    if (dw) toggleWish(dw.dataset.detailWish);
-    const look = event.target.closest('[data-look]');
-    if (look) { chooseLook(Number(look.dataset.look)); closeDetail(); }
-  });
-  $('#filters').addEventListener('submit', event => event.preventDefault());
-  $('#search').addEventListener('input', event => { state.query = event.target.value.trim(); render(); });
-  for (const key of ['category','price','style','sort']) $('#' + key).addEventListener('change', event => { state[key] = event.target.value; render(); });
-  $('#reset').addEventListener('click', reset);
-  $('#empty-reset').addEventListener('click', reset);
-  $('#wish-nav').addEventListener('click', () => { state.onlyWishes = !state.onlyWishes; render(); $('#shop').scrollIntoView({behavior:'smooth'}); });
-  $('#close-detail').addEventListener('click', closeDetail);
-  $('#detail').addEventListener('click', event => {
-    if (event.target === $('#detail')) {
-      const rect = $('#detail').getBoundingClientRect();
-      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeDetail();
+    const allowedHosts=new Set(['www.coupang.com','www.temu.com','search.shopping.naver.com']);
+    for(const suggestion of payload.shopSearches){
+      if(typeof suggestion.query!=='string'||!Array.isArray(suggestion.links))continue;
+      const row=node('article',undefined,'shop-search-row'),text=node('div'),links=node('div',undefined,'shop-search-links');text.append(node('h4',suggestion.query),node('p',suggestion.reason||''));
+      for(const link of suggestion.links){let u;try{u=new URL(link.url)}catch{continue}if(u.protocol!=='https:'||u.username||u.password||u.port||!allowedHosts.has(u.hostname))continue;const a=node('a',(link.label||link.store)+' ↗');a.href=u.href;a.target='_blank';a.rel='noopener noreferrer';links.append(a)}
+      row.append(text,links);$('#ai-shopping-queries').append(row);
     }
+    $('#ai-recommendation-count').textContent=records.size+'개 예시 스타일';$('#ai-catalog-status').textContent='현재 자료는 실제 판매 상품이 아닌 참고용 예시입니다. 실시간 상품 목록 연동은 준비 중입니다.';
+    $('#ai-no-matches').hidden=records.size>0;$('#ai-shopping').hidden=!$('#ai-shopping-queries').children.length;$('#ai-shopping-budget').textContent='외부몰에는 의류 검색어만 전달하며 A1에서 고른 예산 제한은 판매처에서 직접 설정해야 합니다.';$('#premium-results').hidden=false;
+  }
+  document.addEventListener('click',event=>{
+    const d=event.target.closest('[data-detail]');if(d)showDetail(d.dataset.detail,d);
+    const w=event.target.closest('[data-wish]');if(w&&records.has(w.dataset.wish)){if(wishes.has(w.dataset.wish))wishes.delete(w.dataset.wish);else wishes.add(w.dataset.wish);let saved=true;try{localStorage.setItem(storageKey,JSON.stringify([...wishes]))}catch{saved=false}syncWishes();toast(saved?'찜 목록을 갱신했습니다.':'이번 방문에서만 찜을 보관합니다.')}
   });
-  $('#detail').addEventListener('close', () => {
-    document.body.style.overflow = '';
-    if (lastTrigger?.isConnected) lastTrigger.focus();
-    else if (lastTrigger?.dataset.detail) document.querySelector('[data-detail="' + lastTrigger.dataset.detail + '"]')?.focus();
-  });
-  $('#look-select').addEventListener('change', event => chooseLook(Number(event.target.value)));
-  window.addEventListener('storage', event => {
-    if (event.key === storageKey) {
-      state.wishes = wishlist.load(); render();
-      const button = $('[data-detail-wish]');
-      if (button) updateDetailWish(button.dataset.detailWish);
-    }
-  });
-  setImage($('#hero-image'), 'hero');
-  chooseLook(0);
-  render();
+  $('#close-detail').addEventListener('click',()=>$('#detail').close());$('#detail').addEventListener('close',()=>{document.body.style.overflow='';if(lastTrigger?.isConnected)lastTrigger.focus()});
+  $('#detail').addEventListener('click',event=>{if(event.target!==$('#detail'))return;const r=$('#detail').getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)$('#detail').close()});
+  window.addEventListener('storage',event=>{if(event.key===storageKey){wishes=loadWishes();syncWishes()}});
+  guardImage($('#hero-image'));
+  window.A1UI=Object.freeze({clearPremium,renderPremium});
 })();

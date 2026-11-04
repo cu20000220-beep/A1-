@@ -42,46 +42,34 @@ const path = require('node:path');
     await idle();
     assert.match(await page.locator('#ai-status').innerText(), /완료했습니다/);
     assert.ok(await page.locator('#ai-result').isVisible());
-    assert.equal(await page.locator('#ai-cards .card').count(), 4);
-    assert.ok(await page.locator('#ai-shopping').isVisible());
-    assert.equal(await page.locator('#ai-shopping a').count(), 6);
-    const storeLinks = await page.locator('#ai-shopping a').evaluateAll(links => links.map(a => ({href:a.href,target:a.target,rel:a.rel})));
-    assert.deepEqual([...new Set(storeLinks.map(a => new URL(a.href).hostname))].sort(), ['search.shopping.naver.com','www.coupang.com','www.temu.com']);
-    assert.ok(storeLinks.every(a => a.target === '_blank' && a.rel.includes('noopener') && a.rel.includes('noreferrer')));
-    assert.ok(storeLinks.every(a => !decodeURIComponent(a.href).includes('man.jpg')));
+    assert.equal(await page.locator('#ai-cards .card').count(), 0);
+    assert.ok(await page.locator('#ai-shopping').isHidden());
+    assert.equal(await page.locator('#ai-shopping a').count(), 0);
+    assert.ok(await page.locator('#premium-lock').isVisible());
+    assert.ok(await page.locator('#premium-controls').isHidden());
+    assert.ok(await page.locator('#premium-results').isHidden());
+    assert.match(await page.locator('#ai-metrics').innerText(), /어깨/);
+    assert.match(await page.locator('#ai-summary').innerText(), /사진 속/);
+    assert.equal(requests.filter(r => r.url.includes('/api/')).length, 0, 'free analysis must not send ratios or photos to a protected API');
     assert.ok(requests.some(r => r.url.endsWith('/pose_landmark_lite.tflite')));
     assert.ok(requests.some(r => r.url.endsWith('.wasm')));
     const resultSize = await page.locator('#ai-canvas').evaluate(c => ({ width: c.width, height: c.height }));
     assert.ok(resultSize.width > 100 && resultSize.height > 100 && resultSize.height < 1275, 'result must be a cropped photo');
 
-    // Recommendation changes reuse the analysis and respect the exact constraints.
-    const before = requests.filter(r => r.url.includes('/vendor/')).length;
-    await page.locator('#ai-gender').selectOption('여성');
-    await page.locator('#ai-style').selectOption('클래식');
-    await page.locator('#ai-budget').selectOption('50000');
-    await page.locator('#ai-analyze').click();
-    assert.equal(await page.locator('#ai-cards .card').count(), 0);
-    assert.ok(await page.locator('#ai-no-matches').isVisible());
-    assert.ok(await page.locator('#ai-shopping').isVisible(), 'shop search remains available when sample catalog has no matches');
-    assert.match(await page.locator('#ai-shopping-budget').innerText(), /50,000원/);
-    assert.match(await page.locator('#ai-shopping-budget').innerText(), /자동 적용되지/);
-    await page.locator('#ai-style').selectOption('캐주얼');
-    await page.locator('#ai-analyze').click();
-    assert.equal(await page.locator('#ai-cards .card').count(), 1);
-    assert.match(await page.locator('#ai-cards').innerText(), /에센셜 데님 팬츠/);
-    assert.equal(requests.filter(r => r.url.includes('/vendor/')).length, before);
-    const wish = page.locator('#ai-cards [data-wish]').first();
-    await wish.click();
-    assert.equal(await wish.getAttribute('aria-pressed'), 'true');
-    await page.locator('#ai-cards [data-detail]').first().click();
-    assert.equal(await page.locator('#detail-title').innerText(), '에센셜 데님 팬츠');
-    await page.locator('#close-detail').click();
+    assert.ok(await page.locator('#ai-analyze').isDisabled(), 'completed free analysis cannot silently request paid recommendations');
+    const notes = await page.locator('#ai-notes').innerText();
+    assert.match(notes, /정확한 신체 치수/);
+    assert.doesNotMatch(notes, /팬츠|재킷|셔츠|데님|슬랙스/);
 
     for (const [width, height] of [[820, 1180], [390, 844], [320, 740]]) {
       await page.setViewportSize({ width, height });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       await page.evaluate(() => scrollTo(0, 0));
       await page.screenshot({ path: `/tmp/a1-ai-${width}.png`, fullPage: true });
+      if (width === 390) {
+        await page.locator('#ai-result').screenshot({ path: '/tmp/a1-free-analysis-real-390.png', style: 'header { visibility: hidden !important; }' });
+        await page.locator('#premium').screenshot({ path: '/tmp/a1-premium-locked-real-390.png', style: 'header { visibility: hidden !important; }' });
+      }
     }
     // Clearing removes pixels, measurements and rendered recommendations.
     await page.locator('#ai-clear').click();
@@ -134,13 +122,13 @@ const path = require('node:path');
     await cancelled.locator('#ai-analyze').click();
     await cancelled.locator('#ai-clear').click();
     assert.ok(await cancelled.locator('#ai-photo').isEnabled());
-    assert.ok(await cancelled.locator('#ai-gender').isEnabled());
+    assert.ok(await cancelled.locator('#premium-controls').isHidden());
     assert.equal(await cancelled.locator('#ai-output').getAttribute('aria-busy'), 'false');
     releaseDownload();
     await cancelled.waitForFunction(() => !!window.Pose);
     assert.ok(await cancelled.locator('#ai-result').isHidden());
     assert.match(await cancelled.locator('#ai-status').innerText(), /지웠습니다/);
     await cancelled.close();
-    console.log('PASS: real ML inference, lazy local model loading, download retry, non-person rejection, style/budget/gender matching, wishlist/details, privacy/deletion, mobile/tablet layouts, WebGL failure.');
+    console.log('PASS: real ML inference, lazy local model loading, download retry, non-person rejection, free results with no protected recommendation or store links, privacy/deletion, mobile/tablet layouts, WebGL failure.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

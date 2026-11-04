@@ -1,9 +1,9 @@
-/* AI provides 2D pose landmarks. These calculations and catalog matching are
-   deterministic rules, not a second AI model or a size/health assessment. */
+/* AI provides 2D pose landmarks. These public calculations describe photo landmarks only;
+   recommendations and retailer links are served by the protected API. */
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
-  if (root) root.A1StyleAdvisor = api;
+  if (root) root.A1BodyAnalysis = api;
 })(typeof window !== 'undefined' ? window : null, function () {
   'use strict';
 
@@ -76,53 +76,10 @@
       notes: [
         '사진 한 장에서 AI가 추정한 2D 기준점의 간격입니다. 정확한 신체 치수나 체형 판정이 아닙니다.',
         '자세·카메라 각도·원근·입은 옷에 따라 결과가 달라집니다. 실제 사이즈나 건강 상태를 판단할 수 없습니다.',
-        '아래 스타일 제안은 이 기준점과 선택한 취향을 사용하는 규칙 기반 상품 매칭입니다.'
+        '의류 추천과 판매처 연결은 구독 이용권 확인 후 별도로 제공합니다.'
       ]
     };
   }
 
-  function recommend(products, analysis, preferences = {}) {
-    if (!Array.isArray(products) || !analysis || analysis.ok !== true ||
-        !analysis.metrics || !Number.isFinite(analysis.metrics.shoulderHipRatio)) return [];
-    if (!preferences || typeof preferences !== 'object') return [];
-    const { gender = '전체', style = '전체', budget = Infinity } = preferences;
-    if (!['전체', '여성', '남성', '유니섹스'].includes(gender) ||
-        typeof style !== 'string' ||
-        (budget !== Infinity && (!Number.isSafeInteger(budget) || budget < 0))) return [];
-    // Only an omitted budget means no limit; explicitly invalid values never do.
-    if (Object.prototype.hasOwnProperty.call(preferences, 'budget') && budget === Infinity) return [];
-
-    const ratio = analysis.metrics.shoulderHipRatio;
-    const categoryPreference = ratio >= 1.25 ? ['하의', '상의', '아우터', '원피스', '액세서리']
-      : ratio <= 0.9 ? ['상의', '아우터', '하의', '원피스', '액세서리']
-        : ['아우터', '상의', '하의', '원피스', '액세서리'];
-
-    return products
-      .map((product, index) => ({ product, index }))
-      .filter(({ product: p }) => p && p.availability !== 'soldOut' && Number.isFinite(p.price) && p.price >= 0 &&
-        p.price <= budget && (style === '전체' || p.style === style) &&
-        (gender === '전체' || p.gender === gender ||
-          (gender !== '유니섹스' && p.gender === '유니섹스')))
-      .map(({ product, index }) => {
-        const priority = categoryPreference.indexOf(product.category);
-        const reasons = [
-          style === '전체' ? `${product.style} 스타일을 비교할 수 있는 후보입니다.` : `선택한 ${style} 스타일과 일치합니다.`,
-          gender === '전체' ? '성별 컬렉션 제한 없이 고른 후보입니다.'
-            : product.gender === '유니섹스' ? '선택한 컬렉션과 함께 볼 수 있는 유니섹스 상품입니다.'
-              : `선택한 ${gender} 컬렉션의 상품입니다.`,
-          priority === 0
-            ? `사진 속 기준점 간격을 참고해 ${product.category} 아이템부터 비교하도록 제안합니다.`
-            : `${product.category} 아이템을 함께 코디해보는 참고 제안입니다.`
-        ];
-        if (budget !== Infinity) reasons.push(product.source === 'external'
-          ? '입력한 예산 이내의 외부 등록 가격입니다. 현재 가격·재고는 판매처에서 확인해주세요.'
-          : '입력한 예산 이내의 예시 가격입니다.');
-        return { product, reasons, priority: priority < 0 ? 99 : priority, index };
-      })
-      .sort((a, b) => a.priority - b.priority || a.index - b.index)
-      .slice(0, 4)
-      .map(({ product, reasons }) => ({ product, reasons }));
-  }
-
-  return Object.freeze({ analyzePose, recommend });
+  return Object.freeze({ analyzePose });
 });

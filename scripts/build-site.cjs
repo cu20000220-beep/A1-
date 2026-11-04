@@ -24,7 +24,22 @@ function collect(relative) {
   } else throw new Error(`Unsupported deployment file: ${relative}`);
 }
 
-for (const entry of ['index.html', 'credits.html', 'assets']) collect(entry);
+// Only these assets are public. Adding a file to assets/ must not accidentally
+// expose a subscriber catalog, recommendation rules, or shopping URL templates.
+const publicEntries = [
+  'index.html',
+  'credits.html',
+  'assets/app.js',
+  'assets/body-analysis.js',
+  'assets/premium-client.js',
+  'assets/ai-studio.js',
+  'assets/style.css',
+  'assets/placeholder.svg',
+  'assets/PHOTO-CREDITS.md',
+  'assets/photos',
+  'assets/vendor'
+];
+for (const entry of publicEntries) collect(entry);
 if (files.length + 1 > 1000) throw new Error('Deployment exceeds the dashboard upload file limit.');
 
 // Never replace an existing directory unless a previous invocation created it.

@@ -1,15 +1,13 @@
 'use strict';
 (() => {
   const $ = selector => document.querySelector(selector);
-  const catalog = window.A1Catalog;
-  const advisor = window.A1StyleAdvisor;
+  const advisor = window.A1BodyAnalysis;
   const vendor = new URL('vendor/mediapipe/', new URL('.', document.currentScript.src));
   let photograph = null;
   let analysis = null;
   let busy = false;
   let revision = 0;
   let libraryPromise = null;
-  let wishes = new Set();
   let activeRun = null;
 
   function status(message, error = false) {
@@ -18,10 +16,9 @@
   }
 
   function controls() {
-    $('#ai-analyze').disabled = busy || (!photograph && !analysis);
-    $('#ai-analyze').textContent = busy ? 'AI 분석 중…' : analysis ? '선택한 조건으로 다시 추천' : '사진 분석하고 추천 받기';
+    $('#ai-analyze').disabled = busy || !photograph;
+    $('#ai-analyze').textContent = busy ? 'AI 분석 중…' : analysis ? '무료 분석 완료' : '무료로 사진 분석하기';
     $('#ai-photo').disabled = busy;
-    for (const id of ['ai-gender', 'ai-style', 'ai-budget']) $('#' + id).disabled = busy;
     $('#ai-clear').disabled = !photograph && !analysis && !busy;
     $('#ai-output').setAttribute('aria-busy', String(busy));
   }
@@ -42,12 +39,8 @@
     $('#ai-photo').value = '';
     $('#ai-file-info').textContent = '사진은 외부 서버로 전송하거나 저장하지 않습니다.';
     $('#ai-result').hidden = true;
-    $('#ai-recommendations').hidden = true;
-    $('#ai-shopping').hidden = true;
-    $('#ai-shopping-queries').replaceChildren();
-    $('#ai-shopping-budget').textContent = '';
+    document.dispatchEvent(new Event('a1:analysis-cleared'));
     $('#ai-placeholder').hidden = false;
-    $('#ai-cards').replaceChildren();
     $('#ai-summary').textContent = '';
     $('#ai-metrics').replaceChildren();
     $('#ai-notes').textContent = '';
@@ -135,85 +128,6 @@
     }
   }
 
-  function syncWishes() {
-    $('#ai-cards').querySelectorAll('[data-wish]').forEach(button => {
-      const saved = wishes.has(button.dataset.wish);
-      button.textContent = saved ? '♥' : '♡';
-      button.setAttribute('aria-pressed', String(saved));
-      button.setAttribute('aria-label', saved ? '찜 해제' : '찜하기');
-    });
-  }
-
-  function recommend() {
-    const preferences = {
-      gender: $('#ai-gender').value,
-      style: $('#ai-style').value,
-      budget: Number($('#ai-budget').value)
-    };
-    const rows = advisor.recommend(catalog.products, analysis, preferences);
-    const cards = $('#ai-cards');
-    cards.replaceChildren();
-    for (const {product: p, reasons} of rows) {
-      // Only trusted catalog strings enter this template; filenames/user inputs do not.
-      const article = document.createElement('article');
-      article.className = 'card';
-      article.innerHTML = `<div class="card-photo"><button class="image-button" data-detail="${p.id}" aria-label="${p.name} 상세보기"><img src="${catalog.image(p.photo)}" alt="${p.name} 스타일 참고 사진" loading="lazy" width="600" height="800"></button><button class="wish-button" data-wish="${p.id}" aria-label="찜하기" aria-pressed="false">♡</button><span class="card-tag">${window.A1CatalogRules.sourceLabel(p)} / ${p.gender}</span></div><div class="card-info"><p class="brand">A1 EDIT · ${p.style}</p><h4 class="product-title"><button data-detail="${p.id}">${p.name}</button></h4><span class="price">${p.price.toLocaleString('ko-KR')}원 <small>예시</small></span><ul class="ai-reasons"></ul></div>`;
-      for (const reason of reasons) {
-        const li = document.createElement('li');
-        li.textContent = reason;
-        article.querySelector('.ai-reasons').append(li);
-      }
-      article.querySelector('img').addEventListener('error', event => {
-        const img = event.target;
-        img.src = 'assets/placeholder.svg';
-        img.classList.add('image-fallback');
-        img.alt = '사진을 불러오지 못했습니다. 상품 설명을 참고해주세요.';
-      }, {once: true});
-      cards.append(article);
-    }
-    syncWishes();
-    $('#ai-recommendations').hidden = false;
-    $('#ai-no-matches').hidden = rows.length > 0;
-    $('#ai-recommendation-count').textContent = `${rows.length}개 제안 · AI 기준점 + 선택 조건 매칭`;
-    $('#ai-recommendation-title').textContent = 'A1 예시 컬렉션에서 제안';
-    $('#ai-catalog-status').textContent = '아래는 실제 판매 상품이 아닌 스타일 참고용 예시입니다. 실제 쇼핑은 별도의 외부몰 검색 연결을 이용하세요.';
-    $('#ai-catalog-note').textContent = '예시 상품에 대한 스타일 탐색용 제안입니다. 실제 착용 적합성이나 사이즈를 보장하지 않습니다.';
-    renderShopSearch(preferences);
-  }
-
-  function renderShopSearch(preferences) {
-    const container = $('#ai-shopping-queries');
-    container.replaceChildren();
-    const suggestions = window.A1ShopSearch.suggest(analysis, preferences);
-    for (const suggestion of suggestions) {
-      const row = document.createElement('article');
-      row.className = 'shop-search-row';
-      const text = document.createElement('div');
-      const title = document.createElement('h4');
-      title.textContent = suggestion.query;
-      const reason = document.createElement('p');
-      reason.textContent = suggestion.reason;
-      text.append(title, reason);
-      const links = document.createElement('div');
-      links.className = 'shop-search-links';
-      for (const link of suggestion.links) {
-        const anchor = document.createElement('a');
-        anchor.href = link.url;
-        anchor.target = '_blank';
-        anchor.rel = 'noopener noreferrer';
-        anchor.textContent = `${link.label} ↗`;
-        anchor.setAttribute('aria-label', `${suggestion.query} · ${link.label}, 새 창`);
-        links.append(anchor);
-      }
-      row.append(text, links);
-      container.append(row);
-    }
-    $('#ai-shopping').hidden = suggestions.length === 0;
-    $('#ai-shopping-budget').textContent = preferences.budget < 1000000
-      ? `선택한 예산은 상품당 ${preferences.budget.toLocaleString('ko-KR')}원 이하입니다. 외부몰 검색에는 가격 제한이 자동 적용되지 않으므로 판매처의 가격 필터를 설정해주세요.`
-      : '외부몰의 상품 가격과 재고는 실시간으로 바뀔 수 있습니다.';
-  }
-
   $('#ai-photo').addEventListener('change', async event => {
     const file = event.target.files[0];
     if (!file) return;
@@ -225,7 +139,7 @@
       if (token !== revision) { eraseCanvas(decoded); return; }
       photograph = decoded;
       $('#ai-file-info').textContent = `${file.name} · 사진 준비 완료`;
-      status('사진이 준비됐습니다. 원하는 조건을 선택하고 분석 버튼을 눌러주세요.');
+      status('사진이 준비됐습니다. 무료 분석 버튼을 눌러주세요.');
     } catch (error) { if (token === revision) status(error.message, true); }
     controls();
   });
@@ -233,7 +147,6 @@
   $('#ai-form').addEventListener('submit', async event => {
     event.preventDefault();
     if (busy) return;
-    if (analysis) { recommend(); status('선택한 조건으로 추천을 갱신했습니다. 사진은 다시 분석하지 않았습니다.'); return; }
     if (!photograph) return;
     const source = photograph;
     const token = revision;
@@ -282,8 +195,8 @@
       $('#ai-notes').textContent = result.notes.join(' ');
       $('#ai-result').hidden = false;
       $('#ai-placeholder').hidden = true;
-      recommend();
-      status('AI 기준점 분석을 완료했습니다. 아래에서 참고 비율과 추천 이유를 확인하세요.');
+      document.dispatchEvent(new CustomEvent('a1:analysis-ready',{detail:Object.freeze({metrics:Object.freeze({shoulderHipRatio:result.metrics.shoulderHipRatio,legTorsoRatio:result.metrics.legTorsoRatio})})}));
+      status('무료 분석을 완료했습니다. 결과는 구독 없이 볼 수 있으며, 스타일 추천은 구독 확인 후 이용합니다.');
       eraseCanvas(source);
       photograph = null;
     } catch (error) {
@@ -304,11 +217,5 @@
   });
 
   $('#ai-clear').addEventListener('click', clear);
-  document.addEventListener('a1:catalog-rendered', event => {
-    wishes = new Set(event.detail.wishes);
-    syncWishes();
-  });
-  // Initial wishlist state contains only catalog IDs, never a photo or body data.
-  $('#cards').querySelectorAll('[data-wish][aria-pressed="true"]').forEach(b => wishes.add(b.dataset.wish));
   window.addEventListener('pagehide', clear);
 })();

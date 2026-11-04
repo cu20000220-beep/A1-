@@ -1,0 +1,10 @@
+# GitHub Pages is a static fallback; protected API handlers run only on
+# Cloudflare Pages. Keep their implementation out of this static publication.
+exclude:
+  - server
+  - functions
+  - scripts
+  - tests
+  - docs
+  - dist
+  - README.md
