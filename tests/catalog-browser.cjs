@@ -6,7 +6,7 @@ const path = require('node:path');
 (async () => {
   const browser = await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
   try {
-    const base = process.env.A1_TEST_URL || 'http://127.0.0.1:8002/A1-/';
+    const base = process.env.A1_TEST_URL || 'http://127.0.0.1:8000/';
     const page = await browser.newPage({viewport:{width:820,height:1180}});
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
