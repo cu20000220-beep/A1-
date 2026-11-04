@@ -1,8 +1,11 @@
 # Cloudflare Pages 무료 브랜드 주소
 
-목표는 `a1fashion.pages.dev`처럼 GitHub나 개인 계정 이름을 포함하지 않는 공개 주소입니다. 이름 사용 가능 여부는 프로젝트 생성 시 확인하며, 중복이면 다른 브랜드 이름을 선택합니다. 기존 GitHub 저장소 이름을 바꿀 필요는 없습니다.
+공개 주소는 **https://a1fashion.pages.dev** 입니다. 사용자 배포 완료 화면과 연결된 GitHub의 Cloudflare Pages 성공 체크(c04da5d)에서 a1fashion 프로젝트를 확인했습니다. 기존 GitHub 저장소 이름을 바꿀 필요는 없습니다. 이 작업 환경은 pages.dev 직접 접속을 정책으로 차단하므로 원격 화면 동작까지 검증했다고 설명하지 않습니다.
 
 ## 자동 업데이트 방식
+
+Pages 생성 전용 화면: https://dash.cloudflare.com/?to=/:account/workers-and-pages/create/pages
+일반 Create app 화면은 Workers 설정으로 들어갈 수 있으므로 Pages 생성 화면에서 시작합니다.
 
 Cloudflare 계정 소유자가 Pages의 Git 통합을 처음 연결해야 합니다. 이 작업 환경에는 Cloudflare 계정·배포 권한이 연결되어 있지 않으므로, 계정 소유자의 로그인·GitHub 연결 승인 단계를 대신 완료했다고 주장하지 않습니다. 비밀번호나 인증키를 채팅으로 보내지 않습니다.
 

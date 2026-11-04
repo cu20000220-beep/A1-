@@ -1,5 +1,7 @@
 # A1 FASHION
 
+공개 사이트: https://a1fashion.pages.dev
+
 전신 사진의 기기 내 AI 기준점 추정, 취향별 스타일 탐색과 외부 쇼핑몰 검색 연결을 제공하는 출시 전 기능 미리보기입니다. 현재 의류를 직접 판매하거나 실제 체험 이용권·유료 구독을 발급하지 않습니다. 정책은 7일 무료 체험 후 구독 필수로 정했으며 월 구독료·혜택은 미정입니다. 실제 인증·기간 제한·결제 연결은 아직 완료되지 않았습니다.
 
 ## 실행
@@ -65,6 +67,6 @@ node tests/membership-policy.cjs
 
 ## 배포와 새 주소
 
-`node scripts/build-site.cjs`는 외부 의존성 설치 없이 `dist/`에 실행 파일만 복사하고 Git 이력·테스트·개발 문서를 제외합니다. [Cloudflare Pages 설정](docs/CLOUDFLARE-PAGES.md)의 명령과 출력 폴더를 사용합니다. 계정 소유자의 연결·배포가 확인되기 전에는 새 브랜드 주소가 만들어졌다고 주장하지 않습니다. 기존 GitHub Pages 반영과 Cloudflare 새 주소 배포는 별도로 확인합니다.
+`node scripts/build-site.cjs`는 외부 의존성 설치 없이 `dist/`에 실행 파일만 복사하고 Git 이력·테스트·개발 문서를 제외합니다. [Cloudflare Pages 설정](docs/CLOUDFLARE-PAGES.md)의 명령과 출력 폴더를 사용합니다. Cloudflare Pages의 a1fashion 프로젝트 배포 성공과 https://a1fashion.pages.dev 주소를 사용자 완료 화면 및 연결된 GitHub 배포 체크에서 확인했습니다. 새 주소는 GitHub·개인 계정 이름을 포함하지 않습니다. 기존 GitHub Pages 배포와 별개의 주소이며 회원/결제/7일 이용권 연결 상태와도 별개입니다. 작업 환경의 네트워크 정책으로 새 호스트 직접 접속이 차단되어 원격 화면 테스트는 미실행이며, 배포 파일의 실제 AI·모바일·주요 기능 검증 결과와 구분합니다.
 
 7일 체험의 서버 판정 코드는 `server/membership-policy.mjs`에 준비했으며 현재 정적 빌드에는 포함하지 않습니다. 정책 코드와 실제 회원/결제 배포 상태는 다릅니다. [연결 요건](server/README.md)을 참고하세요.
