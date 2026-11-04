@@ -43,6 +43,12 @@ const path = require('node:path');
     assert.match(await page.locator('#ai-status').innerText(), /완료했습니다/);
     assert.ok(await page.locator('#ai-result').isVisible());
     assert.equal(await page.locator('#ai-cards .card').count(), 4);
+    assert.ok(await page.locator('#ai-shopping').isVisible());
+    assert.equal(await page.locator('#ai-shopping a').count(), 6);
+    const storeLinks = await page.locator('#ai-shopping a').evaluateAll(links => links.map(a => ({href:a.href,target:a.target,rel:a.rel})));
+    assert.deepEqual([...new Set(storeLinks.map(a => new URL(a.href).hostname))].sort(), ['search.shopping.naver.com','www.coupang.com','www.temu.com']);
+    assert.ok(storeLinks.every(a => a.target === '_blank' && a.rel.includes('noopener') && a.rel.includes('noreferrer')));
+    assert.ok(storeLinks.every(a => !decodeURIComponent(a.href).includes('man.jpg')));
     assert.ok(requests.some(r => r.url.endsWith('/pose_landmark_lite.tflite')));
     assert.ok(requests.some(r => r.url.endsWith('.wasm')));
     const resultSize = await page.locator('#ai-canvas').evaluate(c => ({ width: c.width, height: c.height }));
@@ -56,6 +62,9 @@ const path = require('node:path');
     await page.locator('#ai-analyze').click();
     assert.equal(await page.locator('#ai-cards .card').count(), 0);
     assert.ok(await page.locator('#ai-no-matches').isVisible());
+    assert.ok(await page.locator('#ai-shopping').isVisible(), 'shop search remains available when sample catalog has no matches');
+    assert.match(await page.locator('#ai-shopping-budget').innerText(), /50,000원/);
+    assert.match(await page.locator('#ai-shopping-budget').innerText(), /자동 적용되지/);
     await page.locator('#ai-style').selectOption('캐주얼');
     await page.locator('#ai-analyze').click();
     assert.equal(await page.locator('#ai-cards .card').count(), 1);
@@ -80,6 +89,8 @@ const path = require('node:path');
     assert.equal(await page.locator('#ai-cards .card').count(), 0);
     assert.equal(await page.locator('#ai-canvas').evaluate(c => c.width * c.height), 1);
     assert.equal(await page.locator('#ai-metrics').innerText(), '');
+    assert.ok(await page.locator('#ai-shopping').isHidden());
+    assert.equal(await page.locator('#ai-shopping a').count(), 0);
 
     // A bag is not a person: do not manufacture body analysis or recommendations.
     await page.locator('#ai-photo').setInputFiles(photo('bag.jpg'));
@@ -88,6 +99,7 @@ const path = require('node:path');
     assert.ok(await page.locator('#ai-status').evaluate(el => el.classList.contains('is-error')));
     assert.ok(await page.locator('#ai-result').isHidden());
     assert.equal(await page.locator('#ai-cards .card').count(), 0);
+    assert.ok(await page.locator('#ai-shopping').isHidden());
 
     // File names stay text, not HTML; private data never goes to localStorage.
     await page.locator('#ai-photo').setInputFiles({ name: '<b>private</b>.jpg', mimeType: 'image/jpeg', buffer: fs.readFileSync(photo('man.jpg')) });

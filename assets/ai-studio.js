@@ -43,6 +43,9 @@
     $('#ai-file-info').textContent = '사진은 외부 서버로 전송하거나 저장하지 않습니다.';
     $('#ai-result').hidden = true;
     $('#ai-recommendations').hidden = true;
+    $('#ai-shopping').hidden = true;
+    $('#ai-shopping-queries').replaceChildren();
+    $('#ai-shopping-budget').textContent = '';
     $('#ai-placeholder').hidden = false;
     $('#ai-cards').replaceChildren();
     $('#ai-summary').textContent = '';
@@ -142,11 +145,12 @@
   }
 
   function recommend() {
-    const rows = advisor.recommend(catalog.products, analysis, {
+    const preferences = {
       gender: $('#ai-gender').value,
       style: $('#ai-style').value,
       budget: Number($('#ai-budget').value)
-    });
+    };
+    const rows = advisor.recommend(catalog.products, analysis, preferences);
     const cards = $('#ai-cards');
     cards.replaceChildren();
     for (const {product: p, reasons} of rows) {
@@ -171,6 +175,40 @@
     $('#ai-recommendations').hidden = false;
     $('#ai-no-matches').hidden = rows.length > 0;
     $('#ai-recommendation-count').textContent = `${rows.length}개 제안 · AI 기준점 + 선택 조건 매칭`;
+    renderShopSearch(preferences);
+  }
+
+  function renderShopSearch(preferences) {
+    const container = $('#ai-shopping-queries');
+    container.replaceChildren();
+    const suggestions = window.A1ShopSearch.suggest(analysis, preferences);
+    for (const suggestion of suggestions) {
+      const row = document.createElement('article');
+      row.className = 'shop-search-row';
+      const text = document.createElement('div');
+      const title = document.createElement('h4');
+      title.textContent = suggestion.query;
+      const reason = document.createElement('p');
+      reason.textContent = suggestion.reason;
+      text.append(title, reason);
+      const links = document.createElement('div');
+      links.className = 'shop-search-links';
+      for (const link of suggestion.links) {
+        const anchor = document.createElement('a');
+        anchor.href = link.url;
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        anchor.textContent = `${link.label} ↗`;
+        anchor.setAttribute('aria-label', `${suggestion.query} · ${link.label}, 새 창`);
+        links.append(anchor);
+      }
+      row.append(text, links);
+      container.append(row);
+    }
+    $('#ai-shopping').hidden = suggestions.length === 0;
+    $('#ai-shopping-budget').textContent = preferences.budget < 1000000
+      ? `선택한 예산은 상품당 ${preferences.budget.toLocaleString('ko-KR')}원 이하입니다. 외부몰 검색에는 가격 제한이 자동 적용되지 않으므로 판매처의 가격 필터를 설정해주세요.`
+      : '외부몰의 상품 가격과 재고는 실시간으로 바뀔 수 있습니다.';
   }
 
   $('#ai-photo').addEventListener('change', async event => {
