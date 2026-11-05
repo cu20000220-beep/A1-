@@ -7,7 +7,19 @@ const JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@sys
 const MAX_BODY = 4096;
 const MAX_REMOTE = 64 * 1024;
 const MESSAGES = Object.freeze({
-  setup_required: '회원 서비스 연결을 준비 중입니다. 지금은 무료 사진 분석을 이용할 수 있습니다.',
+  setup_required: '회원 연결 설정을 확인해야 합니다. 관리자에게 알려주세요. [AUTH-CONFIG]',
+  provider_key_invalid: '회원 인증 연결값을 확인해야 합니다. 관리자에게 알려주세요. [AUTH-KEY]',
+  provider_access_denied: '회원 인증 서비스의 연결 권한을 확인해야 합니다. 관리자에게 알려주세요. [AUTH-ACCESS]',
+  provider_method_disabled: '이메일 회원가입이 활성화되지 않았습니다. 관리자에게 알려주세요. [AUTH-METHOD]',
+  provider_signup_disabled: '새 회원가입이 허용되지 않았습니다. 관리자에게 알려주세요. [AUTH-SIGNUP]',
+  provider_service_disabled: '회원 인증 서비스의 사용 설정을 확인해야 합니다. 관리자에게 알려주세요. [AUTH-API]',
+  provider_project_invalid: '회원 인증 프로젝트 설정을 확인해야 합니다. 관리자에게 알려주세요. [AUTH-PROJECT]',
+  provider_domain_disallowed: '이 사이트 주소가 회원 인증 서비스에 등록되어 있는지 확인해야 합니다. 관리자에게 알려주세요. [AUTH-DOMAIN]',
+  provider_security_required: '회원가입 보안 확인을 연결해야 합니다. 관리자에게 알려주세요. [AUTH-CHECK]',
+  provider_plan_required: '회원 인증 설정이 현재 무료 운영 조건에 맞는지 확인해야 합니다. 관리자에게 알려주세요. [AUTH-PLAN]',
+  provider_unavailable: '회원 인증 서비스에 연결하지 못했습니다. 잠시 후 다시 시도해주세요. [AUTH-CONNECT]',
+  verification_unavailable: '로그인 확인 서비스에 연결하지 못했습니다. 잠시 후 다시 시도해주세요. [AUTH-VERIFY]',
+  service_unavailable: '회원 요청을 처리하지 못했습니다. 관리자에게 알려주세요. [AUTH-SERVER]',
   authentication_required: '로그인이 필요합니다. 다시 로그인해주세요.',
   email_verification_required: '이메일 인증을 완료한 뒤 다시 로그인해주세요. 인증 메일을 다시 요청할 수 있습니다.',
   invalid_credentials: '이메일 또는 비밀번호를 확인해주세요.',
@@ -17,14 +29,15 @@ const MESSAGES = Object.freeze({
   request_too_large: '요청 크기가 너무 큽니다.',
   forbidden_origin: 'A1 FASHION 사이트에서 다시 시도해주세요.',
   method_not_allowed: '지원하지 않는 요청 방식입니다.',
-  try_later: '요청이 많습니다. 잠시 후 다시 시도해주세요.'
+  password_policy: '비밀번호가 가입 조건에 맞지 않습니다. 더 긴 비밀번호에 영문·숫자·기호를 조합해 다시 시도해주세요.',
+  try_later: '요청이 많습니다. 잠시 후 다시 시도해주세요. [AUTH-LIMIT]'
 });
 
 export class FirebaseAuthError extends Error {
   constructor(status, code) { super(code); this.status = status; this.code = code; }
 }
 class ProviderError extends Error {
-  constructor(code) { super('firebase-request-failed'); this.code = code; }
+  constructor(code, status) { super('firebase-request-failed'); this.code = code; this.status = status; }
 }
 
 export function isFirebaseAuthSelected(env) {
@@ -32,8 +45,8 @@ export function isFirebaseAuthSelected(env) {
 }
 
 function configuration(env) {
-  const project = env?.FIREBASE_PROJECT_ID;
-  const key = env?.FIREBASE_WEB_API_KEY;
+  const project = typeof env?.FIREBASE_PROJECT_ID === 'string' ? env.FIREBASE_PROJECT_ID.trim() : env?.FIREBASE_PROJECT_ID;
+  const key = typeof env?.FIREBASE_WEB_API_KEY === 'string' ? env.FIREBASE_WEB_API_KEY.trim() : env?.FIREBASE_WEB_API_KEY;
   if (typeof project !== 'string' || !/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(project)
     || typeof key !== 'string' || !/^[A-Za-z0-9_-]{20,200}$/.test(key)) {
     throw new FirebaseAuthError(503, 'setup_required');
@@ -51,7 +64,7 @@ function json(data, status = 200, headers = {}) {
 function errorResponse(error, action) {
   const known = error instanceof FirebaseAuthError;
   const status = known ? error.status : 503;
-  const code = known ? error.code : 'setup_required';
+  const code = known ? error.code : 'service_unavailable';
   return json({ ok: false, ...(action === 'session' ? { authenticated: false } : {}),
     error: code, message: MESSAGES[code] || MESSAGES.setup_required }, status,
   { ...(status === 401 && action === 'session' ? { 'Set-Cookie': expiredCookie() } : {}),
@@ -119,35 +132,61 @@ async function input(request, fields) {
 async function firebase(config, action, payload, fetchImpl) {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 8000);
   try {
-    const response = await fetchImpl(`${API}accounts:${action}?key=${encodeURIComponent(config.key)}`, {
-      method: 'POST', redirect: 'error', signal: controller.signal,
+    const projectConfig = action === 'projectConfig';
+    const response = await fetchImpl(`${API}${projectConfig ? 'projects' : `accounts:${action}`}?key=${encodeURIComponent(config.key)}`, {
+      method: projectConfig ? 'GET' : 'POST', redirect: 'error', signal: controller.signal,
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Firebase-Locale': 'ko' },
-      body: JSON.stringify(payload)
+      ...(projectConfig ? {} : { body: JSON.stringify(payload) })
     });
     const declared = response.headers.get('Content-Length');
     if (declared !== null && (!/^\d+$/.test(declared) || Number(declared) > MAX_REMOTE)) throw new Error('invalid-response');
     const data = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await boundedBytes(response.body, MAX_REMOTE)));
     if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('invalid-response');
-    if (!response.ok) {
-      const code = typeof data.error?.message === 'string' ? data.error.message.split(/[ :]/, 1)[0] : 'REMOTE_FAILURE';
-      throw new ProviderError(code);
-    }
+    if (!response.ok) throw new ProviderError(providerCode(data.error), response.status);
     return data;
   } catch (error) {
     if (error instanceof ProviderError) throw error;
-    throw new FirebaseAuthError(503, 'setup_required');
+    throw new FirebaseAuthError(503, 'provider_unavailable');
   } finally { clearTimeout(timer); }
+}
+
+function providerCode(error) {
+  // Google API errors may be prose plus ErrorInfo.reason, rather than Firebase's
+  // uppercase message code. Never return the remote payload, metadata, or URL.
+  const reasons = new Set(['API_KEY_INVALID', 'API_KEY_EXPIRED', 'API_KEY_NOT_FOUND',
+    'API_KEY_SERVICE_BLOCKED', 'API_KEY_HTTP_REFERRER_BLOCKED', 'API_KEY_IP_ADDRESS_BLOCKED',
+    'API_KEY_ANDROID_APP_BLOCKED', 'API_KEY_IOS_APP_BLOCKED', 'SERVICE_DISABLED',
+    'CONSUMER_INVALID', 'PROJECT_INVALID', 'BILLING_DISABLED']);
+  if (Array.isArray(error?.details)) {
+    for (const detail of error.details.slice(0, 20)) {
+      if (detail?.['@type'] === 'type.googleapis.com/google.rpc.ErrorInfo' && reasons.has(detail.reason)) return detail.reason;
+    }
+  }
+  const message = typeof error?.message === 'string' ? error.message : '';
+  if (/^API key not valid\b/i.test(message)) return 'API_KEY_INVALID';
+  const code = /^([A-Z][A-Z0-9_]{1,99})(?:[ :]|$)/.exec(message)?.[1];
+  if (code) return code;
+  return error?.status === 'PERMISSION_DENIED' ? 'PERMISSION_DENIED' : 'REMOTE_FAILURE';
 }
 
 function providerError(error, action) {
   if (!(error instanceof ProviderError)) return error;
+  if (['API_KEY_INVALID', 'INVALID_API_KEY', 'API_KEY_EXPIRED', 'API_KEY_NOT_FOUND'].includes(error.code)) return new FirebaseAuthError(503, 'provider_key_invalid');
+  if (['API_KEY_SERVICE_BLOCKED', 'API_KEY_HTTP_REFERRER_BLOCKED', 'API_KEY_IP_ADDRESS_BLOCKED', 'API_KEY_ANDROID_APP_BLOCKED', 'API_KEY_IOS_APP_BLOCKED', 'PERMISSION_DENIED'].includes(error.code) || error.status === 403 && error.code === 'REMOTE_FAILURE') return new FirebaseAuthError(503, 'provider_access_denied');
+  if (['OPERATION_NOT_ALLOWED', 'PASSWORD_LOGIN_DISABLED'].includes(error.code)) return new FirebaseAuthError(503, 'provider_method_disabled');
+  if (['ADMIN_ONLY_OPERATION', 'SIGNUP_DISABLED'].includes(error.code)) return new FirebaseAuthError(503, 'provider_signup_disabled');
+  if (error.code === 'SERVICE_DISABLED') return new FirebaseAuthError(503, 'provider_service_disabled');
+  if (['CONFIGURATION_NOT_FOUND', 'PROJECT_NOT_FOUND', 'INVALID_PROJECT_ID', 'PROJECT_INVALID', 'CONSUMER_INVALID'].includes(error.code)) return new FirebaseAuthError(503, 'provider_project_invalid');
+  if (['MISSING_RECAPTCHA_TOKEN', 'INVALID_RECAPTCHA_TOKEN', 'CAPTCHA_CHECK_FAILED', 'MISSING_APP_CREDENTIAL', 'INVALID_APP_CREDENTIAL'].includes(error.code)) return new FirebaseAuthError(503, 'provider_security_required');
+  if (['BILLING_NOT_ENABLED', 'BILLING_DISABLED'].includes(error.code)) return new FirebaseAuthError(503, 'provider_plan_required');
   if (['TOO_MANY_ATTEMPTS_TRY_LATER', 'QUOTA_EXCEEDED', 'TOO_MANY_REQUESTS'].includes(error.code)) return new FirebaseAuthError(429, 'try_later');
   if (action === 'signup' && error.code === 'EMAIL_EXISTS') return new FirebaseAuthError(409, 'account_exists');
   if (action === 'signup' && error.code === 'WEAK_PASSWORD') return new FirebaseAuthError(400, 'password_too_short');
+  if (error.code === 'PASSWORD_DOES_NOT_MEET_REQUIREMENTS') return new FirebaseAuthError(400, 'password_policy');
   if (error.code === 'INVALID_EMAIL') return new FirebaseAuthError(400, 'invalid_request');
   if (['INVALID_LOGIN_CREDENTIALS', 'INVALID_PASSWORD', 'EMAIL_NOT_FOUND', 'USER_DISABLED'].includes(error.code)) return new FirebaseAuthError(401, 'invalid_credentials');
   if (['INVALID_ID_TOKEN', 'TOKEN_EXPIRED', 'USER_NOT_FOUND', 'CREDENTIAL_TOO_OLD_LOGIN_AGAIN'].includes(error.code)) return new FirebaseAuthError(401, 'authentication_required');
-  return new FirebaseAuthError(503, 'setup_required');
+  return new FirebaseAuthError(503, 'provider_unavailable');
 }
 
 function readSessionToken(request) {
@@ -166,8 +205,8 @@ async function tokenIdentity(token, config, { now, fetchImpl, requireVerified = 
   let claims;
   try { claims = await verifyJwtToken(token, config, { now, fetchImpl }); }
   catch (error) {
-    if (error instanceof JwtVerificationError) throw new FirebaseAuthError(error.status, error.code);
-    throw new FirebaseAuthError(503, 'setup_required');
+    if (error instanceof JwtVerificationError) throw new FirebaseAuthError(error.status, error.status === 503 ? 'verification_unavailable' : error.code);
+    throw new FirebaseAuthError(503, 'service_unavailable');
   }
   const seconds = Math.floor(now / 1000);
   if (typeof claims.aud !== 'string' || claims.aud !== config.project || claims.sub.length > 128
@@ -198,7 +237,7 @@ async function tokenIdentity(token, config, { now, fetchImpl, requireVerified = 
 async function internalSession(request, env, options = {}) {
   const config = configuration(env);
   const now = options.now ?? Date.now(), fetchImpl = options.fetchImpl ?? globalThis.fetch;
-  if (!Number.isSafeInteger(now) || now < 0 || typeof fetchImpl !== 'function') throw new FirebaseAuthError(503, 'setup_required');
+  if (!Number.isSafeInteger(now) || now < 0 || typeof fetchImpl !== 'function') throw new FirebaseAuthError(503, 'service_unavailable');
   const token = readSessionToken(request);
   const identity = await tokenIdentity(token, config, { now, fetchImpl });
   return { config, token, identity };
@@ -220,9 +259,9 @@ async function signIn(config, credentials, options, requireVerified) {
   let response;
   try { response = await firebase(config, 'signInWithPassword', { ...credentials, returnSecureToken: true }, options.fetchImpl); }
   catch (error) { throw providerError(error, 'login'); }
-  if (typeof response.idToken !== 'string' || response.idToken.length > 16384) throw new FirebaseAuthError(503, 'setup_required');
+  if (typeof response.idToken !== 'string' || response.idToken.length > 16384) throw new FirebaseAuthError(503, 'provider_unavailable');
   const identity = await tokenIdentity(response.idToken, config, { ...options, requireVerified });
-  if (identity.email.toLowerCase() !== credentials.email.toLowerCase()) throw new FirebaseAuthError(503, 'setup_required');
+  if (identity.email.toLowerCase() !== credentials.email.toLowerCase()) throw new FirebaseAuthError(503, 'provider_unavailable');
   return { identity, token: response.idToken };
 }
 
@@ -231,11 +270,24 @@ export async function handleAuthRequest(action, { request, env }, { now = Date.n
     const expected = ['config', 'session'].includes(action) ? 'GET' : 'POST';
     if (request.method !== expected) throw new FirebaseAuthError(405, 'method_not_allowed');
     if (action === 'config') {
-      let configured = false;
-      try { configuration(env); configured = true; } catch { /* No provider identifiers or keys are exposed. */ }
-      return json({ configured });
+      let config;
+      try { config = configuration(env); } catch { return json({ configured: false }); }
+      // This is the same read-only project configuration request used by the
+      // Firebase web SDK. It creates no account and sends no email or password.
+      let remote;
+      try { remote = await firebase(config, 'projectConfig', {}, fetchImpl); }
+      catch (error) { throw providerError(error, action); }
+      if (!Array.isArray(remote.authorizedDomains) || remote.authorizedDomains.length > 1000
+        || remote.authorizedDomains.some(domain => typeof domain !== 'string' || domain.length > 253)) {
+        throw new FirebaseAuthError(503, 'provider_unavailable');
+      }
+      const hostname = new URL(request.url).hostname.toLowerCase();
+      if (!remote.authorizedDomains.some(domain => domain.toLowerCase() === hostname)) {
+        throw new FirebaseAuthError(503, 'provider_domain_disallowed');
+      }
+      return json({ configured: true });
     }
-    if (!Number.isSafeInteger(now) || now < 0 || typeof fetchImpl !== 'function') throw new FirebaseAuthError(503, 'setup_required');
+    if (!Number.isSafeInteger(now) || now < 0 || typeof fetchImpl !== 'function') throw new FirebaseAuthError(503, 'service_unavailable');
     if (action === 'session') {
       const identity = await authenticateFirebaseSession(request, env, { now, fetchImpl });
       return json({ authenticated: true, user: user(identity), expiresAt: identity.expiresAt });
@@ -249,7 +301,7 @@ export async function handleAuthRequest(action, { request, env }, { now = Date.n
       let created;
       try { created = await firebase(config, 'signUp', { ...body, returnSecureToken: true }, fetchImpl); }
       catch (error) { throw providerError(error, 'signup'); }
-      if (typeof created.localId !== 'string' || !created.localId) throw new FirebaseAuthError(503, 'setup_required');
+      if (typeof created.localId !== 'string' || !created.localId) throw new FirebaseAuthError(503, 'provider_unavailable');
       let sent = false;
       if (typeof created.idToken === 'string' && created.idToken.length <= 16384) {
         try { await firebase(config, 'sendOobCode', { requestType: 'VERIFY_EMAIL', idToken: created.idToken }, fetchImpl); sent = true; }

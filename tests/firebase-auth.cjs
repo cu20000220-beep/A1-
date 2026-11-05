@@ -40,11 +40,18 @@ function fixture(options = {}) {
     }
     assert.equal(url.origin, 'https://identitytoolkit.googleapis.com', 'Only official fixed provider URLs are permitted');
     assert.equal(url.searchParams.get('key'), KEY);
+    if (url.pathname === '/v1/projects') {
+      assert.equal(request.method, 'GET');
+      assert.equal(request.body, undefined);
+      state.calls.push({ action: 'projectConfig' });
+      if (state.fail.projectConfig) return Response.json({ error: typeof state.fail.projectConfig === 'string' ? { message: state.fail.projectConfig } : state.fail.projectConfig }, { status: 400 });
+      return Response.json({ authorizedDomains: state.authorizedDomains || ['a1fashion.pages.dev', `${PROJECT}.firebaseapp.com`] });
+    }
     assert.equal(request.method, 'POST');
     const action = url.pathname.replace('/v1/accounts:', '');
     const body = JSON.parse(request.body);
     state.calls.push({ action, body });
-    if (state.fail[action]) return Response.json({ error: { message: state.fail[action] } }, { status: 400 });
+    if (state.fail[action]) return Response.json({ error: typeof state.fail[action] === 'string' ? { message: state.fail[action] } : state.fail[action] }, { status: 400 });
     switch (action) {
       case 'signUp':
         return Response.json({ localId: 'fixture-user', email: body.email, idToken: token({ email_verified: false }) });
@@ -109,6 +116,65 @@ test('signup creates a provider account, requests verification, and never grants
   assert.deepEqual(fx.state.calls[0].body, { email: EMAIL, password: PASSWORD, returnSecureToken: true });
   assert.equal(fx.state.calls[1].body.requestType, 'VERIFY_EMAIL');
   assert.equal(result.allowed, undefined); assert.equal(result.idToken, undefined);
+});
+
+test('copy-and-paste whitespace is normalized without accepting malformed connection values', async () => {
+  const padded = { FIREBASE_PROJECT_ID: ` ${PROJECT}\n`, FIREBASE_WEB_API_KEY: `\n${KEY} ` };
+  const fx = fixture();
+  assert.deepEqual(await (await call('config', undefined, { env: padded, fixture: fx })).json(), { configured: true });
+  assert.equal((await call('signup', { email: EMAIL, password: PASSWORD }, { env: padded, fixture: fx })).status, 201);
+  assert.deepEqual(await (await call('config', undefined, { env: { ...env, FIREBASE_WEB_API_KEY: `"${KEY}"` } })).json(), { configured: false });
+});
+
+test('read-only connection check rejects invalid keys and unapproved hosts before accepting a password', async () => {
+  const invalid = fixture({ fail: { projectConfig: 'INVALID_API_KEY' } });
+  await expectError(await call('config', undefined, { fixture: invalid }), 503, 'provider_key_invalid');
+  assert.deepEqual(invalid.state.calls.map(call => call.action), ['projectConfig']);
+  const wrongDomain = fixture({ authorizedDomains: ['other.example.test'] });
+  const result = await expectError(await call('config', undefined, { fixture: wrongDomain }), 503, 'provider_domain_disallowed');
+  assert.match(result.message, /AUTH-DOMAIN/);
+  assert.ok(!JSON.stringify(result).includes('other.example.test'));
+  assert.deepEqual(wrongDomain.state.calls.map(call => call.action), ['projectConfig']);
+});
+
+test('provider setup failures have distinct safe messages instead of a generic preparing state', async () => {
+  const cases = [
+    ['INVALID_API_KEY', 'provider_key_invalid', 'AUTH-KEY'],
+    ['API key not valid. Please pass a valid API key.', 'provider_key_invalid', 'AUTH-KEY'],
+    ['OPERATION_NOT_ALLOWED', 'provider_method_disabled', 'AUTH-METHOD'],
+    ['PASSWORD_LOGIN_DISABLED', 'provider_method_disabled', 'AUTH-METHOD'],
+    ['ADMIN_ONLY_OPERATION', 'provider_signup_disabled', 'AUTH-SIGNUP'],
+    ['CONFIGURATION_NOT_FOUND', 'provider_project_invalid', 'AUTH-PROJECT'],
+    ['MISSING_RECAPTCHA_TOKEN', 'provider_security_required', 'AUTH-CHECK'],
+    ['BILLING_NOT_ENABLED', 'provider_plan_required', 'AUTH-PLAN'],
+    [`Unrecognized response containing ${KEY} ${PASSWORD}`, 'provider_unavailable', 'AUTH-CONNECT']
+  ];
+  for (const [message, code, display] of cases) {
+    const fx = fixture({ fail: { signUp: message } });
+    const result = await expectError(await call('signup', { email: EMAIL, password: PASSWORD }, { fixture: fx }), 503, code);
+    assert.ok(result.message.includes(display));
+    assert.deepEqual(fx.state.calls.map(c => c.action), ['signUp']);
+  }
+  for (const [reason, code, display] of [
+    ['API_KEY_INVALID', 'provider_key_invalid', 'AUTH-KEY'],
+    ['API_KEY_HTTP_REFERRER_BLOCKED', 'provider_access_denied', 'AUTH-ACCESS'],
+    ['API_KEY_SERVICE_BLOCKED', 'provider_access_denied', 'AUTH-ACCESS'],
+    ['SERVICE_DISABLED', 'provider_service_disabled', 'AUTH-API'],
+    ['CONSUMER_INVALID', 'provider_project_invalid', 'AUTH-PROJECT']
+  ]) {
+    const fx = fixture({ fail: { signUp: { message: `Private response ${KEY} ${PASSWORD}`, status: 'PERMISSION_DENIED', details: [
+      { '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason, metadata: { key: KEY, input: PASSWORD, account: EMAIL } }
+    ] } } });
+    const result = await expectError(await call('signup', { email: EMAIL, password: PASSWORD }, { fixture: fx }), 503, code);
+    assert.ok(result.message.includes(display));
+    assert.ok(!JSON.stringify(result).includes(EMAIL));
+  }
+});
+
+test('provider network failures remain distinct from missing settings without exposing exceptions', async () => {
+  const fx = { fetchImpl: async () => { throw new Error(`Private network details ${KEY} ${PASSWORD}`); } };
+  const result = await expectError(await call('signup', { email: EMAIL, password: PASSWORD }, { fixture: fx }), 503, 'provider_unavailable');
+  assert.match(result.message, /AUTH-CONNECT/);
 });
 
 test('mail failure after account creation accurately reports a created account and permits a later resend', async () => {
@@ -196,7 +262,7 @@ test('deleted, disabled, revoked, or mismatched current Firebase users lose thei
     await expectError(await call('session', undefined, { fixture: fx, cookie: `__Host-a1-session=${token()}` }), 401, 'authentication_required');
   }
   const offline = fixture({ jwksUnavailable: true });
-  await expectError(await call('session', undefined, { fixture: offline, cookie: `__Host-a1-session=${token()}` }), 503, 'setup_required');
+  await expectError(await call('session', undefined, { fixture: offline, cookie: `__Host-a1-session=${token()}` }), 503, 'verification_unavailable');
 });
 
 test('password reset uses the same generic result for existing and unknown accounts', async () => {

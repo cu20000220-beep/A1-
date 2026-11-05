@@ -32,6 +32,7 @@ let resetEmails = 0;
 let databaseReads = 0;
 let paidEntitlement = false;
 let lastToken;
+let providerFailure;
 const apiCalls = [];
 const providerCalls = [];
 
@@ -56,12 +57,20 @@ async function firebaseFixture(input, options = {}) {
   if (url.href === jwksUrl) return json({ keys: [jwk] });
   assert.equal(url.origin, 'https://identitytoolkit.googleapis.com', 'Fixtures must not contact a remote service');
   assert.equal(url.searchParams.get('key'), testKey);
+  if (url.pathname === '/v1/projects') {
+    assert.equal(options.method, 'GET');
+    assert.equal(options.body, undefined);
+    providerCalls.push('projectConfig');
+    if (providerFailure) return json({ error: providerFailure }, 400);
+    return json({ authorizedDomains: ['127.0.0.1', 'localhost', 'a1fashion.pages.dev', `${project}.firebaseapp.com`] });
+  }
   assert.equal(options.method, 'POST');
   const body = JSON.parse(options.body);
   const action = url.pathname.split(':').at(-1);
   providerCalls.push(action);
   if (action === 'signUp') {
     assert.deepEqual({ email: body.email, password: body.password }, { email, password });
+    if (providerFailure) return json({ error: providerFailure }, 400);
     if (created && !deleted) return json({ error: { message: 'EMAIL_EXISTS' } }, 400);
     created = true; deleted = false; verified = false;
     return json({ idToken: token(), refreshToken: 'local-refresh-fixture', email, localId: uid, expiresIn: '3600' });
@@ -236,6 +245,14 @@ async function noCredentialStorage(page) {
     assert.equal(providerCalls.length, 0);
 
     configured = true;
+    providerFailure = { message: 'API key not valid. Please pass a valid API key.', details: [
+      { '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'API_KEY_INVALID' }
+    ] };
+    await page.reload({ waitUntil: 'networkidle' });
+    assert.equal(await page.locator('#auth-fields').evaluate(el => el.disabled), true);
+    assert.match(await page.locator('#auth-config-status').textContent(), /AUTH-KEY/);
+    assert.equal(created, false);
+    providerFailure = undefined;
     await page.reload({ waitUntil: 'networkidle' });
     assert.equal(await page.locator('#auth-fields').evaluate(el => el.disabled), false);
     assert.equal(await page.locator('#auth-member').isVisible(), false);
@@ -247,6 +264,19 @@ async function noCredentialStorage(page) {
     const beforeMismatch = apiCalls.filter(call => call.path === '/api/auth/signup').length;
     await page.locator('#auth-submit').click();
     assert.equal(apiCalls.filter(call => call.path === '/api/auth/signup').length, beforeMismatch, 'Mismatched passwords are not submitted');
+    await page.locator('#auth-confirm').fill(password);
+    providerFailure = { message: 'API key not valid. Please pass a valid API key.', status: 'INVALID_ARGUMENT', details: [
+      { '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'API_KEY_INVALID', metadata: { key: testKey } }
+    ] };
+    await responseFor(page, '/api/auth/signup', () => page.locator('#auth-submit').click(), 503);
+    assert.match(await page.locator('#auth-status').textContent(), /AUTH-KEY/);
+    assert.equal(created, false, 'A provider connection failure never pretends to create an account');
+    assert.equal(await page.locator('#auth-member').isVisible(), false);
+    assert.equal(await page.locator('#auth-password').inputValue(), '');
+    assert.ok(!(await page.locator('#auth-status').textContent()).includes(testKey));
+    await noCredentialStorage(page);
+    providerFailure = undefined;
+    await fillLogin(page);
     await page.locator('#auth-confirm').fill(password);
     await responseFor(page, '/api/auth/signup', () => page.locator('#auth-submit').click(), 201);
     await page.waitForFunction(() => document.querySelector('#auth-password').value === '');

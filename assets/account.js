@@ -108,7 +108,7 @@
   }
   function errorMessage(data) {
     const messages = {
-      setup_required: '회원 서비스를 연결하는 중입니다. 지금은 계정을 만들거나 로그인할 수 없습니다.',
+      setup_required: '회원 연결 설정을 확인해야 합니다. 관리자에게 알려주세요. [AUTH-CONFIG]',
       email_verification_required: '가입 이메일의 확인 링크를 먼저 열어주세요. 인증 메일을 다시 받으려면 비밀번호를 다시 입력한 뒤 ‘인증 메일 다시 보내기’를 누르세요.',
       authentication_required: '로그인 정보를 확인할 수 없습니다. 이메일과 비밀번호를 확인하고 다시 로그인해주세요.',
       invalid_credentials: '이메일 또는 비밀번호를 확인해주세요.',
@@ -148,7 +148,7 @@
       if (token !== revision) return;
       if (!config.response.ok || config.data.configured !== true) {
         showGuest();
-        $('#auth-config-status').textContent = '회원가입 연결 준비 중입니다. 아직 이메일·비밀번호를 입력하거나 계정을 만들 수 없습니다. 무료 사진 분석은 계속 이용할 수 있습니다.';
+        $('#auth-config-status').textContent = config.response.ok ? '회원 연결 설정을 확인해야 합니다. 무료 사진 분석은 계속 이용할 수 있습니다. [AUTH-CONFIG]' : errorMessage(config.data);
         $('#auth-retry').hidden = false;
         return;
       }
@@ -157,13 +157,13 @@
       if (token !== revision) return;
       if (session.response.ok && session.data.authenticated === true) showMember(session.data);
       else if (session.response.status === 401) showGuest();
-      else throw new Error('session-unavailable');
+      else { const error = new Error('session-unavailable'); error.displayMessage = errorMessage(session.data); throw error; }
       $('#auth-config-status').textContent = '회원가입은 무료이며 이메일 확인 후 로그인할 수 있습니다.';
-    } catch {
+    } catch (error) {
       if (token === revision) {
         configured = false;
         showGuest();
-        $('#auth-config-status').textContent = '회원 서비스 연결을 확인하지 못했습니다. 잠시 후 다시 확인해주세요.';
+        $('#auth-config-status').textContent = error?.displayMessage || '회원 서비스 연결을 확인하지 못했습니다. 잠시 후 다시 확인해주세요. [AUTH-NETWORK]';
         $('#auth-retry').hidden = false;
       }
     } finally { if (token === revision) { busy = false; controls(); } }
