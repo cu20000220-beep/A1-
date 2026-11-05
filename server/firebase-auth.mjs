@@ -134,10 +134,16 @@ async function firebase(config, action, payload, fetchImpl) {
   try {
     const projectConfig = action === 'projectConfig';
     const response = await fetchImpl(`${API}${projectConfig ? 'projects' : `accounts:${action}`}?key=${encodeURIComponent(config.key)}`, {
-      method: projectConfig ? 'GET' : 'POST', redirect: 'error', signal: controller.signal,
+      method: projectConfig ? 'GET' : 'POST', redirect: 'manual', signal: controller.signal,
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Firebase-Locale': 'ko' },
       ...(projectConfig ? {} : { body: JSON.stringify(payload) })
     });
+    // Workers supports manual redirects; its unsupported "error" mode throws
+    // before sending a request. Never forward a key or password to a new URL.
+    if (response.status >= 300 && response.status < 400) {
+      await response.body?.cancel();
+      throw new FirebaseAuthError(503, 'provider_unavailable');
+    }
     const declared = response.headers.get('Content-Length');
     if (declared !== null && (!/^\d+$/.test(declared) || Number(declared) > MAX_REMOTE)) throw new Error('invalid-response');
     const data = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await boundedBytes(response.body, MAX_REMOTE)));

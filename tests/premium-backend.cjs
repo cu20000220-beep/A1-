@@ -54,7 +54,7 @@ function environment(row = paidRow) {
 function mockJwks(t, body = { keys: [publicJwk] }, status = 200) {
   return t.mock.method(globalThis, 'fetch', async (url, options) => {
     assert.equal(url, JWKS_URL);
-    assert.equal(options.redirect, 'error');
+    assert.equal(options.redirect, 'manual');
     assert.equal(options.headers.Accept, 'application/json');
     assert.equal(options.headers.Authorization, undefined);
     return new Response(typeof body === 'string' ? body : JSON.stringify(body), { status });
@@ -188,6 +188,7 @@ test('signed paid claims, legacy trials, inactive or unverified rows never repla
 test('JWKS failure, excessive keys/body, or DB failure return setup_required without leaking details', async t => {
   const fetchMock = mockJwks(t);
   for (const response of [
+    () => new Response(JSON.stringify({ keys: [publicJwk] }), { status: 302, headers: { Location: 'https://untrusted.example.test/keys' } }),
     () => new Response('service unavailable', { status: 503 }),
     () => new Response('malformed'),
     () => new Response(JSON.stringify({ keys: Array(21).fill(publicJwk) })),

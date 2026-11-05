@@ -78,6 +78,8 @@ Preview(미리보기)에는 실제 회원 설정을 복사하지 않아도 됩�
 
 ## 연결 오류 확인
 
+2026-11-05에 실제 Cloudflare 실행 엔진(workerd)에서 `redirect: 'error'`가 `TypeError`를 발생시키는 것을 재현했습니다. 이 옵션은 Node.js의 fetch에서 허용되지만 Cloudflare Workers에서는 지원하지 않습니다. Firebase 요청과 JWT 공개키 조회를 `manual`로 수정하고, 3xx 응답은 따라가지 않고 거부합니다. 연결 키나 비밀번호를 리다이렉트 대상에 전달하지 않습니다. [Cloudflare 공식 요청 문서](https://developers.cloudflare.com/workers/runtime-apis/request/)에서 지원 옵션을 확인할 수 있습니다.
+
 소유자의 실제 가입 시도에서 기존의 포괄적인 ‘회원 서비스를 연결하는 중’ 오류가 보고되어 연결을 확인하고 있습니다. `/api/auth/config`는 Firebase 웹 SDK와 같은 공식 `GET /v1/projects` 요청으로 키 접근과 현재 사이트의 승인 도메인을 확인합니다. 이 확인에는 이메일·비밀번호가 필요하지 않고 계정 생성이나 메일 발송도 하지 않습니다. 설정값 앞뒤 공백은 정리하며, 값의 일부를 추측하거나 인증을 우회하지 않습니다.
 
 연결이 실패하면 입력창을 열기 전에 안전한 안내 코드를 표시합니다. 공급자 응답 원문·키·비밀번호·회원 정보는 오류에 포함하지 않습니다.

@@ -54,6 +54,7 @@ function json(data, status = 200) {
 
 async function firebaseFixture(input, options = {}) {
   const url = new URL(String(input));
+  assert.equal(options.redirect, 'manual');
   if (url.href === jwksUrl) return json({ keys: [jwk] });
   assert.equal(url.origin, 'https://identitytoolkit.googleapis.com', 'Fixtures must not contact a remote service');
   assert.equal(url.searchParams.get('key'), testKey);

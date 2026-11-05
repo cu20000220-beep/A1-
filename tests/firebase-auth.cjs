@@ -32,7 +32,7 @@ function fixture(options = {}) {
   };
   const fetchImpl = async (input, request) => {
     const url = new URL(input);
-    assert.equal(request.redirect, 'error');
+    assert.equal(request.redirect, 'manual');
     if (String(url) === JWKS) {
       state.calls.push({ action: 'jwks' });
       if (state.jwksUnavailable) throw new Error('fixture-offline');
@@ -175,6 +175,22 @@ test('provider network failures remain distinct from missing settings without ex
   const fx = { fetchImpl: async () => { throw new Error(`Private network details ${KEY} ${PASSWORD}`); } };
   const result = await expectError(await call('signup', { email: EMAIL, password: PASSWORD }, { fixture: fx }), 503, 'provider_unavailable');
   assert.match(result.message, /AUTH-CONNECT/);
+});
+
+test('provider redirects are rejected instead of forwarding connection keys or passwords', async () => {
+  for (const action of ['config', 'signup']) {
+    const calls = [];
+    const fx = { fetchImpl: async (url, options) => {
+      assert.equal(new URL(url).origin, 'https://identitytoolkit.googleapis.com');
+      assert.equal(options.redirect, 'manual');
+      calls.push(String(url));
+      return new Response(JSON.stringify({ authorizedDomains: ['a1fashion.pages.dev'] }), {
+        status: 307, headers: { Location: 'https://untrusted.example.test/collect' }
+      });
+    } };
+    await expectError(await call(action, action === 'signup' ? { email: EMAIL, password: PASSWORD } : undefined, { fixture: fx }), 503, 'provider_unavailable');
+    assert.equal(calls.length, 1);
+  }
 });
 
 test('mail failure after account creation accurately reports a created account and permits a later resend', async () => {

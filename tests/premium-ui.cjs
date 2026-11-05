@@ -73,7 +73,7 @@ async function assertLocked(page) {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url, options) => {
     assert.equal(String(url), jwksUrl, 'The fixture must never contact an external service');
-    assert.equal(options.redirect, 'error');
+    assert.equal(options.redirect, 'manual');
     return new Response(JSON.stringify({ keys: [jwk] }), { headers: { 'Content-Type': 'application/json' } });
   };
   const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.png': 'image/png', '.wasm': 'application/wasm' };

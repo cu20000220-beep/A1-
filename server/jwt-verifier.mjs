@@ -49,9 +49,12 @@ async function getSigningKey(config, kid, fetchImpl) {
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
     const response = await fetchImpl(config.jwksUrl, {
-      headers: { Accept: 'application/json' }, redirect: 'error', signal: controller.signal
+      headers: { Accept: 'application/json' }, redirect: 'manual', signal: controller.signal
     });
-    if (!response.ok) throw new Error('jwks-unavailable');
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw new Error('jwks-unavailable');
+    }
     const declared = response.headers.get('Content-Length');
     if (declared !== null && (!/^\d+$/.test(declared) || Number(declared) > MAX_JWKS_BYTES)) {
       throw new Error('jwks-too-large');
