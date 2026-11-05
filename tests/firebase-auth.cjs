@@ -317,6 +317,34 @@ test('self-service deletion requires a current session and fresh same-user passw
   assert.deepEqual(noSession.state.calls, []);
 });
 
+test('account deletion erases owned global data before provider deletion and stops safely on a DB failure', async () => {
+  const fx = fixture(), erased = [];
+  const tables = ['product_watchlists', 'notification_preferences', 'notification_consents', 'notification_deliveries', 'api_rate_limits'];
+  const database = {
+    prepare(sql) { return { bind(...params) { return {
+      async first() { assert.match(sql, /sqlite_master/); return tables.includes(params[0]) ? { name: params[0] } : null; },
+      sql, params
+    }; } }; },
+    async batch(statements) {
+      assert.equal(fx.state.deleted, false, 'Identity must still exist until erasure succeeds');
+      assert.ok(fx.state.calls.some(call => call.action === 'signInWithPassword'));
+      for (const statement of statements) {
+        assert.match(statement.sql, /^DELETE FROM \w+ WHERE issuer = \? AND subject = \?$/);
+        assert.deepEqual(statement.params, [ISSUER, 'fixture-user']);
+        erased.push(statement.sql.split(' ')[2]);
+      }
+    }
+  };
+  assert.equal((await call('delete-account', { password: PASSWORD }, { fixture: fx,
+    cookie: `__Host-a1-session=${token()}`, env: { ...env, MEMBERSHIP_DB: database } })).status, 200);
+  assert.deepEqual(erased, tables); assert.equal(fx.state.deleted, true);
+  const failed = fixture();
+  await expectError(await call('delete-account', { password: PASSWORD }, { fixture: failed,
+    cookie: `__Host-a1-session=${token()}`, env: { ...env, MEMBERSHIP_DB: { prepare() { throw new Error('private database unavailable'); } } } }), 503, 'service_unavailable');
+  assert.equal(failed.state.deleted, false);
+  assert.equal(failed.state.calls.filter(call => call.action === 'delete').length, 0);
+});
+
 test('Firebase signup/session never bypasses paid D1 entitlement, and revoked identities are rejected before DB reads', async () => {
   const cookie = `__Host-a1-session=${token()}`;
   const makeRequest = () => new Request(`${ORIGIN}/api/membership`, { headers: { Cookie: cookie, 'X-Paid': 'true' } });

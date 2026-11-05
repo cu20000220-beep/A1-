@@ -98,5 +98,16 @@ window.A1I18n?.register({
   "무료 회원가입 · 구독 결제 연결 준비 중 · 현재 자동 청구 없음": "Free registration · Subscription payment coming later · No automatic billing",
   "사진·AI 모델 출처 및 이용 안내 ↗": "Photo and AI model credits ↗",
   "회원 개인정보 안내 ↗": "Account privacy notice ↗",
-  "스타일 상세 닫기": "Close style details"
+  "스타일 상세 닫기": "Close style details",
+  "글로벌 쇼핑": "Global shopping",
+  "국내·해외 쇼핑몰 검색 연결": "Search links to local and international retailers",
+  "가격 비교와 알림": "Price comparison and alerts",
+  "GENERAL의 모든 기능": "All GENERAL features",
+  "확인된 동일 상품 가격 비교": "Compare verified offers for the same product",
+  "관심 상품 목표 가격·할인 알림": "Target price and discount alerts for watched products",
+  "이메일·SMS 채널별 별도 동의": "Separate email and SMS marketing consent",
+  "가격 비교는 DEMO이며 알림은 실제 발송 없는 모의 모드입니다.": "Price comparisons are DEMO examples. Alerts run in simulation mode without sending messages.",
+  "세 가지 멤버십 비교 ↗": "Compare all three memberships ↗",
+  "별도의 DEMO 가격 비교 보기 ↗": "View a separate DEMO price comparison ↗",
+  "현재 추천 예시의 실제 판매 가격 비교가 아닙니다. 가격 비교에는 PREMIUM 권한이 필요합니다.": "This does not compare real sale prices for the style examples above. Price comparison requires PREMIUM access."
 });

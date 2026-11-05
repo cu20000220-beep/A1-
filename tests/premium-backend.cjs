@@ -154,7 +154,7 @@ test('valid bearer, signed Access assertion, and signed Access cookie identify t
     const response = await get(request('/api/membership', { jwt: null, headers }), env);
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
-    assert.deepEqual(await response.json(), { allowed: true, accessUntil: paidRow.paid_through });
+    assert.deepEqual(await response.json(), { allowed: true, accessUntil: paidRow.paid_through, plan: 'GENERAL' });
     assert.deepEqual(env.MEMBERSHIP_DB.reads, [[ISSUER, 'member-1']]);
   }
 });
@@ -291,5 +291,7 @@ test('schema grants no demo memberships and requires composite identity with pay
   const sql = readFileSync(require.resolve('../server/schema.sql'), 'utf8');
   assert.match(sql, /PRIMARY KEY \(issuer, subject\)/);
   assert.match(sql, /payment_verified_at IS NOT NULL/);
-  assert.doesNotMatch(sql, /^\s*INSERT\s/im);
+  const insertTargets = [...sql.matchAll(/^\s*INSERT(?:\s+OR\s+IGNORE)?\s+INTO\s+([a-z_]+)/gim)].map(match => match[1].toLowerCase());
+  assert.deepEqual(insertTargets, ['membership_plans'], 'Only fixed plan definitions may be seeded; no member or delivery grants');
+  assert.doesNotMatch(sql, /INSERT(?:\s+OR\s+IGNORE)?\s+INTO\s+(?:memberships|notification_deliveries)\b/i);
 });

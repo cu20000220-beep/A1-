@@ -1,6 +1,7 @@
 /** Firebase Authentication REST adapter. No passwords, tokens, or account rows are persisted here. */
 import { JwtVerificationError, verifyJwtToken } from './jwt-verifier.mjs';
 import { normalizeLanguage, requestLanguage } from './locale.mjs';
+import { eraseAllMemberData } from './member-data.mjs';
 
 const COOKIE = '__Host-a1-session';
 const API = 'https://identitytoolkit.googleapis.com/v1/';
@@ -381,6 +382,10 @@ export async function handleAuthRequest(action, { request, env }, { now = Date.n
       const { identity } = await internalSession(request, env, options);
       const fresh = await signIn(config, { email: identity.email, password: body.password }, options, true);
       if (fresh.identity.issuer !== identity.issuer || fresh.identity.subject !== identity.subject) throw new FirebaseAuthError(401, 'authentication_required');
+      // Remove private global records before destroying the identity needed to
+      // retry erasure. Missing optional tables are safe; other DB failures stop
+      // account deletion. Financial membership records remain for review.
+      if (env.MEMBERSHIP_DB) await eraseAllMemberData(env.MEMBERSHIP_DB, identity);
       try { await firebase(config, 'delete', { idToken: fresh.token }, fetchImpl); }
       catch (error) { throw providerError(error, action); }
       return respond({ ok: true, authenticated: false, message: '회원 계정을 삭제했습니다.' }, 200, { 'Set-Cookie': expiredCookie() });

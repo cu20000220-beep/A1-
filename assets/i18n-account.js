@@ -91,5 +91,7 @@ window.A1I18n.register({
   "지원하지 않는 요청 방식입니다.": "This request method is not supported.",
   "비밀번호가 가입 조건에 맞지 않습니다. 더 긴 비밀번호에 영문·숫자·기호를 조합해 다시 시도해주세요.": "Your password does not meet the signup requirements. Try a longer password with letters, numbers and symbols.",
   "요청이 많습니다. 잠시 후 다시 시도해주세요. [AUTH-LIMIT]": "There have been too many requests. Please try again shortly. [AUTH-LIMIT]",
-  "요청이 많아 잠시 기다려야 합니다. 잠시 후 다시 시도해주세요.": "There have been too many requests. Please wait a moment and try again."
+  "요청이 많아 잠시 기다려야 합니다. 잠시 후 다시 시도해주세요.": "There have been too many requests. Please wait a moment and try again.",
+  "내 멤버십·알림·관심 상품 ↗": "My membership, alerts and watchlist ↗",
+  "알림 동의·연락처 관리 ↗": "Manage alert consent and contact details ↗"
 });

@@ -10,7 +10,21 @@
 
 사진·비밀번호·사용자 입력을 번역 서비스로 보내지 않습니다. Firebase 인증 메일은 허용한 `ko`/`en` 언어를 요청하며, 실제 언어별 메일 수신은 운영 확인과 구분합니다. 구독자가 이미 요청한 추천의 언어를 바꾸면 같은 보호 API에서 권한을 다시 확인해 해당 언어의 자료를 받아옵니다. 비공개 상품 번역은 공개 정적 파일에 포함하지 않습니다.
 
-화면 번역은 외부 쇼핑몰 자체의 번역·해외 배송·지역별 판매 가능 여부를 의미하지 않습니다. 예시 가격은 KRW이며 자동 환율 변환은 제공하지 않습니다. 판매처 검색어는 해당 한국 쇼핑몰의 검색에 맞게 유지합니다.
+화면 번역은 외부 쇼핑몰 자체의 번역·해외 배송·지역별 판매 가능 여부를 의미하지 않습니다. 기존 추천 카탈로그의 예시 가격은 KRW입니다. 글로벌 DEMO 가격 비교는 KRW/USD/EUR/GBP/JPY 표시와 출처·시각을 명시한 가상 환율을 시험하며 실제 환율 자동 연동은 제공하지 않습니다.
+
+## 글로벌 확장 — 검토용 변경
+
+기존 사이트에 `global.html`을 추가하고 한국·미국·일본·영국·유럽 판매처 검색, 배송 목적지·통화·성별·브랜드·스타일·가격·사이즈 필터를 제공합니다. 검색 링크는 개별 상품 피드·해외 배송 확인이 아닙니다. 가격 필터의 실제 적용은 판매처 검색을 확인해야 합니다. 기존 AI 분석과 회원 계정을 새 프로젝트로 옮기거나 삭제하지 않습니다.
+
+- **FREE:** 무료 분석, 회원 기능과 서비스 안내.
+- **GENERAL:** 서버에서 검증된 유효 구독이 있을 때 스타일 추천, 국내·해외 쇼핑몰 검색과 관심 상품 저장.
+- **PREMIUM:** GENERAL에 더해 동일 상품 가격 비교와 목표 가격·알림 설정. 현재 가격 비교는 명시적인 DEMO이며 실제 최저가·자동 감시가 아닙니다.
+
+기존 유효 유료 기록은 GENERAL로 대응하는 이전안을 제안하며 PREMIUM으로 자동 올리지 않습니다. 운영 D1 마이그레이션은 별도 승인이 필요합니다. `server/migrations/0001_membership_tiers.sql`, `0002_global_catalog_and_alerts.sql`은 검토·로컬 테스트용이며 운영 DB에 자동 적용하지 않습니다. 두 구독 등급의 월 가격은 미정입니다.
+
+프리미엄 알림은 채널별 별도 마케팅 동의와 회원 소유 범위를 검사합니다. 이메일·SMS 템플릿 미리보기와 모의 기록만 생성합니다. **실제 발송, 정기결제, 유료 API, 운영 Cron은 비활성화**되어 있으며 키나 브라우저 값을 입력해 켤 수 없습니다. 회원 탈퇴는 재인증 후 자신의 글로벌 데이터를 먼저 삭제하며, 실패하면 Firebase 계정 삭제를 진행하지 않습니다.
+
+구현 범위·비용·공급자 승인·개인정보 및 실제 배포의 승인 순서는 [글로벌 운영 보고서](docs/GLOBAL-OPERATIONS.md), 공급자와 무료 한도 근거는 [공식 자료 조사](docs/GLOBAL-RESEARCH.md)에 정리합니다. 이번 작업은 기능 브랜치/PR 검토 대상이며 운영 배포나 운영 데이터 변경을 수행하지 않습니다.
 
 ## 무료 분석
 
@@ -54,19 +68,25 @@ Cloudflare Pages Git 통합의 빌드 명령은 `node scripts/build-site.cjs`, �
 - `assets/body-analysis.js`: 공개 무료 분석의 기준점 품질 검증·2D 간격 계산.
 - `assets/ai-studio.js`: 사진 선택·실제 기기 내 추론·분석 결과와 삭제.
 - `assets/premium-client.js`: 구독 상태 확인과 보호된 추천 요청. 클라이언트 상태는 권한의 근거가 아닙니다.
-- `assets/app.js`: 서버가 허용한 추천 응답의 카드·상세·찜·검색 링크 표시. 찜한 예시 ID만 브라우저에 보관합니다.
+- `assets/app.js`: 서버가 허용한 추천 응답의 카드·상세·검색 링크 표시와 로그인 계정의 서버 찜 목록 연결. 새 찜 기록을 브라우저 저장소에 보관하지 않으며 예전 브라우저 찜 목록을 읽거나 자동 이전하지 않습니다.
 - `functions/api/auth/`: Firebase 회원가입·이메일 인증·로그인 세션·로그아웃·비밀번호 재설정·회원탈퇴 연결.
 - `functions/api/`: 회원 확인·추천 API. 인증·DB 구독 검증 후에만 추천을 반환합니다.
+- `global.html`, `assets/global.js`, `assets/i18n-global.js`: 글로벌 쇼핑·3등급 멤버십·DEMO 가격 비교·관심 상품·알림·계정 화면과 한국어/영어.
+- `functions/api/global/`, `server/member-data.mjs`: 등급 검사, 회원별 저장·동의·철회·삭제·모의 알림 API.
+- `server/price-comparison.mjs`, `server/adapters/`: 정확한 변형 비교와 승인 전 비활성화된 공식 공급자 어댑터.
+- `workers/price-monitor/`: 활성 Cron 없는 제한된 수동 모의 실행 구조.
 - `server/`: 서버 전용 인증/권한 정책, D1 스키마, 예시 카탈로그, 추천과 외부몰 검색 규칙.
 - `assets/vendor/mediapipe/`: 공식 `@mediapipe/pose@0.5.1675469404` Lite 모델/실행 파일, Apache-2.0 라이선스와 무결성 기록.
 - `assets/photos/`: 사용 허가된 참고 사진. 출처는 `assets/PHOTO-CREDITS.md`와 `credits.html`에 보존합니다.
 
 ## 검증
 
+GitHub의 `.github/workflows/global-checks.yml`은 Pull Request 또는 운영자의 수동 실행에서 외부 발송 없는 서버·SQLite·권한 테스트와 정적 패키징을 실행합니다. 저장소 읽기 권한만 사용하며 배포·마이그레이션·공급자 호출을 실행하지 않습니다. 브라우저 및 workerd 검증은 아래의 별도 개발 환경에서 수행하며 이 CI에 포함되었다고 간주하지 않습니다.
+
 Node.js의 서버 테스트:
 
 ```sh
-node --test tests/body-analysis.cjs tests/membership-policy.cjs tests/premium-backend.cjs tests/recommendation-engine.cjs
+node --test tests/body-analysis.cjs tests/membership-policy.cjs tests/premium-backend.cjs tests/recommendation-engine.cjs tests/firebase-auth.cjs tests/global-entitlements.cjs tests/global-schema.cjs tests/global-api.cjs tests/global-retailers.cjs tests/price-comparison.cjs tests/notifications.cjs
 ```
 
 브라우저 검증은 위의 정적 서버와 Playwright/Chromium이 설치된 환경에서 실행합니다.
@@ -74,12 +94,13 @@ node --test tests/body-analysis.cjs tests/membership-policy.cjs tests/premium-ba
 ```sh
 node tests/smoke.cjs
 node tests/i18n-browser.cjs
+node tests/global-browser.cjs
 node tests/discovery-browser.cjs
 node tests/ai-studio.cjs
 ```
 
 실제 기기 내 추론, 무료 결과와 추천 잠금, 파일 삭제, 모바일 화면을 확인합니다. 회원가입 코드의 로컬/테스트 공급자 검증과 실제 Firebase 프로젝트·인증 이메일 수신·운영 쿠키 검증은 구분합니다. 설정 전에는 실제 가입 완료를 주장하지 않습니다. `CHROMIUM_PATH`, `A1_TEST_URL`로 검증 실행 파일과 주소를 지정할 수 있습니다. 실제 iPad Safari 기기 검증과 Chromium의 iPad 크기 화면 검증은 구분합니다. 서버 권한 테스트용 유료 회원은 테스트 안에서만 생성하며 운영 데이터베이스에 유료 회원을 만들지 않습니다.
 
-Functions의 실행 환경 호환성은 Miniflare(workerd)와 esbuild가 설치된 개발 환경에서 `node tests/workerd-auth.cjs`로 검증합니다. 도구가 다른 디렉터리에 설치되어 있으면 `A1_WORKER_TOOLS_ROOT`에 해당 `node_modules` 경로를 지정합니다. 실제 서버 코드를 workerd에서 실행해 요청 방식·가입·공개키 조회·RSA 로그인·세션·리다이렉트 차단을 확인하며, 외부 요청과 실제 회원 생성은 하지 않습니다. 이 검증은 Node.js만 사용한 테스트가 놓칠 수 있는 Workers 실행 환경 차이를 검사합니다.
+Functions의 실행 환경 호환성은 Miniflare(workerd)와 esbuild가 설치된 개발 환경에서 `node tests/workerd-auth.cjs`로 검증합니다. 글로벌 API와 D1 SQLite 실행 환경의 결합은 `node tests/workerd-global.cjs`로 별도 검증하며 실제 운영 D1이나 외부 공급자를 호출하지 않습니다. 도구가 다른 디렉터리에 설치되어 있으면 `A1_WORKER_TOOLS_ROOT`에 해당 `node_modules` 경로를 지정합니다. 실제 서버 코드를 workerd에서 실행해 요청 방식·가입·공개키 조회·RSA 로그인·세션·리다이렉트 차단을 확인하며, 외부 요청과 실제 회원 생성은 하지 않습니다. 이 검증은 Node.js만 사용한 테스트가 놓칠 수 있는 Workers 실행 환경 차이를 검사합니다.
 
 공개 주소는 사용자 완료 화면과 연결된 Cloudflare Pages 배포 체크에서 확인했습니다. 현재 작업 환경의 네트워크 정책은 `pages.dev` 직접 접속을 차단하므로 원격 화면 테스트는 로컬 배포 파일 검증과 구분합니다.

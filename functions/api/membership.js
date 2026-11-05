@@ -6,6 +6,7 @@ export async function onRequest({ request, env }) {
   }
   try {
     const access = await authorizePremium(request, env);
-    return jsonResponse(access);
+    // Publish entitlement fields only, never the authenticated internal identity.
+    return jsonResponse({ allowed: true, accessUntil: access.accessUntil, plan: access.plan });
   } catch (error) { return errorResponse(error, env); }
 }

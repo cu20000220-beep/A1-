@@ -3,6 +3,7 @@
 exclude:
   - server
   - functions
+  - workers
   - scripts
   - tests
   - docs
