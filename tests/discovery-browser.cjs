@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
   try {
-    const page = await browser.newPage({ viewport: { width: 390, height: 844 } }), errors = [], requests = [];
+    const page = await browser.newPage({ locale: 'ko-KR', viewport: { width: 390, height: 844 } }), errors = [], requests = [];
     const base = process.env.A1_TEST_URL || 'http://127.0.0.1:8000/';
     page.on('pageerror', error => errors.push(error.message));
     page.on('request', request => requests.push(request));

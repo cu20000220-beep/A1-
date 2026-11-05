@@ -115,7 +115,7 @@ async function assertLocked(page) {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const origin = `http://127.0.0.1:${server.address().port}`;
     browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const context = await browser.newContext({ locale: 'ko-KR', viewport: { width: 390, height: 844 } });
     const errors = [];
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));

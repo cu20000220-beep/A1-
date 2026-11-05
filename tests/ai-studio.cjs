@@ -12,7 +12,7 @@ const path = require('node:path');
     args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
   });
   try {
-    const page = await browser.newPage({ viewport: { width: 820, height: 1180 } });
+    const page = await browser.newPage({ locale: 'ko-KR', viewport: { width: 820, height: 1180 } });
     const base = process.env.A1_TEST_URL || 'http://127.0.0.1:8000/';
     const origin = new URL(base).origin;
     const errors = [], requests = [];
@@ -57,6 +57,18 @@ const path = require('node:path');
     assert.ok(resultSize.width > 100 && resultSize.height > 100 && resultSize.height < 1275, 'result must be a cropped photo');
 
     assert.ok(await page.locator('#ai-analyze').isDisabled(), 'completed free analysis cannot silently request paid recommendations');
+    const pixelsBeforeLanguageSwitch = await page.locator('#ai-canvas').evaluate(canvas => canvas.toDataURL());
+    const modelRequestsBeforeLanguageSwitch = requests.filter(request => request.url.includes('/vendor/')).length;
+    await page.evaluate(() => window.A1I18n.setLanguage('en'));
+    await page.waitForFunction(() => document.documentElement.lang === 'en');
+    assert.match(await page.locator('#ai-metrics').innerText(), /shoulder/i);
+    assert.doesNotMatch(await page.locator('#ai-summary').innerText(), /[\uac00-\ud7af]/u);
+    assert.doesNotMatch(await page.locator('#ai-notes').innerText(), /[\uac00-\ud7af]/u);
+    assert.equal(await page.locator('#ai-canvas').evaluate(canvas => canvas.toDataURL()), pixelsBeforeLanguageSwitch);
+    assert.equal(requests.filter(request => request.url.includes('/vendor/')).length, modelRequestsBeforeLanguageSwitch);
+    assert.equal(requests.filter(request => request.url.includes('/api/')).length, 0);
+    await page.evaluate(() => window.A1I18n.setLanguage('ko'));
+    await page.waitForFunction(() => document.documentElement.lang === 'ko');
     const notes = await page.locator('#ai-notes').innerText();
     assert.match(notes, /정확한 신체 치수/);
     assert.doesNotMatch(notes, /팬츠|재킷|셔츠|데님|슬랙스/);
@@ -94,12 +106,12 @@ const path = require('node:path');
     await page.waitForFunction(() => document.querySelector('#ai-file-info').textContent.includes('준비 완료'));
     assert.equal(await page.locator('#ai-file-info b').count(), 0);
     const storage = await page.evaluate(() => Object.entries(localStorage));
-    assert.ok(storage.every(([key,value]) => key === 'a1-fashion:wishlist:v1' && value.length < 200));
+    assert.ok(storage.every(([key,value]) => (key === 'a1-fashion:wishlist:v1' && value.length < 200) || (key === 'a1-fashion:language' && ['ko','en'].includes(value))));
     assert.ok(requests.every(r => new URL(r.url).origin === origin && r.method === 'GET'), 'no photo upload or external API/CDN requests');
     assert.deepEqual(errors, []);
 
     // The unsupported-browser path is honest and does not start a model download.
-    const unsupported = await browser.newPage();
+    const unsupported = await browser.newPage({ locale: 'ko-KR' });
     await unsupported.addInitScript(() => {
       const original = HTMLCanvasElement.prototype.getContext;
       HTMLCanvasElement.prototype.getContext = function (type, ...args) {
@@ -113,7 +125,7 @@ const path = require('node:path');
     assert.match(await unsupported.locator('#ai-status').innerText(), /WebGL/);
     assert.ok(await unsupported.locator('#ai-result').isHidden());
     // A delayed download must not lock the UI after clear, or resurrect results.
-    const cancelled = await browser.newPage();
+    const cancelled = await browser.newPage({ locale: 'ko-KR' });
     let releaseDownload;
     const heldDownload = new Promise(resolve => { releaseDownload = resolve; });
     await cancelled.route('**/vendor/mediapipe/pose.js', async route => { await heldDownload; await route.continue(); });
@@ -128,6 +140,10 @@ const path = require('node:path');
     await cancelled.waitForFunction(() => !!window.Pose);
     assert.ok(await cancelled.locator('#ai-result').isHidden());
     assert.match(await cancelled.locator('#ai-status').innerText(), /지웠습니다/);
+    await cancelled.evaluate(() => window.A1I18n.setLanguage('en'));
+    await cancelled.evaluate(() => window.A1I18n.setLanguage('ko'));
+    assert.equal(await cancelled.locator('#ai-summary').innerText(), '');
+    assert.ok(await cancelled.locator('#ai-result').isHidden(), 'Language switches cannot resurrect cleared private analysis');
     await cancelled.close();
     console.log('PASS: real ML inference, lazy local model loading, download retry, non-person rejection, free results with no protected recommendation or store links, privacy/deletion, mobile/tablet layouts, WebGL failure.');
   } finally { await browser.close(); }

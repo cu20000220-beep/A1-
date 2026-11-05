@@ -9,15 +9,53 @@
   let revision = 0;
   let libraryPromise = null;
   let activeRun = null;
+  let statusSource = '사진을 선택해주세요. 분석 결과까지 무료로 확인할 수 있습니다.';
+  let statusError = false;
+  let fileSource = '사진은 외부 서버로 전송하거나 저장하지 않습니다.';
+  let fileParams = {};
+
+  function t(source, params = {}) {
+    return window.A1I18n?.t(source, params) ?? source.replace(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => Object.hasOwn(params, key) ? String(params[key]) : match);
+  }
+
+  function text(element, source, params = {}) {
+    if (window.A1I18n) window.A1I18n.setText(element, source, params);
+    else element.textContent = t(source, params);
+  }
+
+  function fileInfo(source, params = {}) {
+    fileSource = source;
+    fileParams = params;
+    text($('#ai-file-info'), source, params);
+  }
+
+  function renderAnalysisCopy() {
+    if (!analysis) return;
+    text($('#ai-summary'), analysis.summary);
+    $('#ai-metrics').replaceChildren();
+    for (const [label, ratio] of [
+      ['사진 속 어깨 / 골반 기준점 간격', analysis.metrics.shoulderHipRatio],
+      ['사진 속 다리 / 몸통 기준점 길이', analysis.metrics.legTorsoRatio]
+    ]) {
+      const dt = document.createElement('dt'), dd = document.createElement('dd');
+      text(dt, label);
+      text(dd, '{ratio}배', { ratio: ratio.toFixed(2) });
+      $('#ai-metrics').append(dt, dd);
+    }
+    // Retain the original analysis data; only its visible copy changes language.
+    $('#ai-notes').textContent = analysis.notes.map(note => t(note)).join(' ');
+  }
 
   function status(message, error = false) {
-    $('#ai-status').textContent = message;
+    statusSource = message;
+    statusError = error;
+    text($('#ai-status'), message);
     $('#ai-status').classList.toggle('is-error', error);
   }
 
   function controls() {
     $('#ai-analyze').disabled = busy || !photograph;
-    $('#ai-analyze').textContent = busy ? 'AI 분석 중…' : analysis ? '무료 분석 완료' : '무료로 사진 분석하기';
+    text($('#ai-analyze'), busy ? 'AI 분석 중…' : analysis ? '무료 분석 완료' : '무료로 사진 분석하기');
     $('#ai-photo').disabled = busy;
     $('#ai-clear').disabled = !photograph && !analysis && !busy;
     $('#ai-output').setAttribute('aria-busy', String(busy));
@@ -37,11 +75,11 @@
     analysis = null;
     eraseCanvas($('#ai-canvas'));
     $('#ai-photo').value = '';
-    $('#ai-file-info').textContent = '사진은 외부 서버로 전송하거나 저장하지 않습니다.';
+    fileInfo('사진은 외부 서버로 전송하거나 저장하지 않습니다.');
     $('#ai-result').hidden = true;
     document.dispatchEvent(new Event('a1:analysis-cleared'));
     $('#ai-placeholder').hidden = false;
-    $('#ai-summary').textContent = '';
+    text($('#ai-summary'), '');
     $('#ai-metrics').replaceChildren();
     $('#ai-notes').textContent = '';
     status('사진과 분석 결과를 지웠습니다.');
@@ -138,7 +176,7 @@
       const decoded = await readPhoto(file);
       if (token !== revision) { eraseCanvas(decoded); return; }
       photograph = decoded;
-      $('#ai-file-info').textContent = `${file.name} · 사진 준비 완료`;
+      fileInfo('{name} · 사진 준비 완료', { name: file.name });
       status('사진이 준비됐습니다. 무료 분석 버튼을 눌러주세요.');
     } catch (error) { if (token === revision) status(error.message, true); }
     controls();
@@ -182,17 +220,7 @@
       if (!result.ok) throw new Error(result.error);
       analysis = result;
       drawResult(source, points);
-      $('#ai-summary').textContent = result.summary;
-      $('#ai-metrics').replaceChildren();
-      for (const [label, value] of [
-        ['사진 속 어깨 / 골반 기준점 간격', `${result.metrics.shoulderHipRatio.toFixed(2)}배`],
-        ['사진 속 다리 / 몸통 기준점 길이', `${result.metrics.legTorsoRatio.toFixed(2)}배`]
-      ]) {
-        const dt = document.createElement('dt'), dd = document.createElement('dd');
-        dt.textContent = label; dd.textContent = value;
-        $('#ai-metrics').append(dt, dd);
-      }
-      $('#ai-notes').textContent = result.notes.join(' ');
+      renderAnalysisCopy();
       $('#ai-result').hidden = false;
       $('#ai-placeholder').hidden = true;
       document.dispatchEvent(new CustomEvent('a1:analysis-ready',{detail:Object.freeze({metrics:Object.freeze({shoulderHipRatio:result.metrics.shoulderHipRatio,legTorsoRatio:result.metrics.legTorsoRatio})})}));
@@ -216,6 +244,13 @@
     }
   });
 
+  document.addEventListener('a1:language-changed', () => {
+    // Language selection never re-runs inference, clears a photo, or sends data.
+    status(statusSource, statusError);
+    fileInfo(fileSource, fileParams);
+    controls();
+    renderAnalysisCopy();
+  });
   $('#ai-clear').addEventListener('click', clear);
   window.addEventListener('pagehide', clear);
 })();

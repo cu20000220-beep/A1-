@@ -26,3 +26,72 @@ export const catalogExamples = Object.freeze([
   source: 'example',
   availability: 'preview'
 })));
+
+// Prepared translations remain server-side with the example catalog. They do
+// not turn these illustrations into live products, offers, or size advice.
+const ENGLISH_EXAMPLES = Object.freeze(Object.fromEntries(Object.entries({
+  'a1-001': {
+    name: 'Blue Tailored Coat', color: 'Powder blue', material: 'Polyester blend',
+    description: 'A city-inspired look with a relaxed silhouette and a soft color palette. Try it over a lightweight base layer.'
+  },
+  'a1-002': {
+    name: 'Modern City Suit', color: 'Navy', material: 'Wool blend',
+    description: 'Clean lines with an easy, relaxed feel. A classic styling idea for workdays and weekend plans.'
+  },
+  'a1-003': {
+    name: 'Patterned Cotton Shirt', color: 'Mixed floral print', material: 'Cotton',
+    description: 'A simple shirt styling idea for an everyday wardrobe. Wear it on its own or layer it under outerwear.'
+  },
+  'a1-004': {
+    name: 'Burgundy Long Coat', color: 'Burgundy', material: 'Wool blend',
+    description: 'A long silhouette creates an easy sense of balance. Pair it with neutral colors for an understated look.'
+  },
+  'a1-005': {
+    name: 'Wide Straight-Leg Jeans', color: 'Indigo blue', material: 'Cotton denim',
+    description: 'A denim styling idea that works with many different tops. Try a lightweight shirt or knitwear to suit your taste.'
+  },
+  'a1-006': {
+    name: 'Graphic Sweatshirt Dress', color: 'Red', material: 'Polyester blend',
+    description: 'A layered styling idea for a small change in your everyday outfits. Keep accessories in fewer colors to highlight the silhouette.'
+  },
+  'a1-007': {
+    name: 'Everyday Utility Bag', color: 'Deep navy', material: 'Polyester',
+    description: 'A lightweight, simple everyday bag styling idea in a versatile core color.'
+  },
+  'a1-008': {
+    name: 'Relaxed Patterned Shirt', color: 'Mixed floral print', material: 'Cotton',
+    description: 'An easy everyday styling idea with a neat finish. Pair it with denim for a relaxed outfit.'
+  },
+  'a1-009': {
+    name: 'Classic Straight-Leg Trousers', color: 'Navy', material: 'Polyester blend',
+    description: 'An understated color paired with straight lines. Complete the styling idea with a shirt and jacket.'
+  },
+  'a1-010': {
+    name: 'Light Denim Jacket', color: 'Light blue', material: 'Cotton blend',
+    description: 'A lightweight outerwear styling idea for easy layering. Try it with relaxed trousers or other casual bottoms.'
+  },
+  'a1-011': {
+    name: 'Everyday Graphic Sweatshirt', color: 'Red', material: 'Cotton blend',
+    description: 'A minimal styling idea with a soft color palette. Pair it with bottoms in a similar tone.'
+  },
+  'a1-012': {
+    name: 'Essential Denim Jeans', color: 'Vintage blue', material: 'Cotton denim',
+    description: 'A denim styling idea for comfortable everyday outfits. Finish the look simply with a basic T-shirt.'
+  }
+}).map(([id, translation]) => [id, Object.freeze(translation)])));
+
+const LOCALIZED_PUBLIC_FIELDS = ['id', 'name', 'gender', 'category', 'style', 'price', 'photo',
+  'color', 'material', 'sizes', 'description', 'look', 'source'];
+
+/** Return a fresh public product without changing canonical filters or prices. */
+export function localizeCatalogProduct(product, language = 'ko') {
+  const result = {};
+  if (!product || typeof product !== 'object' || Array.isArray(product)) return result;
+  for (const field of LOCALIZED_PUBLIC_FIELDS) {
+    if (typeof product[field] === 'string' || typeof product[field] === 'number') result[field] = product[field];
+  }
+  if (language === 'en' && result.source === 'example' && Object.hasOwn(ENGLISH_EXAMPLES, result.id)) {
+    Object.assign(result, ENGLISH_EXAMPLES[result.id]);
+  }
+  return result;
+}

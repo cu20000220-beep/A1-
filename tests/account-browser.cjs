@@ -228,7 +228,7 @@ async function noCredentialStorage(page) {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const origin = `https://127.0.0.1:${server.address().port}`;
     browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
-    const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 } });
+    const context = await browser.newContext({ locale: 'ko-KR', ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 } });
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));

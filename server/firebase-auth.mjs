@@ -1,5 +1,6 @@
 /** Firebase Authentication REST adapter. No passwords, tokens, or account rows are persisted here. */
 import { JwtVerificationError, verifyJwtToken } from './jwt-verifier.mjs';
+import { normalizeLanguage, requestLanguage } from './locale.mjs';
 
 const COOKIE = '__Host-a1-session';
 const API = 'https://identitytoolkit.googleapis.com/v1/';
@@ -33,6 +34,42 @@ const MESSAGES = Object.freeze({
   try_later: '요청이 많습니다. 잠시 후 다시 시도해주세요. [AUTH-LIMIT]'
 });
 
+const EN_MESSAGES = Object.freeze({
+  setup_required: 'Member connection settings need to be checked. Please tell the administrator. [AUTH-CONFIG]',
+  provider_key_invalid: 'The member authentication connection key needs to be checked. Please tell the administrator. [AUTH-KEY]',
+  provider_access_denied: 'Authentication service access permissions need to be checked. Please tell the administrator. [AUTH-ACCESS]',
+  provider_method_disabled: 'Email registration is not enabled. Please tell the administrator. [AUTH-METHOD]',
+  provider_signup_disabled: 'New account registration is not allowed. Please tell the administrator. [AUTH-SIGNUP]',
+  provider_service_disabled: 'The authentication service needs to be enabled. Please tell the administrator. [AUTH-API]',
+  provider_project_invalid: 'Authentication project settings need to be checked. Please tell the administrator. [AUTH-PROJECT]',
+  provider_domain_disallowed: 'This site address needs to be approved by the authentication service. Please tell the administrator. [AUTH-DOMAIN]',
+  provider_security_required: 'Registration security verification needs to be connected. Please tell the administrator. [AUTH-CHECK]',
+  provider_plan_required: 'The authentication setup needs to be checked against the current free plan. Please tell the administrator. [AUTH-PLAN]',
+  provider_unavailable: 'Could not connect to the authentication service. Please try again later. [AUTH-CONNECT]',
+  verification_unavailable: 'Could not connect to the login verification service. Please try again later. [AUTH-VERIFY]',
+  service_unavailable: 'The account request could not be completed. Please tell the administrator. [AUTH-SERVER]',
+  authentication_required: 'Please log in again.',
+  email_verification_required: 'Verify your email address, then log in again. You can request another verification email.',
+  invalid_credentials: 'Check your email address and password.',
+  account_exists: 'Registration could not be completed. If you already have an account, log in or reset your password.',
+  invalid_request: 'Please check your input.',
+  password_too_short: 'Your password must contain 12 to 128 characters.',
+  request_too_large: 'The request is too large.',
+  forbidden_origin: 'Please try again from the A1 FASHION website.',
+  method_not_allowed: 'This request method is not supported.',
+  password_policy: 'The password does not meet the registration requirements. Try a longer password with letters, numbers and symbols.',
+  try_later: 'Too many requests. Please try again later. [AUTH-LIMIT]'
+});
+const EN_TEXT = Object.freeze({
+  ...Object.fromEntries(Object.entries(MESSAGES).map(([code, message]) => [message, EN_MESSAGES[code]])),
+  '계정을 만들었습니다. 인증 메일의 링크를 누른 뒤 로그인해주세요.': 'Your account was created. Open the link in the verification email, then log in.',
+  '계정은 만들어졌지만 인증 메일을 요청하지 못했습니다. 잠시 후 이메일 인증 메일을 다시 요청해주세요.': 'Your account was created, but the verification email could not be requested. Please request another verification email later.',
+  '이미 이메일 인증을 완료했습니다. 로그인해주세요.': 'Your email address is already verified. Please log in.',
+  '인증 메일을 요청했습니다. 메일의 링크를 누른 뒤 로그인해주세요.': 'A verification email was requested. Open its link, then log in.',
+  '해당 이메일로 가입한 계정이 있다면 비밀번호 재설정 메일이 발송됩니다. 받은편지함과 스팸함을 확인해주세요.': 'If an account exists for that email address, password reset instructions will be sent. Check your inbox and spam folder.',
+  '회원 계정을 삭제했습니다.': 'Your account was deleted.'
+});
+
 export class FirebaseAuthError extends Error {
   constructor(status, code) { super(code); this.status = status; this.code = code; }
 }
@@ -54,21 +91,24 @@ function configuration(env) {
   return { project, key, issuer: `https://securetoken.google.com/${project}`, audience: project, jwksUrl: JWKS };
 }
 
-function json(data, status = 200, headers = {}) {
-  return new Response(JSON.stringify(data), { status, headers: {
+function json(data, status = 200, headers = {}, language = 'ko') {
+  const localized = language === 'en' && typeof data.message === 'string'
+    ? { ...data, message: EN_TEXT[data.message] || data.message } : data;
+  return new Response(JSON.stringify(localized), { status, headers: {
     'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'private, no-store',
-    'Vary': 'Cookie', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', ...headers
+    'Vary': 'Cookie, Accept-Language', 'Content-Language': language,
+    'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', ...headers
   } });
 }
 
-function errorResponse(error, action) {
+function errorResponse(error, action, language) {
   const known = error instanceof FirebaseAuthError;
   const status = known ? error.status : 503;
   const code = known ? error.code : 'service_unavailable';
   return json({ ok: false, ...(action === 'session' ? { authenticated: false } : {}),
     error: code, message: MESSAGES[code] || MESSAGES.setup_required }, status,
   { ...(status === 401 && action === 'session' ? { 'Set-Cookie': expiredCookie() } : {}),
-    ...(status === 405 ? { Allow: ['config', 'session'].includes(action) ? 'GET' : 'POST' } : {}) });
+    ...(status === 405 ? { Allow: ['config', 'session'].includes(action) ? 'GET' : 'POST' } : {}) }, language);
 }
 
 async function boundedBytes(stream, limit) {
@@ -135,7 +175,7 @@ async function firebase(config, action, payload, fetchImpl) {
     const projectConfig = action === 'projectConfig';
     const response = await fetchImpl(`${API}${projectConfig ? 'projects' : `accounts:${action}`}?key=${encodeURIComponent(config.key)}`, {
       method: projectConfig ? 'GET' : 'POST', redirect: 'manual', signal: controller.signal,
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Firebase-Locale': 'ko' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Firebase-Locale': normalizeLanguage(config.locale) },
       ...(projectConfig ? {} : { body: JSON.stringify(payload) })
     });
     // Workers supports manual redirects; its unsupported "error" mode throws
@@ -241,7 +281,7 @@ async function tokenIdentity(token, config, { now, fetchImpl, requireVerified = 
 }
 
 async function internalSession(request, env, options = {}) {
-  const config = configuration(env);
+  const config = { ...configuration(env), locale: requestLanguage(request) };
   const now = options.now ?? Date.now(), fetchImpl = options.fetchImpl ?? globalThis.fetch;
   if (!Number.isSafeInteger(now) || now < 0 || typeof fetchImpl !== 'function') throw new FirebaseAuthError(503, 'service_unavailable');
   const token = readSessionToken(request);
@@ -272,12 +312,14 @@ async function signIn(config, credentials, options, requireVerified) {
 }
 
 export async function handleAuthRequest(action, { request, env }, { now = Date.now(), fetchImpl = globalThis.fetch } = {}) {
+  const language = requestLanguage(request);
+  const respond = (data, status = 200, headers = {}) => json(data, status, headers, language);
   try {
     const expected = ['config', 'session'].includes(action) ? 'GET' : 'POST';
     if (request.method !== expected) throw new FirebaseAuthError(405, 'method_not_allowed');
     if (action === 'config') {
       let config;
-      try { config = configuration(env); } catch { return json({ configured: false }); }
+      try { config = { ...configuration(env), locale: language }; } catch { return respond({ configured: false }); }
       // This is the same read-only project configuration request used by the
       // Firebase web SDK. It creates no account and sends no email or password.
       let remote;
@@ -291,17 +333,17 @@ export async function handleAuthRequest(action, { request, env }, { now = Date.n
       if (!remote.authorizedDomains.some(domain => domain.toLowerCase() === hostname)) {
         throw new FirebaseAuthError(503, 'provider_domain_disallowed');
       }
-      return json({ configured: true });
+      return respond({ configured: true });
     }
     if (!Number.isSafeInteger(now) || now < 0 || typeof fetchImpl !== 'function') throw new FirebaseAuthError(503, 'service_unavailable');
     if (action === 'session') {
       const identity = await authenticateFirebaseSession(request, env, { now, fetchImpl });
-      return json({ authenticated: true, user: user(identity), expiresAt: identity.expiresAt });
+      return respond({ authenticated: true, user: user(identity), expiresAt: identity.expiresAt });
     }
-    if (action === 'logout') { await input(request, []); return json({ ok: true, authenticated: false }, 200, { 'Set-Cookie': expiredCookie() }); }
+    if (action === 'logout') { await input(request, []); return respond({ ok: true, authenticated: false }, 200, { 'Set-Cookie': expiredCookie() }); }
     const fields = action === 'reset-password' ? ['email'] : action === 'delete-account' ? ['password'] : ['email', 'password'];
     const body = await input(request, fields);
-    const config = configuration(env), options = { now, fetchImpl };
+    const config = { ...configuration(env), locale: language }, options = { now, fetchImpl };
     if (action === 'signup') {
       if (body.password.length < 12) throw new FirebaseAuthError(400, 'password_too_short');
       let created;
@@ -313,27 +355,27 @@ export async function handleAuthRequest(action, { request, env }, { now = Date.n
         try { await firebase(config, 'sendOobCode', { requestType: 'VERIFY_EMAIL', idToken: created.idToken }, fetchImpl); sent = true; }
         catch { /* Account already exists: report mail failure without creating it again. */ }
       }
-      return json({ ok: true, emailVerificationRequired: true, verificationEmailSent: sent,
+      return respond({ ok: true, emailVerificationRequired: true, verificationEmailSent: sent,
         message: sent ? '계정을 만들었습니다. 인증 메일의 링크를 누른 뒤 로그인해주세요.' : '계정은 만들어졌지만 인증 메일을 요청하지 못했습니다. 잠시 후 이메일 인증 메일을 다시 요청해주세요.' }, 201);
     }
     if (action === 'login') {
       const { identity, token } = await signIn(config, body, options, true);
-      return json({ ok: true, user: user(identity), expiresAt: identity.expiresAt }, 200,
+      return respond({ ok: true, user: user(identity), expiresAt: identity.expiresAt }, 200,
         { 'Set-Cookie': sessionCookie(token, identity.expiresAt, now) });
     }
     if (action === 'verify-email') {
       const { identity, token } = await signIn(config, body, options, false);
-      if (identity.emailVerified) return json({ ok: true, emailVerificationRequired: false, message: '이미 이메일 인증을 완료했습니다. 로그인해주세요.' });
+      if (identity.emailVerified) return respond({ ok: true, emailVerificationRequired: false, message: '이미 이메일 인증을 완료했습니다. 로그인해주세요.' });
       try { await firebase(config, 'sendOobCode', { requestType: 'VERIFY_EMAIL', idToken: token }, fetchImpl); }
       catch (error) { throw providerError(error, action); }
-      return json({ ok: true, emailVerificationRequired: true, verificationEmailSent: true, message: '인증 메일을 요청했습니다. 메일의 링크를 누른 뒤 로그인해주세요.' });
+      return respond({ ok: true, emailVerificationRequired: true, verificationEmailSent: true, message: '인증 메일을 요청했습니다. 메일의 링크를 누른 뒤 로그인해주세요.' });
     }
     if (action === 'reset-password') {
       try { await firebase(config, 'sendOobCode', { requestType: 'PASSWORD_RESET', email: body.email }, fetchImpl); }
       catch (error) {
         if (!(error instanceof ProviderError && ['EMAIL_NOT_FOUND', 'INVALID_LOGIN_CREDENTIALS'].includes(error.code))) throw providerError(error, action);
       }
-      return json({ ok: true, message: '해당 이메일로 가입한 계정이 있다면 비밀번호 재설정 메일이 발송됩니다. 받은편지함과 스팸함을 확인해주세요.' });
+      return respond({ ok: true, message: '해당 이메일로 가입한 계정이 있다면 비밀번호 재설정 메일이 발송됩니다. 받은편지함과 스팸함을 확인해주세요.' });
     }
     if (action === 'delete-account') {
       const { identity } = await internalSession(request, env, options);
@@ -341,8 +383,8 @@ export async function handleAuthRequest(action, { request, env }, { now = Date.n
       if (fresh.identity.issuer !== identity.issuer || fresh.identity.subject !== identity.subject) throw new FirebaseAuthError(401, 'authentication_required');
       try { await firebase(config, 'delete', { idToken: fresh.token }, fetchImpl); }
       catch (error) { throw providerError(error, action); }
-      return json({ ok: true, authenticated: false, message: '회원 계정을 삭제했습니다.' }, 200, { 'Set-Cookie': expiredCookie() });
+      return respond({ ok: true, authenticated: false, message: '회원 계정을 삭제했습니다.' }, 200, { 'Set-Cookie': expiredCookie() });
     }
     throw new FirebaseAuthError(400, 'invalid_request');
-  } catch (error) { return errorResponse(error, action); }
+  } catch (error) { return errorResponse(error, action, language); }
 }
