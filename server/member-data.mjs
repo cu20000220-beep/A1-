@@ -34,8 +34,8 @@ export function amount(value, code) {
 }
 export function normalizeWatchlist(value) {
   exactFields(value, ['productId', 'currency', 'targetPrice', 'brand', 'category'], ['productId', 'currency']);
-  const productId = text(value.productId, 128);
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/.test(productId)) throw new MemberDataError(400, 'invalid_request');
+  const productId = text(value.productId, 160);
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,159}$/.test(productId)) throw new MemberDataError(400, 'invalid_request');
   const code = currency(value.currency);
   return { productId, currency: code, targetPrice: amount(value.targetPrice ?? null, code),
     brand: text(value.brand ?? '', 80), category: text(value.category ?? '', 80) };
@@ -61,6 +61,30 @@ function id() { return crypto.randomUUID(); }
 function safeParse(value, fallback) { try { return JSON.parse(value); } catch { return fallback; } }
 function masked(value) { return typeof value === 'string' && value ? value.slice(0, 3) + '••••••' + value.slice(-2) : ''; }
 
+export const CONSENT_POLICY_VERSION = 'a1-marketing-v2';
+export function consentNotice(channel, language = 'ko', granted = true) {
+  if (!['email', 'sms'].includes(channel) || !['ko', 'en'].includes(language) || typeof granted !== 'boolean') throw new MemberDataError(400, 'invalid_request');
+  if (!granted) return language === 'en'
+    ? `I withdraw consent to A1 FASHION ${channel === 'email' ? 'marketing emails' : 'marketing SMS messages'}. Future simulated alerts for this channel will stop.`
+    : `A1 FASHION의 ${channel === 'email' ? '이메일' : 'SMS'} 마케팅 수신 동의를 철회합니다. 이 채널의 이후 모의 알림도 중단합니다.`;
+  return language === 'en'
+    ? `I separately agree to A1 FASHION watchlist price and promotion ${channel === 'email' ? 'emails' : 'SMS messages'}. This is optional and separate from registration and subscription. I can withdraw consent at any time without a fee. This service currently runs simulations without sending real messages.`
+    : `A1 FASHION의 관심 상품 가격·프로모션 ${channel === 'email' ? '이메일' : 'SMS'} 수신에 별도로 동의합니다. 선택 사항이며 회원가입·구독과 별개입니다. 언제든 무료로 철회할 수 있습니다. 현재는 실제 발송 없는 모의 운영입니다.`;
+}
+function missingContextColumn(error) {
+  for (let value = error, depth = 0; value && depth < 4; value = value.cause, depth++) {
+    if (typeof value.message === 'string' && (/(?:no such column:\s*(?:notification_consents\.)?(?:country|language|notice_text)\b)/i.test(value.message)
+      || /table notification_consents has no column named (?:country|language|notice_text)\b/i.test(value.message))) return true;
+  }
+  return false;
+}
+function missingPlanColumn(error) {
+  for (let value = error, depth = 0; value && depth < 4; value = value.cause, depth++) {
+    if (/no such column:\s*(?:memberships\.)?plan_code\b/i.test(value.message || '')) return true;
+  }
+  return false;
+}
+
 export class MemberStore {
   constructor(db, identity, now = Date.now()) {
     if (typeof db?.prepare !== 'function' || !identity?.issuer || !identity?.subject) throw new MemberDataError(503, 'setup_required');
@@ -78,10 +102,11 @@ export class MemberStore {
       currency: row.currency, brand: row.brand, category: row.category, createdAt: row.created_at }));
   }
   async saveWatch(value) {
-    const count = await this.statement('SELECT COUNT(*) AS count FROM product_watchlists WHERE issuer = ? AND subject = ?').first();
-    if (count?.count >= 100) throw new MemberDataError(409, 'watchlist_limit');
-    await this.statement('INSERT INTO product_watchlists (issuer, subject, id, product_id, target_price, currency, brand, category, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(issuer, subject, product_id, currency) DO UPDATE SET target_price = excluded.target_price, brand = excluded.brand, category = excluded.category',
-      id(), value.productId, value.targetPrice, value.currency, value.brand, value.category, this.now).run();
+    // The limit and write share one SQLite statement. Updating an existing
+    // item remains possible when the list already contains one hundred items.
+    const written = await this.statement('INSERT INTO product_watchlists (issuer, subject, id, product_id, target_price, currency, brand, category, created_at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM product_watchlists WHERE issuer = ? AND subject = ? AND product_id = ? AND currency = ?) OR (SELECT COUNT(*) FROM product_watchlists WHERE issuer = ? AND subject = ?) < 100 ON CONFLICT(issuer, subject, product_id, currency) DO UPDATE SET target_price = excluded.target_price, brand = excluded.brand, category = excluded.category RETURNING id',
+      id(), value.productId, value.targetPrice, value.currency, value.brand, value.category, this.now, ...this.owner, value.productId, value.currency, ...this.owner).first();
+    if (!written) throw new MemberDataError(409, 'watchlist_limit');
     return this.watches();
   }
   async deleteWatch(watchId) {
@@ -96,6 +121,21 @@ export class MemberStore {
     }
     return channels;
   }
+  async consentHistory() {
+    let result, auditContextAvailable = true;
+    try {
+      result = await this.statement('SELECT id, channel, granted, policy_version, occurred_at, country, language, notice_text FROM notification_consents WHERE issuer = ? AND subject = ? ORDER BY occurred_at DESC, id DESC LIMIT 100').all();
+    } catch (error) {
+      if (!missingContextColumn(error)) throw error;
+      auditContextAvailable = false;
+      result = await this.statement('SELECT id, channel, granted, policy_version, occurred_at FROM notification_consents WHERE issuer = ? AND subject = ? ORDER BY occurred_at DESC, id DESC LIMIT 100').all();
+    }
+    const records = (result.results || []).map(row => ({ id: row.id, channel: row.channel, granted: row.granted === 1,
+      policyVersion: row.policy_version, occurredAt: row.occurred_at, country: row.country ?? null,
+      language: row.language ?? null, noticeText: row.notice_text ?? null,
+      contextCaptured: countries.has(row.country) && ['ko', 'en'].includes(row.language) && typeof row.notice_text === 'string' && row.notice_text.length > 0 }));
+    return { auditContextAvailable, records };
+  }
   async preferences() {
     const row = await this.statement('SELECT country, time_zone, language, frequency, email_enabled, sms_enabled, phone_e164, phone_verified, brands_json, categories_json FROM notification_preferences WHERE issuer = ? AND subject = ?').first();
     return row ? { country: row.country, timeZone: row.time_zone, language: row.language, frequency: row.frequency,
@@ -108,26 +148,58 @@ export class MemberStore {
   async savePreferences(value) {
     const consent = await this.consents();
     if (value.phone && !consent.sms) throw new MemberDataError(400, 'consent_required');
-    const old = await this.statement('SELECT phone_e164 FROM notification_preferences WHERE issuer = ? AND subject = ?').first();
-    const phone = own(value, 'phone') ? value.phone : old?.phone_e164 ?? null;
-    await this.statement('INSERT INTO notification_preferences (issuer, subject, country, time_zone, language, frequency, email_enabled, sms_enabled, phone_e164, phone_verified, brands_json, categories_json, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?) ON CONFLICT(issuer, subject) DO UPDATE SET country = excluded.country, time_zone = excluded.time_zone, language = excluded.language, frequency = excluded.frequency, email_enabled = excluded.email_enabled, sms_enabled = excluded.sms_enabled, phone_e164 = excluded.phone_e164, phone_verified = 0, brands_json = excluded.brands_json, categories_json = excluded.categories_json, updated_at = excluded.updated_at',
-      value.country, value.timeZone, value.language, value.frequency, Number(value.emailEnabled && consent.email), Number(value.smsEnabled && consent.sms), phone,
-      JSON.stringify(value.brands), JSON.stringify(value.categories), this.now).run();
+    const written = await this.db.prepare(`WITH permission AS (
+      SELECT COALESCE((SELECT granted FROM notification_consents WHERE issuer = ? AND subject = ? AND channel = 'email' ORDER BY occurred_at DESC, id DESC LIMIT 1), 0) AS email,
+        COALESCE((SELECT granted FROM notification_consents WHERE issuer = ? AND subject = ? AND channel = 'sms' ORDER BY occurred_at DESC, id DESC LIMIT 1), 0) AS sms,
+        (SELECT phone_e164 FROM notification_preferences WHERE issuer = ? AND subject = ?) AS saved_phone
+      ) INSERT INTO notification_preferences (issuer, subject, country, time_zone, language, frequency, email_enabled, sms_enabled, phone_e164, phone_verified, brands_json, categories_json, updated_at)
+      SELECT ?, ?, ?, ?, ?, ?, CASE WHEN ? = 1 AND permission.email = 1 THEN 1 ELSE 0 END,
+        CASE WHEN ? = 1 AND permission.sms = 1 THEN 1 ELSE 0 END,
+        CASE WHEN permission.sms = 1 THEN CASE WHEN ? = 1 THEN ? ELSE permission.saved_phone END ELSE NULL END,
+        0, ?, ?, ? FROM permission WHERE ? = 0 OR permission.sms = 1
+      ON CONFLICT(issuer, subject) DO UPDATE SET country = excluded.country, time_zone = excluded.time_zone, language = excluded.language, frequency = excluded.frequency, email_enabled = excluded.email_enabled, sms_enabled = excluded.sms_enabled, phone_e164 = excluded.phone_e164, phone_verified = 0, brands_json = excluded.brands_json, categories_json = excluded.categories_json, updated_at = excluded.updated_at RETURNING issuer`)
+      .bind(...this.owner, ...this.owner, ...this.owner, ...this.owner, value.country, value.timeZone, value.language, value.frequency,
+        Number(value.emailEnabled), Number(value.smsEnabled), Number(own(value, 'phone')), value.phone ?? null,
+        JSON.stringify(value.brands), JSON.stringify(value.categories), this.now, Number(Boolean(value.phone))).first();
+    if (!written) throw new MemberDataError(400, 'consent_required');
     return this.preferences();
   }
-  async saveConsent(channel, granted) {
+  async saveConsent(channel, granted, options = {}) {
+    if (!['email', 'sms'].includes(channel) || typeof granted !== 'boolean') throw new MemberDataError(400, 'invalid_request');
+    exactFields(options, ['language', 'noticeVersion'], []);
+    if (own(options, 'language') && !['ko', 'en'].includes(options.language)
+      || granted && options.noticeVersion !== undefined && options.noticeVersion !== CONSENT_POLICY_VERSION) throw new MemberDataError(400, 'invalid_request');
+    if (typeof this.db.batch !== 'function') throw new MemberDataError(503, 'setup_required');
+    const consentId = id(), acknowledged = options.noticeVersion === CONSENT_POLICY_VERSION;
     // Calculate the monotonic timestamp inside the write transaction, so
     // concurrent requests cannot reorder a withdrawal by random UUID ordering.
-    const insert = this.db.prepare('INSERT INTO notification_consents (issuer, subject, id, channel, granted, policy_version, occurred_at) VALUES (?, ?, ?, ?, ?, ?, (SELECT MAX(?, COALESCE(MAX(occurred_at), 0) + 1) FROM notification_consents WHERE issuer = ? AND subject = ?))')
-      .bind(...this.owner, id(), channel, Number(granted), 'a1-marketing-v1', this.now, ...this.owner);
-    const statements = [insert];
-    if (!granted) {
-      const column = channel === 'email' ? 'email_enabled' : 'sms_enabled';
-      statements.push(this.db.prepare(`UPDATE notification_preferences SET ${column} = 0, updated_at = ? WHERE issuer = ? AND subject = ?`).bind(this.now, ...this.owner));
-      statements.push(this.db.prepare("UPDATE notification_deliveries SET status = 'canceled' WHERE issuer = ? AND subject = ? AND channel = ? AND status IN ('pending', 'queued', 'dry-run')").bind(...this.owner, channel));
+    const statements = includeContext => {
+      const columns = ['issuer', 'subject', 'id', 'channel', 'granted', 'policy_version', 'occurred_at'];
+      const expressions = ['?', '?', '?', '?', '?', '?', '(SELECT MAX(?, COALESCE(MAX(occurred_at), 0) + 1) FROM notification_consents WHERE issuer = ? AND subject = ?)'];
+      const values = [...this.owner, consentId, channel, Number(granted), acknowledged ? CONSENT_POLICY_VERSION : 'a1-marketing-v1', this.now, ...this.owner];
+      if (includeContext) {
+        columns.push('country', 'language', 'notice_text');
+        expressions.push("COALESCE((SELECT country FROM notification_preferences WHERE issuer = ? AND subject = ?), 'KR')",
+          "COALESCE(?, (SELECT language FROM notification_preferences WHERE issuer = ? AND subject = ?), 'ko')",
+          "CASE WHEN ? = 1 THEN CASE COALESCE(?, (SELECT language FROM notification_preferences WHERE issuer = ? AND subject = ?), 'ko') WHEN 'en' THEN ? ELSE ? END ELSE NULL END");
+        values.push(...this.owner, options.language ?? null, ...this.owner, Number(acknowledged), options.language ?? null, ...this.owner,
+          consentNotice(channel, 'en', granted), consentNotice(channel, 'ko', granted));
+      }
+      const result = [this.db.prepare(`INSERT INTO notification_consents (${columns.join(', ')}) VALUES (${expressions.join(', ')})`).bind(...values)];
+      if (!granted) {
+        const update = channel === 'email' ? 'email_enabled = 0' : 'sms_enabled = 0, phone_e164 = NULL, phone_verified = 0';
+        result.push(this.db.prepare(`UPDATE notification_preferences SET ${update}, updated_at = ? WHERE issuer = ? AND subject = ?`).bind(this.now, ...this.owner));
+        result.push(this.db.prepare("UPDATE notification_deliveries SET status = 'canceled' WHERE issuer = ? AND subject = ? AND channel = ? AND status IN ('pending', 'queued', 'dry-run')").bind(...this.owner, channel));
+      }
+      return result;
+    };
+    try { await this.db.batch(statements(true)); }
+    catch (error) {
+      if (!missingContextColumn(error)) throw error;
+      // Legacy deployments still support opt-out. Never invent snapshots for
+      // old rows or fall back on unrelated storage/query failures.
+      await this.db.batch(statements(false));
     }
-    if (typeof this.db.batch !== 'function') throw new MemberDataError(503, 'setup_required');
-    await this.db.batch(statements);
     return this.consents();
   }
   async history() {
@@ -145,9 +217,17 @@ export class MemberStore {
     if (!consent[channel]) throw new MemberDataError(403, 'consent_required');
     const event = 'DEMO-preview-' + new Date(this.now).toISOString().slice(0, 10);
     const dedupe = `preview:${channel}:${event}`;
-    await this.db.prepare("INSERT INTO notification_deliveries (issuer, subject, id, channel, event_id, dedupe_key, status, created_at, payload_json) SELECT ?, ?, ?, ?, ?, ?, 'dry-run', ?, ? WHERE (SELECT granted FROM notification_consents WHERE issuer = ? AND subject = ? AND channel = ? ORDER BY occurred_at DESC, id DESC LIMIT 1) = 1 ON CONFLICT(issuer, subject, channel, dedupe_key) DO NOTHING")
-      .bind(...this.owner, id(), channel, event, dedupe, this.now, JSON.stringify(template), ...this.owner, channel).run();
-    if (!(await this.consents())[channel]) throw new MemberDataError(403, 'consent_required');
+    const premium = "EXISTS (SELECT 1 FROM memberships WHERE issuer = ? AND subject = ? AND plan_code = 'PREMIUM' AND subscription_status = 'active' AND paid_through > ? AND payment_verified_at > 0 AND payment_verified_at <= ? AND payment_verified_at < paid_through)";
+    try {
+      await this.db.prepare(`INSERT INTO notification_deliveries (issuer, subject, id, channel, event_id, dedupe_key, status, created_at, payload_json) SELECT ?, ?, ?, ?, ?, ?, 'dry-run', ?, ? WHERE (SELECT granted FROM notification_consents WHERE issuer = ? AND subject = ? AND channel = ? ORDER BY occurred_at DESC, id DESC LIMIT 1) = 1 AND ${premium} ON CONFLICT(issuer, subject, channel, dedupe_key) DO NOTHING`)
+        .bind(...this.owner, id(), channel, event, dedupe, this.now, JSON.stringify(template), ...this.owner, channel, ...this.owner, this.now, this.now).run();
+      const access = await this.db.prepare(`SELECT (SELECT granted FROM notification_consents WHERE issuer = ? AND subject = ? AND channel = ? ORDER BY occurred_at DESC, id DESC LIMIT 1) AS consent_allowed, ${premium} AS premium_allowed`)
+        .bind(...this.owner, channel, ...this.owner, this.now, this.now).first();
+      if (access?.consent_allowed !== 1 || access?.premium_allowed !== 1) {
+        await this.db.prepare("UPDATE notification_deliveries SET status = 'canceled' WHERE issuer = ? AND subject = ? AND channel = ? AND dedupe_key = ? AND status = 'dry-run'").bind(...this.owner, channel, dedupe).run();
+        throw new MemberDataError(403, access?.consent_allowed !== 1 ? 'consent_required' : 'premium_required');
+      }
+    } catch (error) { if (missingPlanColumn(error)) throw new MemberDataError(403, 'premium_required'); throw error; }
     return { template, mode: 'DRY_RUN', sent: false };
   }
   async eraseNotificationData() {

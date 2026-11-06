@@ -1,12 +1,16 @@
 import { AccessError, authenticateMember, authorizeMember, jsonResponse } from '../../../server/premium-access.mjs';
-import { MemberDataError, MemberStore, exactFields, normalizePreferences, normalizeWatchlist, currency } from '../../../server/member-data.mjs';
+import { MemberDataError, MemberStore, exactFields, normalizePreferences, normalizeWatchlist, currency,
+  CONSENT_POLICY_VERSION, consentNotice } from '../../../server/member-data.mjs';
 import { listGlobalRetailers } from '../../../server/global-retailers.mjs';
 import { demoComparison } from '../../../server/demo-offers.mjs';
 import { renderNotificationTemplate, validateE164 } from '../../../server/notifications.mjs';
 import { requestLanguage } from '../../../server/locale.mjs';
+import { loadVerifiedCatalog } from '../../../server/catalog-repository.mjs';
+import { compareStoredProduct } from '../../../server/global-comparison.mjs';
+import { runMemberPromotionSimulation } from '../../../server/promotion-simulation.mjs';
 
-const methods = { account: ['GET'], retailers: ['POST'], comparison: ['POST'], watchlist: ['GET', 'POST', 'DELETE'],
-  preferences: ['GET', 'PUT', 'DELETE'], consents: ['POST'], history: ['GET', 'DELETE'], preview: ['POST'] };
+const methods = { account: ['GET'], retailers: ['POST'], products: ['POST'], comparison: ['POST'], watchlist: ['GET', 'POST', 'DELETE'],
+  preferences: ['GET', 'PUT', 'DELETE'], consents: ['GET', 'POST'], history: ['GET', 'DELETE'], preview: ['POST'], simulate: ['POST'] };
 const messages = {
   invalid_request: ['입력 내용을 확인해주세요.', 'Please check your input.'],
   authentication_required: ['로그인이 필요합니다.', 'Please sign in.'],
@@ -54,7 +58,8 @@ function errorResponse(error, language, allow) {
 }
 
 export async function handleGlobalRequest(resource, { request, env }, options = {}) {
-  const now = options.now ?? Date.now(), language = requestLanguage(request);
+  const clock = typeof options.clock === 'function' ? options.clock : () => options.now ?? Date.now();
+  const now = clock(), language = requestLanguage(request);
   const respond = (value, status = 200) => jsonResponse(value, status, { 'Content-Language': language,
     Vary: 'Authorization, Cookie, Cf-Access-Jwt-Assertion, Accept-Language' });
   try {
@@ -63,6 +68,17 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
     if (new URL(request.url).search) throw new MemberDataError(400, 'invalid_request');
     if (!Number.isSafeInteger(now) || now < 0) throw new MemberDataError(503, 'setup_required');
     const authOptions = { now, ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}) };
+    const currentTime = () => {
+      const value = clock();
+      if (!Number.isSafeInteger(value) || value < now) throw new MemberDataError(503, 'setup_required');
+      return value;
+    };
+    const recheck = async (access, requiredTier) => {
+      const current = await authorizeMember(request, env, { ...authOptions, now: currentTime(), requiredTier });
+      if (current.identity.issuer !== access.identity.issuer || current.identity.subject !== access.identity.subject) throw new MemberDataError(401, 'authentication_required');
+      return currentTime();
+    };
+    const paidResponse = async (value, access, tier, status = 200) => { await recheck(access, tier); return respond(value, status); };
     if (resource === 'account') {
       if (typeof env?.MEMBERSHIP_DB?.prepare !== 'function') {
         await authenticateMember(request, env, authOptions);
@@ -80,8 +96,8 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
     const value = request.method === 'GET' ? null : await body(request);
     const withdrawal = resource === 'consents' && value?.granted === false;
     const deletion = request.method === 'DELETE';
-    const ownRecordRead = request.method === 'GET' && ['watchlist', 'preferences', 'history'].includes(resource);
-    const tier = ['comparison', 'preferences', 'consents', 'history', 'preview'].includes(resource) ? 'PREMIUM' : 'GENERAL';
+    const ownRecordRead = request.method === 'GET' && ['watchlist', 'preferences', 'history', 'consents'].includes(resource);
+    const tier = ['comparison', 'preferences', 'consents', 'history', 'preview', 'simulate'].includes(resource) ? 'PREMIUM' : 'GENERAL';
     const access = withdrawal || deletion || ownRecordRead
       ? { identity: await authenticateMember(request, env, authOptions), plan: 'FREE' }
       : await authorizeMember(request, env, { ...authOptions, requiredTier: tier });
@@ -89,18 +105,50 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
     // Reads consume the same owner-scoped quota as writes. Privacy withdrawal
     // and erasure remain available even when the hourly quota is exhausted.
     if (!withdrawal && !deletion) await store.rateLimit();
-    if (resource === 'retailers') return respond(listGlobalRetailers(safeFilters(value), { language }));
+    if (resource === 'retailers') return paidResponse(listGlobalRetailers(safeFilters(value), { language }), access, tier);
+    const allowLiveCatalog = env.ENABLE_LIVE_CATALOG === 'true' && env.GLOBAL_CATALOG_APPROVED === 'true';
+    if (resource === 'products') {
+      const catalog = await loadVerifiedCatalog(env.MEMBERSHIP_DB, { ...safeFilters(value), now: currentTime(), clock: currentTime, limit: 12, allowLiveCatalog });
+      const completedAt = await recheck(access, tier);
+      const products = catalog.products.filter(product => product.expiresAt > completedAt
+        && (!product.promotion || product.promotion.endsAt > completedAt)).map(product => ({
+        id: product.id, productId: product.productId, brand: product.brand, name: product.name, sku: product.sku, gtin: product.gtin,
+        color: product.color, size: product.size, condition: product.condition, category: product.category, gender: product.gender,
+        price: product.price, currency: product.currency, productUrl: product.productUrl, retailerName: product.retailerName,
+        retailerId: product.retailerId, sellerCountry: product.sellerCountry, checkedAt: product.checkedAt, expiresAt: product.expiresAt,
+        shipping: product.shipping, tax: product.tax, duties: product.duties, shippingCountries: product.shippingCountries,
+        source: product.source, sourceUrl: product.sourceUrl
+      }));
+      return respond({ mode: 'verified-offers', status: catalog.status === 'ready' && !products.length ? 'empty' : catalog.status,
+        reason: catalog.reason, products, noCurrencyConversion: true, liveFeedFetchEnabled: false });
+    }
     if (resource === 'comparison') {
       exactFields(value, ['destination', 'currency', 'productId'], ['destination', 'currency']);
       currency(value.currency);
-      return respond(demoComparison({ ...value, now }));
+      const result = value.productId === undefined || value.productId === 'demo-tee'
+        ? demoComparison({ ...value, now: currentTime() })
+        : await compareStoredProduct(env.MEMBERSHIP_DB, { ...value, now: currentTime(), clock: currentTime, allowLiveCatalog });
+      const completedAt = await recheck(access, tier);
+      // A long DB/authentication wait must not leave an expired offer wearing a
+      // lowest-price badge. Keep the original source time and explicit warning.
+      if (result.demo !== true && Array.isArray(result.results)) {
+        result.results = result.results.map(row => row.expiresAt <= completedAt || row.promotionActive && row.promotion?.endsAt <= completedAt
+          ? { ...row, eligible: false, price: null, estimatedTotal: null, warnings: [...new Set([...row.warnings, 'stale-or-unknown-price'])] } : row);
+        const ranked = result.results.filter(row => row.eligible).sort((a, b) => a.estimatedTotal - b.estimatedTotal || a.id.localeCompare(b.id));
+        result.lowestOfferId = ranked[0]?.id || null; result.minimumAmount = ranked[0]?.estimatedTotal ?? null;
+        result.lowestStatus = ranked.length ? 'lowest-estimate-among-verified-comparable-sellers' : 'lowest-price-unavailable';
+        result.hasUncertainOffers = result.results.some(row => !row.eligible);
+        if (result.hasUncertainOffers && !result.warnings.includes('some-sellers-cannot-be-ranked')) result.warnings.push('some-sellers-cannot-be-ranked');
+        if (!ranked.length && !result.warnings.includes('lowest-price-unavailable')) result.warnings.push('lowest-price-unavailable');
+      }
+      return respond(result);
     }
     if (resource === 'watchlist') {
       if (request.method === 'GET') return respond({ items: await store.watches() });
       if (request.method === 'DELETE') { exactFields(value, ['id']); await store.deleteWatch(value.id); return respond({ ok: true }); }
       const watch = normalizeWatchlist(value);
       if (watch.targetPrice !== null && access.plan !== 'PREMIUM') throw new MemberDataError(403, 'premium_required');
-      return respond({ ok: true, items: await store.saveWatch(watch) }, 201);
+      return paidResponse({ ok: true, items: await store.saveWatch(watch) }, access, tier, 201);
     }
     if (resource === 'preferences') {
       if (request.method === 'GET') return respond(await preferencesResult(store));
@@ -108,12 +156,18 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
       const normalized = normalizePreferences(value);
       if (normalized.phone && !validateE164(normalized.phone, normalized.country).valid) throw new MemberDataError(400, 'invalid_request');
       await store.savePreferences(normalized);
-      return respond({ ok: true, ...(await preferencesResult(store)) });
+      return paidResponse({ ok: true, ...(await preferencesResult(store)) }, access, tier);
     }
     if (resource === 'consents') {
-      exactFields(value, ['channel', 'granted']);
+      if (request.method === 'GET') {
+        const audit = await store.consentHistory();
+        return respond({ consents: await store.consents(), history: audit.records, auditContextAvailable: audit.auditContextAvailable,
+          noticeVersion: CONSENT_POLICY_VERSION, notices: { email: consentNotice('email', language), sms: consentNotice('sms', language) }, mode: 'DRY_RUN' });
+      }
+      exactFields(value, ['channel', 'granted', 'noticeVersion'], ['channel', 'granted']);
       if (!['email', 'sms'].includes(value.channel) || typeof value.granted !== 'boolean') throw new MemberDataError(400, 'invalid_request');
-      return respond({ ok: true, consents: await store.saveConsent(value.channel, value.granted), mode: 'DRY_RUN' });
+      const result = { ok: true, consents: await store.saveConsent(value.channel, value.granted, { language, noticeVersion: value.noticeVersion }), mode: 'DRY_RUN' };
+      return withdrawal ? respond(result) : paidResponse(result, access, tier);
     }
     if (resource === 'history') {
       if (request.method === 'DELETE') { empty(value); await store.deleteHistory(); return respond({ ok: true }); }
@@ -127,7 +181,12 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
         event: { id: 'demo-alert-preview', type: 'price_drop', title: 'DEMO price alert', brand: 'A1 DEMO', productId: 'demo-tee',
           currentPrice: { amount: 39, currency: 'USD' }, previousPrice: { amount: 49, currency: 'USD' }, demo: true },
         demo: true, unsubscribeUrl: `${new URL(request.url).origin}/global.html#alerts` });
-      return respond(await store.savePreview(value.channel, template));
+      return paidResponse(await store.savePreview(value.channel, template), access, tier);
+    }
+    if (resource === 'simulate') {
+      empty(value);
+      const result = await runMemberPromotionSimulation(env.MEMBERSHIP_DB, { identity: access.identity, now: currentTime(), clock: currentTime, origin: new URL(request.url).origin });
+      return paidResponse(result, access, tier);
     }
     throw new MemberDataError(404, 'not_found');
   } catch (error) { return errorResponse(error, language); }

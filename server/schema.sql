@@ -142,6 +142,9 @@ CREATE TABLE IF NOT EXISTS notification_consents (
   granted INTEGER NOT NULL CHECK (granted IN (0,1)),
   policy_version TEXT NOT NULL,
   occurred_at INTEGER NOT NULL CHECK (occurred_at >= 0),
+  country TEXT CHECK (country IS NULL OR country IN ('KR','US','JP','GB','EU','DE','FR','IT','ES','NL')),
+  language TEXT CHECK (language IS NULL OR language IN ('ko','en')),
+  notice_text TEXT CHECK (notice_text IS NULL OR length(notice_text) BETWEEN 1 AND 2000),
   PRIMARY KEY(issuer,subject,id)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS consents_owner_channel_time ON notification_consents(issuer,subject,channel,occurred_at DESC,id DESC);
