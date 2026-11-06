@@ -109,5 +109,12 @@ window.A1I18n?.register({
   "가격 비교는 DEMO이며 알림은 실제 발송 없는 모의 모드입니다.": "Price comparisons are DEMO examples. Alerts run in simulation mode without sending messages.",
   "세 가지 멤버십 비교 ↗": "Compare all three memberships ↗",
   "별도의 DEMO 가격 비교 보기 ↗": "View a separate DEMO price comparison ↗",
-  "현재 추천 예시의 실제 판매 가격 비교가 아닙니다. 가격 비교에는 PREMIUM 권한이 필요합니다.": "This does not compare real sale prices for the style examples above. Price comparison requires PREMIUM access."
+  "현재 추천 예시의 실제 판매 가격 비교가 아닙니다. 가격 비교에는 PREMIUM 권한이 필요합니다.": "This does not compare real sale prices for the style examples above. Price comparison requires PREMIUM access.",
+  "A1 AI 스타일리스트 ↗": "A1 AI Stylist ↗",
+  "A1 AI 스타일 상담 · 현재 모의 운영": "A1 AI style consultations · Simulation mode",
+  "분석 비율로 A1 AI 상담하기 ↗": "Discuss my analysis ratios with A1 AI ↗",
+  "무료 분석 후 비율 두 개를 A1 상담 화면으로 가져올 수 있습니다. 사진은 전달하지 않습니다.": "After free analysis, you can bring two ratios to the A1 consultation page. Your photo is not transferred.",
+  "분석 비율을 상담 화면으로 가져올 수 있습니다. 외부 AI 전송은 상담 화면에서 별도로 동의해야 합니다.": "You can bring your analysis ratios to the consultation page. Sending them to an external AI requires separate consent there.",
+  "상담 창을 열지 못했습니다. 새 창을 허용하거나 A1 AI 스타일리스트 링크를 이용해주세요.": "The consultation window could not be opened. Allow a new window or use the A1 AI Stylist link.",
+  "비율 두 개만 A1 상담 화면에 전달합니다. 사진은 기기 안에 남습니다.": "Only two ratios are transferred to the A1 consultation page. Your photo stays on your device."
 });

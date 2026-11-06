@@ -191,5 +191,6 @@ window.A1I18n.register({
   "환율 출처: {source} · 적용 시각: {time}": "Exchange rate source: {source} · As of: {time}",
   "가격 출처: {source}": "Price source: {source}",
   "프로모션 기간: {start} ~ {end}": "Promotion period: {start} – {end}",
-  "내 알림 설정과 연락처를 삭제하고 수신 동의를 철회했습니다.": "Your alert settings and contact details were deleted, and marketing consent was withdrawn."
+  "내 알림 설정과 연락처를 삭제하고 수신 동의를 철회했습니다.": "Your alert settings and contact details were deleted, and marketing consent was withdrawn.",
+  "A1 AI 스타일리스트 ↗": "A1 AI Stylist ↗"
 });

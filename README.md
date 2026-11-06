@@ -26,6 +26,18 @@
 
 구현 범위·비용·공급자 승인·개인정보 및 실제 배포의 승인 순서는 [글로벌 운영 보고서](docs/GLOBAL-OPERATIONS.md), 공급자와 무료 한도 근거는 [공식 자료 조사](docs/GLOBAL-RESEARCH.md)에 정리합니다. 이번 작업은 기능 브랜치/PR 검토 대상이며 운영 배포나 운영 데이터 변경을 수행하지 않습니다.
 
+## A1 AI 스타일리스트 — 모의 운영 우선
+
+`stylist.html`에 한국어·영어 스타일 상담 화면을 추가합니다. GENERAL은 스타일 상담과 상품 검색, PREMIUM은 검증된 동일 상품의 가격 비교와 유효 할인 추천 범위로 서버에서 다시 확인합니다. FREE, 만료·미납·환불 등 유효 구독이 없는 계정은 유료 상담 API를 이용할 수 없습니다. 기존 Firebase 회원·Cloudflare 프로젝트·기기 내 무료 분석은 그대로 유지합니다.
+
+**기본은 실제 GPT 호출 없는 DEMO이며 API 키만 입력해도 실제 호출을 시작하지 않습니다.** 실제 운영에는 운영자의 별도 승인, 서버의 활성화 설정, 승인된 모델·확인한 토큰 요금, 사용자별 요청 한도, 전체 일/월 비용 상한과 D1 예약 기록이 필요합니다. 실패·시간 초과에 재시도를 붙이지 않으며 비용을 알 수 없는 실패는 예약 예산을 돌려주지 않습니다. 설정·키·DB가 없어도 기존 정적 무료 화면과 체형 분석은 계속 작동합니다.
+
+사진·이미지·파일명·전체 기준점을 외부 AI로 보내는 기능은 제공하지 않습니다. 무료 분석 후 사용자가 버튼을 눌렀을 때만 비율 두 숫자를 A1 상담 창으로 메모리 메시지로 가져올 수 있습니다. 숫자는 URL·브라우저 저장소에 넣지 않습니다. 외부 AI로 대화를 보내는 동의와 수치 공유 동의는 상담 화면에서 각각 별도로 선택하며 자동 체크하지 않습니다. 원래 분석을 지우거나 원본 페이지를 떠나면 가져온 수치가 해제됩니다.
+
+상담은 현재 화면 메모리에만 유지하며 A1 DB에 대화·분석값을 저장하지 않습니다. 로그아웃·페이지 이동·대화 지우기는 대화와 진행 중 요청을 정리합니다. 이용량·비용을 위한 내용 없는 집계는 별도입니다. OpenAI 요청의 `store:false`는 제공자의 모든 보안·부정 이용 방지 기록이 없어지는 약속이 아니므로 실제 운영 전에 보관·국외 처리·데이터 보호 조건을 확인해야 합니다.
+
+상품명·가격·할인·판매 URL은 모델이 생성한 내용을 그대로 표시하지 않습니다. 승인된 실제 상품 기록을 검증한 뒤 서버가 표시 자료를 조립합니다. 공식 상품 피드가 연결되지 않았거나 자료가 오래되면 실제 상품 추천·할인으로 제시하지 않고 검색 링크와 데이터 준비 상태를 구분합니다. 원래의 12개 예시 카탈로그를 실제 GPT 상품 근거로 취급하지 않습니다. 현재 요금 확인 범위, 비용 계산과 운영 승인 순서는 [AI 운영 보고서](docs/AI-STYLIST-OPERATIONS.md)에 정리합니다.
+
 ## 무료 분석
 
 - Google MediaPipe의 실제 AI 모델이 사진에서 인체 기준점을 추정합니다. 어깨·골반·다리의 2D 간격으로 참고 지표를 계산하고 결과를 무료로 보여줍니다.
@@ -67,6 +79,8 @@ Cloudflare Pages Git 통합의 빌드 명령은 `node scripts/build-site.cjs`, �
 
 - `assets/body-analysis.js`: 공개 무료 분석의 기준점 품질 검증·2D 간격 계산.
 - `assets/ai-studio.js`: 사진 선택·실제 기기 내 추론·분석 결과와 삭제.
+- `stylist.html`, `assets/stylist.js`, `assets/i18n-stylist.js`: GPT 연결 준비가 된 상담 화면과 한국어/영어, 별도 외부 AI·수치 공유 선택.
+- `assets/stylist-analysis-bridge.js`: 사용자 클릭 뒤 같은 출처 상담 창으로 숫자 두 개만 일회 전달하는 메모리 연결. URL·저장소·사진 전달 없음.
 - `assets/premium-client.js`: 구독 상태 확인과 보호된 추천 요청. 클라이언트 상태는 권한의 근거가 아닙니다.
 - `assets/app.js`: 서버가 허용한 추천 응답의 카드·상세·검색 링크 표시와 로그인 계정의 서버 찜 목록 연결. 새 찜 기록을 브라우저 저장소에 보관하지 않으며 예전 브라우저 찜 목록을 읽거나 자동 이전하지 않습니다.
 - `functions/api/auth/`: Firebase 회원가입·이메일 인증·로그인 세션·로그아웃·비밀번호 재설정·회원탈퇴 연결.
@@ -86,7 +100,7 @@ GitHub의 `.github/workflows/global-checks.yml`은 Pull Request 또는 운영자
 Node.js의 서버 테스트:
 
 ```sh
-node --test tests/body-analysis.cjs tests/membership-policy.cjs tests/premium-backend.cjs tests/recommendation-engine.cjs tests/firebase-auth.cjs tests/global-entitlements.cjs tests/global-schema.cjs tests/global-api.cjs tests/global-retailers.cjs tests/price-comparison.cjs tests/notifications.cjs
+node --test tests/body-analysis.cjs tests/membership-policy.cjs tests/premium-backend.cjs tests/recommendation-engine.cjs tests/firebase-auth.cjs tests/global-entitlements.cjs tests/global-schema.cjs tests/global-api.cjs tests/global-retailers.cjs tests/price-comparison.cjs tests/notifications.cjs tests/ai-catalog.cjs tests/ai-usage.cjs tests/openai-stylist.cjs tests/ai-stylist.cjs
 ```
 
 브라우저 검증은 위의 정적 서버와 Playwright/Chromium이 설치된 환경에서 실행합니다.
@@ -97,10 +111,12 @@ node tests/i18n-browser.cjs
 node tests/global-browser.cjs
 node tests/discovery-browser.cjs
 node tests/ai-studio.cjs
+node tests/stylist-browser.cjs
+node tests/stylist-bridge.cjs
 ```
 
 실제 기기 내 추론, 무료 결과와 추천 잠금, 파일 삭제, 모바일 화면을 확인합니다. 회원가입 코드의 로컬/테스트 공급자 검증과 실제 Firebase 프로젝트·인증 이메일 수신·운영 쿠키 검증은 구분합니다. 설정 전에는 실제 가입 완료를 주장하지 않습니다. `CHROMIUM_PATH`, `A1_TEST_URL`로 검증 실행 파일과 주소를 지정할 수 있습니다. 실제 iPad Safari 기기 검증과 Chromium의 iPad 크기 화면 검증은 구분합니다. 서버 권한 테스트용 유료 회원은 테스트 안에서만 생성하며 운영 데이터베이스에 유료 회원을 만들지 않습니다.
 
-Functions의 실행 환경 호환성은 Miniflare(workerd)와 esbuild가 설치된 개발 환경에서 `node tests/workerd-auth.cjs`로 검증합니다. 글로벌 API와 D1 SQLite 실행 환경의 결합은 `node tests/workerd-global.cjs`로 별도 검증하며 실제 운영 D1이나 외부 공급자를 호출하지 않습니다. 도구가 다른 디렉터리에 설치되어 있으면 `A1_WORKER_TOOLS_ROOT`에 해당 `node_modules` 경로를 지정합니다. 실제 서버 코드를 workerd에서 실행해 요청 방식·가입·공개키 조회·RSA 로그인·세션·리다이렉트 차단을 확인하며, 외부 요청과 실제 회원 생성은 하지 않습니다. 이 검증은 Node.js만 사용한 테스트가 놓칠 수 있는 Workers 실행 환경 차이를 검사합니다.
+Functions의 실행 환경 호환성은 Miniflare(workerd)와 esbuild가 설치된 개발 환경에서 `node tests/workerd-auth.cjs`로 검증합니다. 글로벌 API와 D1 SQLite 실행 환경의 결합은 `node tests/workerd-global.cjs`로, 스타일리스트의 실제 Cloudflare 실행 환경과 D1 비용 예약 결합은 `node tests/workerd-stylist.cjs`로 별도 검증하며 실제 운영 D1이나 외부 공급자를 호출하지 않습니다. 도구가 다른 디렉터리에 설치되어 있으면 `A1_WORKER_TOOLS_ROOT`에 해당 `node_modules` 경로를 지정합니다. 실제 서버 코드를 workerd에서 실행해 요청 방식·가입·공개키 조회·RSA 로그인·세션·리다이렉트 차단을 확인하며, 외부 요청과 실제 회원 생성은 하지 않습니다. 이 검증은 Node.js만 사용한 테스트가 놓칠 수 있는 Workers 실행 환경 차이를 검사합니다.
 
 공개 주소는 사용자 완료 화면과 연결된 Cloudflare Pages 배포 체크에서 확인했습니다. 현재 작업 환경의 네트워크 정책은 `pages.dev` 직접 접속을 차단하므로 원격 화면 테스트는 로컬 배포 파일 검증과 구분합니다.

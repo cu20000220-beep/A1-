@@ -31,6 +31,8 @@ jobs:
           tests/global-entitlements.cjs tests/global-schema.cjs
           tests/global-api.cjs tests/global-retailers.cjs
           tests/price-comparison.cjs tests/notifications.cjs
+          tests/ai-catalog.cjs tests/ai-usage.cjs
+          tests/openai-stylist.cjs tests/ai-stylist.cjs
       - name: Package public assets only
         run: node scripts/build-site.cjs
       - name: Check whitespace
