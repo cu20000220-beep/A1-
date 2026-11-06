@@ -76,7 +76,11 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
     const recheck = async (access, requiredTier) => {
       const current = await authorizeMember(request, env, { ...authOptions, now: currentTime(), requiredTier });
       if (current.identity.issuer !== access.identity.issuer || current.identity.subject !== access.identity.subject) throw new MemberDataError(401, 'authentication_required');
-      return currentTime();
+      const completedAt = currentTime();
+      // Authorization itself awaits signature and database reads. Its starting
+      // clock cannot grant a paid result after the returned period has elapsed.
+      if (requiredTier !== 'FREE' && (!Number.isSafeInteger(current.accessUntil) || current.accessUntil <= completedAt)) throw new MemberDataError(403, 'subscription_required');
+      return completedAt;
     };
     const paidResponse = async (value, access, tier, status = 200) => { await recheck(access, tier); return respond(value, status); };
     if (resource === 'account') {
@@ -91,7 +95,8 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
         access = await authorizeMember(request, env, { ...authOptions, requiredTier: 'FREE' });
       }
       await new MemberStore(env.MEMBERSHIP_DB, access.identity, now).rateLimit();
-      return respond({ plan: access.plan, subscription: { active: access.plan !== 'FREE', accessUntil: access.accessUntil }, mode: 'DRY_RUN', databaseConfigured: true });
+      const active = access.plan !== 'FREE' && Number.isSafeInteger(access.accessUntil) && access.accessUntil > currentTime();
+      return respond({ plan: active ? access.plan : 'FREE', subscription: { active, accessUntil: active ? access.accessUntil : null }, mode: 'DRY_RUN', databaseConfigured: true });
     }
     const value = request.method === 'GET' ? null : await body(request);
     const withdrawal = resource === 'consents' && value?.granted === false;
@@ -105,7 +110,7 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
     // Reads consume the same owner-scoped quota as writes. Privacy withdrawal
     // and erasure remain available even when the hourly quota is exhausted.
     if (!withdrawal && !deletion) await store.rateLimit();
-    if (resource === 'retailers') return paidResponse(listGlobalRetailers(safeFilters(value), { language }), access, tier);
+    if (resource === 'retailers') return await paidResponse(listGlobalRetailers(safeFilters(value), { language }), access, tier);
     const allowLiveCatalog = env.ENABLE_LIVE_CATALOG === 'true' && env.GLOBAL_CATALOG_APPROVED === 'true';
     if (resource === 'products') {
       const catalog = await loadVerifiedCatalog(env.MEMBERSHIP_DB, { ...safeFilters(value), now: currentTime(), clock: currentTime, limit: 12, allowLiveCatalog });
@@ -148,7 +153,7 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
       if (request.method === 'DELETE') { exactFields(value, ['id']); await store.deleteWatch(value.id); return respond({ ok: true }); }
       const watch = normalizeWatchlist(value);
       if (watch.targetPrice !== null && access.plan !== 'PREMIUM') throw new MemberDataError(403, 'premium_required');
-      return paidResponse({ ok: true, items: await store.saveWatch(watch) }, access, tier, 201);
+      return await paidResponse({ ok: true, items: await store.saveWatch(watch) }, access, tier, 201);
     }
     if (resource === 'preferences') {
       if (request.method === 'GET') return respond(await preferencesResult(store));
@@ -156,7 +161,7 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
       const normalized = normalizePreferences(value);
       if (normalized.phone && !validateE164(normalized.phone, normalized.country).valid) throw new MemberDataError(400, 'invalid_request');
       await store.savePreferences(normalized);
-      return paidResponse({ ok: true, ...(await preferencesResult(store)) }, access, tier);
+      return await paidResponse({ ok: true, ...(await preferencesResult(store)) }, access, tier);
     }
     if (resource === 'consents') {
       if (request.method === 'GET') {
@@ -167,7 +172,7 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
       exactFields(value, ['channel', 'granted', 'noticeVersion'], ['channel', 'granted']);
       if (!['email', 'sms'].includes(value.channel) || typeof value.granted !== 'boolean') throw new MemberDataError(400, 'invalid_request');
       const result = { ok: true, consents: await store.saveConsent(value.channel, value.granted, { language, noticeVersion: value.noticeVersion }), mode: 'DRY_RUN' };
-      return withdrawal ? respond(result) : paidResponse(result, access, tier);
+      return withdrawal ? respond(result) : await paidResponse(result, access, tier);
     }
     if (resource === 'history') {
       if (request.method === 'DELETE') { empty(value); await store.deleteHistory(); return respond({ ok: true }); }
@@ -181,12 +186,12 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
         event: { id: 'demo-alert-preview', type: 'price_drop', title: 'DEMO price alert', brand: 'A1 DEMO', productId: 'demo-tee',
           currentPrice: { amount: 39, currency: 'USD' }, previousPrice: { amount: 49, currency: 'USD' }, demo: true },
         demo: true, unsubscribeUrl: `${new URL(request.url).origin}/global.html#alerts` });
-      return paidResponse(await store.savePreview(value.channel, template), access, tier);
+      return await paidResponse(await store.savePreview(value.channel, template), access, tier);
     }
     if (resource === 'simulate') {
       empty(value);
       const result = await runMemberPromotionSimulation(env.MEMBERSHIP_DB, { identity: access.identity, now: currentTime(), clock: currentTime, origin: new URL(request.url).origin });
-      return paidResponse(result, access, tier);
+      return await paidResponse(result, access, tier);
     }
     throw new MemberDataError(404, 'not_found');
   } catch (error) { return errorResponse(error, language); }

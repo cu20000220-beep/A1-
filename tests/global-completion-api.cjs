@@ -200,6 +200,30 @@ test('paid stored-catalog responses recheck a subscription revoked during the as
   }finally{f.close();}
 });
 
+test('subscriptions expiring during the final authorization await cannot publish paid results',async()=>{
+  for(const resource of ['retailers','products','comparison']){
+    const f=fixture();try{
+      const plan=resource==='comparison'?'PREMIUM':'GENERAL';
+      f.member(OWNER,plan,'active',NOW+50);f.approve();f.retailer();f.offer();
+      let clock=NOW,membershipReads=0;
+      f.setQueryHook(query=>{if(/FROM memberships\b/i.test(query)&&++membershipReads===2)clock=NOW+51;});
+      const result=await f.call(resource,{method:'POST',clock:()=>clock,
+        body:resource==='comparison'?{productId:'offer-us',destination:'US',currency:'USD'}:filters});
+      assert.equal(membershipReads,2,'Exercise expiry inside the final authorization await');
+      assert.equal(result.status,403,resource);
+      assert.equal(result.value.error,'subscription_required');
+      for(const key of ['retailers','products','results','lowestOfferId'])assert.equal(Object.hasOwn(result.value,key),false);
+    }finally{f.close();}
+  }
+  const f=fixture();try{
+    f.member(OWNER,'GENERAL','active',NOW+50);let clock=NOW;
+    f.setQueryHook(query=>{if(/INSERT INTO api_rate_limits/i.test(query))clock=NOW+51;});
+    const account=await f.call('account',{clock:()=>clock});
+    assert.equal(account.status,200);assert.equal(account.value.plan,'FREE');
+    assert.equal(account.value.subscription.active,false,'The account screen must not show an elapsed paid period as active');
+  }finally{f.close();}
+});
+
 test('clock advancement across stored-price reads cannot publish expired products or minimum badges',async()=>{
   for(const resource of ['products','comparison']){
     const f=fixture();try{

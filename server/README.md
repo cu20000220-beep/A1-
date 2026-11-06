@@ -8,7 +8,7 @@
 
 운영 연결은 [iPad용 Firebase 설정 안내](../docs/FIREBASE-SETUP.md)를 따릅니다. Firebase의 Spark 무료 플랜과 이메일/비밀번호 인증을 사용하며 Blaze·카드·결제 계정은 연결하지 않습니다. 현재 무료 한도와 이메일 발송 제한은 실제 프로젝트에서 확인합니다.
 
-Cloudflare Pages의 Production 환경에는 `FIREBASE_PROJECT_ID`와 `FIREBASE_WEB_API_KEY`를 설정합니다. 이 회원가입 흐름에는 서비스 계정 비밀키·관리자 JSON·D1 데이터베이스가 필요하지 않습니다. `apiKey`는 Firebase 웹 앱의 클라이언트용 식별 값이며 관리자 비밀키가 아닙니다. 채팅이나 공개 파일에 값을 복사하지 않고 운영 설정에 직접 입력합니다. 환경 변수를 저장한 뒤 운영 배포를 다시 실행해야 합니다.
+현재 정상 작동하는 Cloudflare Pages Production의 `FIREBASE_PROJECT_ID`와 `FIREBASE_WEB_API_KEY`를 유지합니다. 이 회원가입 흐름에는 서비스 계정 비밀키·관리자 JSON·D1 데이터베이스가 필요하지 않습니다. `apiKey`는 Firebase 웹 앱의 클라이언트용 식별 값이며 관리자 비밀키가 아닙니다. 채팅이나 공개 파일에 값을 복사하지 않습니다. 설정 변경과 운영 재배포가 필요하다면 대상·영향을 검토하고 운영자 승인을 받은 뒤 진행합니다.
 
 `functions/api/auth/`의 경로는 다음과 같습니다.
 
@@ -27,11 +27,11 @@ Cloudflare Pages의 Production 환경에는 `FIREBASE_PROJECT_ID`와 `FIREBASE_W
 
 로그인은 Firebase의 RS256 서명, 정확한 프로젝트 issuer·audience·유효기간과 `email_verified`를 서버에서 검증합니다. 검증된 토큰은 `__Host-a1-session` 쿠키로 최대 한 시간 유지하고 `Secure`, `HttpOnly`를 적용합니다. 브라우저 `localStorage`에 비밀번호나 로그인 토큰을 저장하지 않습니다. 서버는 이 쿠키를 검증해 사용자를 식별하며 로그인 성공·이메일 인증만으로 구독 권한을 부여하지 않습니다. 회원 탈퇴나 비밀번호 재설정의 실제 공급자 동작은 운영 프로젝트 연결 후 확인해야 합니다.
 
-현재 운영 프로젝트가 없어 실제 사용자 생성·메일 수신·운영 세션 발급은 검증 전입니다. 로컬 테스트 공급자나 시험용 JWT를 이용한 검증을 실제 회원가입 활성화로 설명하지 않습니다. 개인정보 안내는 운영 사이트의 `privacy.html`에서 제공합니다.
+기존 Firebase 운영 프로젝트가 있으며 소유자가 운영 가입·로그인 성공을 확인했습니다. 이번 재검증은 로컬 대역만 사용하고 운영 회원 생성·삭제나 실제 이메일 발송을 하지 않습니다. 소유자의 운영 확인과 로컬 자동 테스트 범위를 구분합니다. 개인정보 안내는 운영 사이트의 `privacy.html`에서 제공합니다.
 
 ## 권한 경계
 
-- `GET /api/membership`: 로그인 서명과 DB 구독을 확인합니다. 허용 응답은 `{allowed: true, accessUntil}`입니다.
+- `GET /api/membership`: 로그인 서명과 DB 구독을 확인합니다. 허용 응답은 `{allowed: true, accessUntil, plan}`입니다. 등급 없는 기존 유효 유료 기록은 GENERAL로 호환하며 자동 PREMIUM 승격은 없습니다.
 - `POST /api/recommendations`: 같은 검증을 **매 요청마다** 실행한 후 추천을 반환합니다. 앞선 회원 확인 성공은 다음 요청의 권한을 보장하지 않습니다.
 - 로그인은 Firebase 또는 명시적으로 설정한 신뢰 발급자의 RS256 JWT 서명·issuer·audience·유효기간을 검증합니다. Firebase 회원은 이메일 인증도 확인합니다. JWT의 구독 주장이나 브라우저의 `paid` 플래그는 결제 근거로 사용하지 않습니다.
 - D1의 `(issuer, subject)`로 회원을 조회하고 `active` 상태, 미래의 `paid_through`, 유효한 `payment_verified_at`이 모두 있어야 허용합니다. 시간은 서버의 UTC 밀리초입니다.
@@ -53,9 +53,11 @@ Cloudflare Pages의 Production 환경에는 `FIREBASE_PROJECT_ID`와 `FIREBASE_W
 1. 가격·청구 주기·제공 혜택·해지/환불 조건과 판매/결제 제공자의 요건을 정합니다. 현재 월 구독료는 미정이며 실제 결제는 활성화하지 않습니다.
 2. [Firebase 설정](../docs/FIREBASE-SETUP.md)을 완료하고 실제 가입·인증 이메일·로그인·재설정·탈퇴를 확인합니다. 이 단계는 D1 없이 할 수 있습니다.
 3. 유료 추천을 연결할 때 Cloudflare Pages Functions의 운영 환경에 D1 바인딩을 준비합니다. 비밀키는 채팅이나 공개 저장소에 넣지 않습니다.
-4. 운영자가 검토한 D1에 `server/schema.sql`을 적용합니다. 이 스키마는 테이블만 만들며 회원·구독·체험·결제를 생성하지 않습니다.
+4. 운영 DB는 자동 변경하지 않습니다. 먼저 대상·현재 스키마·마이그레이션 이력·백업과 복구 방법을 확인하고 정확한 SQL의 적용 승인을 받습니다. `server/schema.sql`은 완전히 빈 DB의 전체 스키마용입니다. 기존 DB의 `CREATE TABLE IF NOT EXISTS`는 누락된 열을 추가하지 않으므로, 이미 존재하는 테이블에 전체 스키마를 덮어 적용하는 이전 절차로 사용하지 않습니다. 기존 DB는 필요한 `0001_membership_tiers.sql` → `0002_global_catalog_and_alerts.sql` → `0003_global_consent_context.sql`을 적용 이력에 맞춰 한 번씩 검토하며, 새 DB 전체 스키마와 ALTER 마이그레이션을 중복 적용하지 않습니다. 기록 삭제·시험용 구독·실제 결제 생성은 포함하지 않습니다.
 5. 결제 제공자의 **서명 검증된 결과**를 처리하는 신뢰된 서버 연동을 별도로 구현합니다. 성공한 실제 결제로만 구독 행을 갱신하고, 해지·미납·환불·권한 취소도 반영합니다. 이 결제 어댑터는 아직 구현하지 않았습니다.
 6. 운영과 분리된 시험 환경에서 가입·결제 성공/실패·만료·해지·환불·접근 취소를 검증한 뒤 유료 가입을 엽니다.
+
+이번 단계에서는 로컬 DB와 모의 공급자만 사용합니다. 실제 시험 결제·이메일·SMS·Cron·유료 API 검증도 별도 승인 전 실행하지 않습니다. Pages Preview를 사용하는 경우 운영 D1에 연결하지 않으며, 격리된 시험 DB가 없다면 바인딩 없이 잠금/설정 부재 상태만 확인합니다. 새로운 시험 DB 생성도 승인을 받은 뒤 진행합니다.
 
 | Cloudflare 설정 | 용도 |
 | --- | --- |
