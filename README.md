@@ -112,7 +112,7 @@ GitHub의 `.github/workflows/global-checks.yml`은 Pull Request 또는 운영자
 Node.js의 서버 테스트:
 
 ```sh
-node --test tests/body-analysis.cjs tests/membership-policy.cjs tests/premium-backend.cjs tests/recommendation-engine.cjs tests/firebase-auth.cjs tests/localization-server.cjs tests/global-entitlements.cjs tests/global-schema.cjs tests/global-api.cjs tests/global-retailers.cjs tests/price-comparison.cjs tests/notifications.cjs tests/catalog-repository.cjs tests/promotion-simulation.cjs tests/consent-context.cjs tests/global-completion-api.cjs tests/ai-catalog.cjs tests/ai-usage.cjs tests/openai-stylist.cjs tests/ai-stylist.cjs tests/unified-migrations.cjs tests/unified-access.cjs
+node --test tests/body-analysis.cjs tests/membership-policy.cjs tests/premium-backend.cjs tests/recommendation-engine.cjs tests/firebase-auth.cjs tests/localization-server.cjs tests/global-entitlements.cjs tests/global-schema.cjs tests/global-api.cjs tests/global-retailers.cjs tests/price-comparison.cjs tests/notifications.cjs tests/catalog-repository.cjs tests/promotion-simulation.cjs tests/consent-context.cjs tests/global-completion-api.cjs tests/ai-catalog.cjs tests/ai-usage.cjs tests/openai-stylist.cjs tests/ai-stylist.cjs tests/unified-migrations.cjs tests/unified-access.cjs tests/preview-isolation.cjs
 ```
 
 브라우저 검증은 위의 정적 서버와 Playwright/Chromium이 설치된 환경에서 실행합니다.
@@ -125,6 +125,7 @@ node tests/discovery-browser.cjs
 node tests/ai-studio.cjs
 node tests/stylist-browser.cjs
 node tests/stylist-bridge.cjs
+# API middleware/router: node tests/workerd-preview.cjs
 ```
 
 실제 기기 내 추론, 무료 결과와 추천 잠금, 파일 삭제, 모바일 화면을 확인합니다. 회원가입 코드의 로컬/테스트 공급자 검증과 실제 Firebase 프로젝트·인증 이메일 수신·운영 쿠키 검증은 구분합니다. 설정 전에는 실제 가입 완료를 주장하지 않습니다. `CHROMIUM_PATH`, `A1_TEST_URL`로 검증 실행 파일과 주소를 지정할 수 있습니다. 실제 iPad Safari 기기 검증과 Chromium의 iPad 크기 화면 검증은 구분합니다. 서버 권한 테스트용 유료 회원은 테스트 안에서만 생성하며 운영 데이터베이스에 유료 회원을 만들지 않습니다.

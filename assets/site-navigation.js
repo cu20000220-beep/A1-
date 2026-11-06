@@ -13,7 +13,8 @@
     '멤버십': 'MEMBERSHIP',
     '내 계정': 'MY ACCOUNT',
     'A1 AI 스타일 상담 · 현재 모의 운영': 'A1 AI style consultation · currently simulated',
-    'AI 가격 비교 상담 · 현재 모의 운영': 'AI price comparison consultation · currently simulated'
+    'AI 가격 비교 상담 · 현재 모의 운영': 'AI price comparison consultation · currently simulated',
+    '미리보기: 회원가입·로그인·구독·AI 상담은 연결하지 않았습니다. 화면과 무료 사진 분석을 확인하세요.': 'Preview: registration, sign-in, subscriptions and AI consultation are disconnected. You can explore the pages and free photo analysis.'
   });
   const links = [
     ['home', '홈', 'index.html'],
@@ -44,6 +45,15 @@
         const button = document.querySelector(`[data-tab="${target.hash.slice(1)}"]`);
         if (button) { event.preventDefault(); button.click(); update(); }
       });
+    }
+  }
+  if (location.hostname.toLowerCase().replace(/\.$/, '').endsWith('.a1fashion.pages.dev')) {
+    const mount = document.querySelector('[data-site-navigation]');
+    if (mount && !document.querySelector('[data-preview-notice]')) {
+      const notice = document.createElement('p');
+      notice.className = 'preview-notice'; notice.dataset.previewNotice = '';
+      I.setText(notice, '미리보기: 회원가입·로그인·구독·AI 상담은 연결하지 않았습니다. 화면과 무료 사진 분석을 확인하세요.');
+      mount.insertAdjacentElement('afterend', notice);
     }
   }
   window.addEventListener('hashchange', update);
