@@ -37,6 +37,7 @@ jobs:
           tests/openai-stylist.cjs tests/ai-stylist.cjs
           tests/unified-migrations.cjs tests/unified-access.cjs
           tests/preview-isolation.cjs
+          tests/member-write-entitlements.cjs
       - name: Package public assets only
         run: node scripts/build-site.cjs
       - name: Check public artifact exposure

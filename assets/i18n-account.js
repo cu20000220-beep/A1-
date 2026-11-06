@@ -13,6 +13,7 @@ window.A1I18n.register({
   "다시 만나 반가워요.": "Welcome back.",
   "이메일로 로그인하고 나의 계정을 확인하세요.": "Sign in with email to access your account.",
   "회원 서비스 연결을 확인하고 있습니다.": "Checking the account service connection.",
+  "이 미리보기는 회원·구독·외부 서비스에 연결하지 않습니다. 화면과 무료 기기 내 사진 분석을 확인할 수 있습니다.": "This preview does not connect member, subscription or external services. You can check the pages and free on-device photo analysis.",
   "연결 상태 다시 확인 ↗": "Check connection again ↗",
   "계정 메뉴": "Account menu",
   "로그인": "Sign in",

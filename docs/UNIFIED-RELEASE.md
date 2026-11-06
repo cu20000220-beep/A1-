@@ -68,7 +68,7 @@ Preview 확인은 다음 조건을 먼저 확인해야 합니다.
 3. GPT는 DEMO, 실제 상품 승인 플래그는 미설정/false, 이메일/SMS는 모의, 청구·Cron은 비활성으로 유지합니다. Preview에 운영 비밀키·회원 데이터·실제 구독을 복제하지 않습니다.
 4. 격리 확인 후 통합 브랜치의 Preview만 배포하고 성공 체크의 실제 URL에서 페이지·메뉴·번역·무료 분석·보호 기능 잠금을 확인합니다. 전체 인증/유료 기능은 로컬 대역 또는 별도로 승인된 격리 인증/DB로 검사합니다.
 
-현재 관리 환경은 GitHub API와 Cloudflare/Pages 호스트 접근이 제한되고 Cloudflare 연결 자격 증명이 없습니다. 따라서 원격 바인딩 확인·공개 Preview 검증은 아직 완료하지 못했으며 URL을 추측해 제공하지 않습니다. 최종 커밋에 `[CF-Pages-Skip]`을 사용해 격리 확인 전 자동 Pages 빌드를 건너뜁니다. GitHub PR 생성 결과와 실제 가능한 비교 링크는 완료 보고에 기록합니다.
+현재 관리 환경은 GitHub API와 Cloudflare/Pages 호스트 접근이 제한되고 Cloudflare 연결 자격 증명이 없습니다. 따라서 원격 바인딩 분리와 공개 Preview 직접 접속 검증은 아직 완료하지 못했습니다. 초기 커밋은 `[CF-Pages-Skip]`으로 자동 빌드를 건너뛰었고, API 차단 보호 검증 후 빌드 요청용 빈 커밋 `afa8e73`을 푸시했습니다. 공식 Cloudflare 봇에서 Pages 성공과 실제 URL https://4dfbbf22.a1fashion.pages.dev 및 브랜치 별칭 https://feature-a1-unified-release.a1fashion.pages.dev 를 확인했습니다. 배포 성공 확인과 실제 사이트 접속 확인은 구분합니다. 최신 출시 판정과 이후 오류 수정·검사 상태는 [최종 출시 검증서](LAUNCH-REVIEW.md)를 참고하세요.
 
 ### Preview API 차단 보호
 
@@ -83,7 +83,7 @@ Preview 확인은 다음 조건을 먼저 확인해야 합니다.
 - 변경과 관련된 회원·글로벌·AI 상담 브라우저 3종을 다시 실행해 통과했습니다. 별도 네트워크 없는 로컬 브라우저 점검으로 한·영 Preview 안내, 회원 잠금, 메뉴 이동, 320/390/820/1440px과 운영 안내 미표시를 확인했습니다. 실제 공개 Preview 접속 시험은 아닙니다.
 - 공개 파일 52개 빌드·노출 검사와 Functions 재컴파일 통과. API 핸들러는 21개이며 미들웨어가 추가돼 생성 라우트는 `/api/*`로 묶입니다. 정적 자산은 Functions 라우팅 대상에서 제외됩니다.
 
-사용자가 생성한 [PR #1](https://github.com/cu20000220-beep/A1-/pull/1)은 `main ← feature/a1-unified-release`를 대상으로 합니다. 기존 `187c481`의 GitHub 자동 검사 성공을 확인했습니다. Cloudflare 실패 체크는 별도 Worker **a1**의 `npx wrangler preview`가 `previews` 설정을 요구해서 발생했습니다. Worker 미리보기 설정을 Pages 프로젝트에 추가하거나 운영 Worker를 임의로 변경하지 않습니다. 해당 실패를 운영 Pages 배포 성공/실패나 코드 단위 테스트 실패로 간주하지 않습니다.
+사용자가 생성한 [PR #1](https://github.com/cu20000220-beep/A1-/pull/1)은 `main ← feature/a1-unified-release`를 대상으로 합니다. `afa8e73`의 GitHub 자동 검사와 Cloudflare Pages 성공을 확인했으며 별도 Worker **a1** 검사 실패는 남아 있습니다. 사용자가 제공한 과거 Worker 로그의 실패 원인은 `npx wrangler preview`의 `previews` 설정 누락입니다. 최신 실패의 원시 로그·Worker 설정은 직접 재조회하지 못했으므로 원인을 동일하다고 단정하지 않습니다. Worker 미리보기 설정을 Pages 프로젝트에 추가하거나 운영 Worker를 임의로 변경하지 않습니다. 해당 실패를 Pages Preview 배포나 코드 단위 테스트 실패와 혼동하지 않으며 PR 필수 검사 여부는 별도 확인합니다.
 
 ## 운영 승인과 복구
 

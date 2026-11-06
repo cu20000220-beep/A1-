@@ -153,7 +153,7 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
       if (request.method === 'DELETE') { exactFields(value, ['id']); await store.deleteWatch(value.id); return respond({ ok: true }); }
       const watch = normalizeWatchlist(value);
       if (watch.targetPrice !== null && access.plan !== 'PREMIUM') throw new MemberDataError(403, 'premium_required');
-      return await paidResponse({ ok: true, items: await store.saveWatch(watch) }, access, tier, 201);
+      return await paidResponse({ ok: true, items: await store.saveWatch(watch) }, access, watch.targetPrice === null ? tier : 'PREMIUM', 201);
     }
     if (resource === 'preferences') {
       if (request.method === 'GET') return respond(await preferencesResult(store));

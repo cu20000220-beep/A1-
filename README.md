@@ -2,6 +2,8 @@
 
 공개 사이트: **https://a1fashion.pages.dev**
 
+최신 출시 판단·검증 범위·운영 설정 미확인 항목·백업/복구 및 승인 후 iPad 배포 순서는 [최종 출시 검증서](docs/LAUNCH-REVIEW.md)를 참고하세요. PR/Preview 성공만으로 운영 배포가 승인된 것은 아닙니다.
+
 사진을 통한 체형 참고 분석은 무료입니다. 그 결과에 따른 의류 추천·외부 쇼핑몰 연결은 유료 구독자 전용으로 분리했습니다. **기간형 무료 체험은 제공하지 않습니다.** 월 구독료는 미정이며 결제·정기 청구는 아직 연결하지 않았습니다. 이메일 회원가입·로그인은 Firebase를 이용하며 소유자가 실제 가입·로그인 성공을 확인했습니다. 구독 설정이 없으면 추천 기능은 계속 잠깁니다.
 
 ## 한국어·영어
@@ -112,7 +114,7 @@ GitHub의 `.github/workflows/global-checks.yml`은 Pull Request 또는 운영자
 Node.js의 서버 테스트:
 
 ```sh
-node --test tests/body-analysis.cjs tests/membership-policy.cjs tests/premium-backend.cjs tests/recommendation-engine.cjs tests/firebase-auth.cjs tests/localization-server.cjs tests/global-entitlements.cjs tests/global-schema.cjs tests/global-api.cjs tests/global-retailers.cjs tests/price-comparison.cjs tests/notifications.cjs tests/catalog-repository.cjs tests/promotion-simulation.cjs tests/consent-context.cjs tests/global-completion-api.cjs tests/ai-catalog.cjs tests/ai-usage.cjs tests/openai-stylist.cjs tests/ai-stylist.cjs tests/unified-migrations.cjs tests/unified-access.cjs tests/preview-isolation.cjs
+node --test tests/body-analysis.cjs tests/membership-policy.cjs tests/premium-backend.cjs tests/recommendation-engine.cjs tests/firebase-auth.cjs tests/localization-server.cjs tests/global-entitlements.cjs tests/global-schema.cjs tests/global-api.cjs tests/global-retailers.cjs tests/price-comparison.cjs tests/notifications.cjs tests/catalog-repository.cjs tests/promotion-simulation.cjs tests/consent-context.cjs tests/global-completion-api.cjs tests/ai-catalog.cjs tests/ai-usage.cjs tests/openai-stylist.cjs tests/ai-stylist.cjs tests/unified-migrations.cjs tests/unified-access.cjs tests/preview-isolation.cjs tests/member-write-entitlements.cjs
 ```
 
 브라우저 검증은 위의 정적 서버와 Playwright/Chromium이 설치된 환경에서 실행합니다.

@@ -238,7 +238,11 @@ test('preview creation atomically checks current Premium and consent, including 
   } finally { f.close(); }
   const legacy = await fixture({ legacyContext: true, planColumn: false });
   try {
-    await legacy.store.saveConsent('email', true);
+    // Historical proof may exist before plan migration; it is not permission
+    // to create a new Premium-only grant without a verified plan_code.
+    legacy.sql.prepare('INSERT INTO notification_consents(id,issuer,subject,channel,granted,policy_version,occurred_at) VALUES(?,?,?,?,?,?,?)')
+      .run('historical-email', owner.issuer, owner.subject, 'email', 1, 'legacy-proof', NOW - 100);
+    await assert.rejects(legacy.store.saveConsent('email', true), error => error.code === 'premium_required');
     await assert.rejects(legacy.store.savePreview('email', { mode: 'DEMO' }), error => error.code === 'premium_required');
     assert.equal(legacy.sql.prepare('SELECT COUNT(*) AS count FROM notification_deliveries').get().count, 0);
   } finally { legacy.close(); }

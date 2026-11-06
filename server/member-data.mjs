@@ -85,12 +85,31 @@ function missingPlanColumn(error) {
   return false;
 }
 
+// Bind the request's logical time but also use SQLite's execution clock: a
+// queued D1 write cannot reuse a grant that expired while it was awaiting I/O.
+// The condition is part of the same statement as the protected INSERT/UPDATE.
+function paidWritePermission(tier, includePlan = true) {
+  const current = "MAX(?, CAST(unixepoch('subsec') * 1000 AS INTEGER))";
+  return `EXISTS (SELECT 1 FROM memberships WHERE issuer = ? AND subject = ?
+    AND subscription_status = 'active'
+    AND typeof(paid_through) = 'integer' AND paid_through <= 8640000000000000
+    AND typeof(payment_verified_at) = 'integer' AND payment_verified_at > 0
+    AND paid_through > ${current} AND payment_verified_at <= ${current}
+    AND payment_verified_at < paid_through
+    ${includePlan ? tier === 'PREMIUM' ? "AND plan_code = 'PREMIUM'" : "AND plan_code IN ('GENERAL', 'PREMIUM')" : ''})`;
+}
+
 export class MemberStore {
   constructor(db, identity, now = Date.now()) {
     if (typeof db?.prepare !== 'function' || !identity?.issuer || !identity?.subject) throw new MemberDataError(503, 'setup_required');
     this.db = db; this.owner = [identity.issuer, identity.subject]; this.now = now;
   }
   statement(sql, ...values) { return this.db.prepare(sql).bind(...this.owner, ...values); }
+  async paidWriteAllowed(tier, includePlan = true) {
+    const row = await this.db.prepare(`SELECT ${paidWritePermission(tier, includePlan)} AS allowed`)
+      .bind(...this.owner, this.now, this.now).first();
+    return row?.allowed === 1;
+  }
   async rateLimit() {
     const window = Math.floor(this.now / 3600000) * 3600000;
     const result = await this.statement('INSERT INTO api_rate_limits (issuer, subject, window_start, request_count) VALUES (?, ?, ?, 1) ON CONFLICT(issuer, subject, window_start) DO UPDATE SET request_count = request_count + 1 RETURNING request_count', window).first();
@@ -104,9 +123,27 @@ export class MemberStore {
   async saveWatch(value) {
     // The limit and write share one SQLite statement. Updating an existing
     // item remains possible when the list already contains one hundred items.
-    const written = await this.statement('INSERT INTO product_watchlists (issuer, subject, id, product_id, target_price, currency, brand, category, created_at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM product_watchlists WHERE issuer = ? AND subject = ? AND product_id = ? AND currency = ?) OR (SELECT COUNT(*) FROM product_watchlists WHERE issuer = ? AND subject = ?) < 100 ON CONFLICT(issuer, subject, product_id, currency) DO UPDATE SET target_price = excluded.target_price, brand = excluded.brand, category = excluded.category RETURNING id',
-      id(), value.productId, value.targetPrice, value.currency, value.brand, value.category, this.now, ...this.owner, value.productId, value.currency, ...this.owner).first();
-    if (!written) throw new MemberDataError(409, 'watchlist_limit');
+    const tier = value.targetPrice === null ? 'GENERAL' : 'PREMIUM', watchId = id();
+    const write = includePlan => this.statement(`INSERT INTO product_watchlists (issuer, subject, id, product_id, target_price, currency, brand, category, created_at)
+      SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE
+      (EXISTS (SELECT 1 FROM product_watchlists WHERE issuer = ? AND subject = ? AND product_id = ? AND currency = ?)
+        OR (SELECT COUNT(*) FROM product_watchlists WHERE issuer = ? AND subject = ?) < 100)
+      AND ${paidWritePermission(tier, includePlan)}
+      ON CONFLICT(issuer, subject, product_id, currency) DO UPDATE SET target_price = excluded.target_price, brand = excluded.brand, category = excluded.category RETURNING id`,
+      watchId, value.productId, value.targetPrice, value.currency, value.brand, value.category, this.now,
+      ...this.owner, value.productId, value.currency, ...this.owner, ...this.owner, this.now, this.now).first();
+    let written, includePlan = true;
+    try { written = await write(true); }
+    catch (error) {
+      if (!missingPlanColumn(error)) throw error;
+      if (tier === 'PREMIUM') throw new MemberDataError(403, 'premium_required');
+      // Only valid legacy paid rows without plan_code retain General writes.
+      includePlan = false; written = await write(false);
+    }
+    if (!written) {
+      if (!await this.paidWriteAllowed(tier, includePlan)) throw new MemberDataError(403, tier === 'PREMIUM' ? 'premium_required' : 'subscription_required');
+      throw new MemberDataError(409, 'watchlist_limit');
+    }
     return this.watches();
   }
   async deleteWatch(watchId) {
@@ -148,7 +185,8 @@ export class MemberStore {
   async savePreferences(value) {
     const consent = await this.consents();
     if (value.phone && !consent.sms) throw new MemberDataError(400, 'consent_required');
-    const written = await this.db.prepare(`WITH permission AS (
+    let written;
+    try { written = await this.db.prepare(`WITH permission AS (
       SELECT COALESCE((SELECT granted FROM notification_consents WHERE issuer = ? AND subject = ? AND channel = 'email' ORDER BY occurred_at DESC, id DESC LIMIT 1), 0) AS email,
         COALESCE((SELECT granted FROM notification_consents WHERE issuer = ? AND subject = ? AND channel = 'sms' ORDER BY occurred_at DESC, id DESC LIMIT 1), 0) AS sms,
         (SELECT phone_e164 FROM notification_preferences WHERE issuer = ? AND subject = ?) AS saved_phone
@@ -156,12 +194,16 @@ export class MemberStore {
       SELECT ?, ?, ?, ?, ?, ?, CASE WHEN ? = 1 AND permission.email = 1 THEN 1 ELSE 0 END,
         CASE WHEN ? = 1 AND permission.sms = 1 THEN 1 ELSE 0 END,
         CASE WHEN permission.sms = 1 THEN CASE WHEN ? = 1 THEN ? ELSE permission.saved_phone END ELSE NULL END,
-        0, ?, ?, ? FROM permission WHERE ? = 0 OR permission.sms = 1
+        0, ?, ?, ? FROM permission WHERE (? = 0 OR permission.sms = 1) AND ${paidWritePermission('PREMIUM')}
       ON CONFLICT(issuer, subject) DO UPDATE SET country = excluded.country, time_zone = excluded.time_zone, language = excluded.language, frequency = excluded.frequency, email_enabled = excluded.email_enabled, sms_enabled = excluded.sms_enabled, phone_e164 = excluded.phone_e164, phone_verified = 0, brands_json = excluded.brands_json, categories_json = excluded.categories_json, updated_at = excluded.updated_at RETURNING issuer`)
       .bind(...this.owner, ...this.owner, ...this.owner, ...this.owner, value.country, value.timeZone, value.language, value.frequency,
         Number(value.emailEnabled), Number(value.smsEnabled), Number(own(value, 'phone')), value.phone ?? null,
-        JSON.stringify(value.brands), JSON.stringify(value.categories), this.now, Number(Boolean(value.phone))).first();
-    if (!written) throw new MemberDataError(400, 'consent_required');
+        JSON.stringify(value.brands), JSON.stringify(value.categories), this.now, Number(Boolean(value.phone)), ...this.owner, this.now, this.now).first(); }
+    catch (error) { if (missingPlanColumn(error)) throw new MemberDataError(403, 'premium_required'); throw error; }
+    if (!written) {
+      if (!await this.paidWriteAllowed('PREMIUM')) throw new MemberDataError(403, 'premium_required');
+      throw new MemberDataError(400, 'consent_required');
+    }
     return this.preferences();
   }
   async saveConsent(channel, granted, options = {}) {
@@ -185,7 +227,9 @@ export class MemberStore {
         values.push(...this.owner, options.language ?? null, ...this.owner, Number(acknowledged), options.language ?? null, ...this.owner,
           consentNotice(channel, 'en', granted), consentNotice(channel, 'ko', granted));
       }
-      const result = [this.db.prepare(`INSERT INTO notification_consents (${columns.join(', ')}) VALUES (${expressions.join(', ')})`).bind(...values)];
+      const grantCondition = granted ? ` WHERE ${paidWritePermission('PREMIUM')}` : '';
+      const result = [this.db.prepare(`INSERT INTO notification_consents (${columns.join(', ')}) SELECT ${expressions.join(', ')}${grantCondition}`)
+        .bind(...values, ...(granted ? [...this.owner, this.now, this.now] : []))];
       if (!granted) {
         const update = channel === 'email' ? 'email_enabled = 0' : 'sms_enabled = 0, phone_e164 = NULL, phone_verified = 0';
         result.push(this.db.prepare(`UPDATE notification_preferences SET ${update}, updated_at = ? WHERE issuer = ? AND subject = ?`).bind(this.now, ...this.owner));
@@ -193,13 +237,17 @@ export class MemberStore {
       }
       return result;
     };
-    try { await this.db.batch(statements(true)); }
-    catch (error) {
-      if (!missingContextColumn(error)) throw error;
-      // Legacy deployments still support opt-out. Never invent snapshots for
-      // old rows or fall back on unrelated storage/query failures.
-      await this.db.batch(statements(false));
-    }
+    try {
+      let results;
+      try { results = await this.db.batch(statements(true)); }
+      catch (error) {
+        if (!missingContextColumn(error)) throw error;
+        // Legacy deployments still support opt-out. Never invent snapshots for
+        // old rows or fall back on unrelated storage/query failures.
+        results = await this.db.batch(statements(false));
+      }
+      if (granted && results?.[0]?.meta?.changes !== 1) throw new MemberDataError(403, 'premium_required');
+    } catch (error) { if (granted && missingPlanColumn(error)) throw new MemberDataError(403, 'premium_required'); throw error; }
     return this.consents();
   }
   async history() {
@@ -217,7 +265,7 @@ export class MemberStore {
     if (!consent[channel]) throw new MemberDataError(403, 'consent_required');
     const event = 'DEMO-preview-' + new Date(this.now).toISOString().slice(0, 10);
     const dedupe = `preview:${channel}:${event}`;
-    const premium = "EXISTS (SELECT 1 FROM memberships WHERE issuer = ? AND subject = ? AND plan_code = 'PREMIUM' AND subscription_status = 'active' AND paid_through > ? AND payment_verified_at > 0 AND payment_verified_at <= ? AND payment_verified_at < paid_through)";
+    const premium = paidWritePermission('PREMIUM');
     try {
       await this.db.prepare(`INSERT INTO notification_deliveries (issuer, subject, id, channel, event_id, dedupe_key, status, created_at, payload_json) SELECT ?, ?, ?, ?, ?, ?, 'dry-run', ?, ? WHERE (SELECT granted FROM notification_consents WHERE issuer = ? AND subject = ? AND channel = ? ORDER BY occurred_at DESC, id DESC LIMIT 1) = 1 AND ${premium} ON CONFLICT(issuer, subject, channel, dedupe_key) DO NOTHING`)
         .bind(...this.owner, id(), channel, event, dedupe, this.now, JSON.stringify(template), ...this.owner, channel, ...this.owner, this.now, this.now).run();
