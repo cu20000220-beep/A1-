@@ -42,6 +42,8 @@ main을 대상으로 하는 이번 비교에는 최초 글로벌 확장과 후�
 
 외부 인증·상품·이메일·SMS는 로컬 테스트 대역만 사용했습니다. 운영 회원 생성·삭제, 실제 시험 결제·메일·문자·유료 API·Cron은 실행하지 않았습니다. 로컬 Chromium 크기 검사는 실제 iPad Safari 기기 검증과 구분합니다. 개발 환경에서 운영 Pages 주소·Cloudflare 대시보드의 최신 값은 직접 재조회하지 않았으며 운영 건강 상태를 새로 확인했다는 의미가 아닙니다.
 
+최종 재검증에서 기존 코드 `d488627`의 Node 143개, 브라우저 7종, workerd 3종, 빌드와 Functions 컴파일을 다시 실행했습니다. 추가 메모리 SQLite 검사에서는 실제 `0001 → 0002 → 0003` 전체 마이그레이션을 적용하고 기존 회원 2명의 기록 보존, GENERAL 유지, 자동 PREMIUM 승격 0건과 `integrity_check=ok`를 확인했습니다. 운영 DB에는 적용하지 않았습니다.
+
 ## 미완성 운영 연결과 알려진 제한
 
 현재 승인된 범위의 검증을 막는 재현 가능한 오류는 수정했습니다. 다음은 실제 운영 연결이 남은 부분입니다.
@@ -63,10 +65,14 @@ main을 대상으로 하는 이번 비교에는 최초 글로벌 확장과 후�
 | Build command / Output | `node scripts/build-site.cjs` / `dist` |
 | 기존 인증 | 현재 Firebase 프로젝트·이메일 인증·승인 도메인·Production의 FIREBASE_PROJECT_ID/FIREBASE_WEB_API_KEY 유지. 새 프로젝트/값 교체 없음 |
 | DB | 기존 `MEMBERSHIP_DB` 대상과 실제 스키마/적용 이력 확인. 자동 변경 없음 |
-| Preview | 운영 D1 재사용 금지. 승인된 격리 시험 DB가 없으면 바인딩 없이 잠금 상태만 확인하고 DB 테스트는 로컬로 수행 |
+| Preview | 운영 D1·운영 Firebase 재사용 금지. 승인된 격리 환경이 없으면 DB 바인딩과 인증 변수를 미설정으로 두고 잠금 화면·무료 분석만 확인. 전체 회원/DB 테스트는 로컬 대역으로 수행 |
 | 상품·자동화·메시지·청구 | `ENABLE_LIVE_CATALOG`, `GLOBAL_CATALOG_APPROVED` 꺼짐/미설정 유지. 실제 Cron·마케팅 이메일/SMS·결제 비활성 유지 |
 
 **main 병합이 운영 자동 배포를 시작할 수 있으므로 PR 생성과 병합 승인을 구분합니다.** 이번에는 PR/비교 준비만 하며 Merge pull request·운영 재배포를 실행하지 않습니다. 향후 배포도 대상 커밋·예상 영향·중단/복구 방법을 제시해 명시적 승인을 받습니다.
+
+Preview는 D1만 분리해도 충분한 것이 아닙니다. 운영 Firebase 변수를 Preview에 연결하면 실제 가입·인증 메일·재설정·탈퇴가 운영 프로젝트에 작용할 수 있으므로 두 인증 변수도 별도로 확인합니다. 이번 환경에는 Cloudflare 연결 권한이 없고 해당 호스트 접근이 허용되지 않아 원격 Preview 설정을 확인하거나 배포하지 않았습니다. GitHub 커밋 페이지에서도 실제 Preview 링크를 찾지 못했으며, 추측한 주소를 미리보기로 제공하지 않습니다.
+
+이 격리 확인 전의 최종 문서 커밋에는 Cloudflare 공식 Git 연동 지침의 `[CF-Pages-Skip]` 접두사를 사용해 자동 Pages 빌드를 건너뜁니다. 이 표시를 Preview 검증 성공으로 해석하지 않습니다. 요청된 PR의 제목은 `A1 FASHION Global Shopping & Premium Membership Release`, 원본은 `feature/global-shopping-completion`, 대상은 `main`입니다.
 
 DB는 배포와 별도 승인입니다. 대상 DB·현재 스키마·마이그레이션 이력·백업/복구 결과를 먼저 확인하고 필요한 SQL만 검토합니다. 기존 DB에는 미적용 0001→0002→0003을 한 번씩 검토하며, 완전히 빈 DB용 `server/schema.sql`과 ALTER 파일을 중복 적용하지 않습니다. 승인 전 백업 생성/SQL 적용/바인딩 변경도 임의로 실행하지 않습니다.
 
