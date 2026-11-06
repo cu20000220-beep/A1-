@@ -230,5 +230,6 @@ window.A1I18n.register({
   "확인한 상품이나 DEMO 상품의 관심 기록을 저장합니다. 검색 링크만으로 실제 가격을 자동 감시하지 않습니다. 목표 가격 설정은 PREMIUM 기능입니다.": "Save verified or DEMO products to your watchlist. Search links alone do not enable real price monitoring. Target prices require PREMIUM.",
   "A1 FASHION의 관심 상품 가격·프로모션 이메일 수신에 별도로 동의합니다. 선택 사항이며 회원가입·구독과 별개입니다. 언제든 무료로 철회할 수 있습니다. 현재는 실제 발송 없는 모의 운영입니다.": "I separately agree to A1 FASHION watchlist price and promotion emails. This is optional and separate from registration and subscription. I can withdraw consent at any time without a fee. This service currently runs simulations without sending real messages.",
   "A1 FASHION의 관심 상품 가격·프로모션 SMS 수신에 별도로 동의합니다. 선택 사항이며 회원가입·구독과 별개입니다. 언제든 무료로 철회할 수 있습니다. 현재는 실제 발송 없는 모의 운영입니다.": "I separately agree to A1 FASHION watchlist price and promotion SMS messages. This is optional and separate from registration and subscription. I can withdraw consent at any time without a fee. This service currently runs simulations without sending real messages.",
-  "동의 문구를 확인하지 못했습니다. 페이지를 새로 열어 확인해주세요.": "The consent notice could not be confirmed. Reopen the page and review it."
+  "동의 문구를 확인하지 못했습니다. 페이지를 새로 열어 확인해주세요.": "The consent notice could not be confirmed. Reopen the page and review it.",
+  "A1 AI 스타일리스트 ↗": "A1 AI Stylist ↗"
 });

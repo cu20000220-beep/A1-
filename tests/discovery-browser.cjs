@@ -18,7 +18,7 @@ const assert = require('node:assert/strict');
     });
     await page.goto(base);
     assert.equal(await page.locator('#membership .membership-plan').count(), 3);
-    assert.equal(await page.locator('header a[href="global.html"]').count(), 1);
+    assert.equal(await page.locator('[data-site-navigation] a[data-site-link="shopping"][href="global.html#shopping"]').count(), 1);
     assert.equal(await page.locator('#membership button:disabled').count(), 2);
     assert.match(await page.locator('.plan-price').innerText(), /무료/);
     assert.match(await page.locator('.plan-pending').first().innerText(), /월 구독료 준비 중/);

@@ -1,0 +1,7 @@
+/* The existing A1 wordmark and palette are retained across all service pages. */
+.site-navigation{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 25px;width:auto;height:auto;margin:0;padding:17px 5%;border-bottom:1px solid var(--line);background:var(--paper);font-size:10px;letter-spacing:.035em;line-height:1.7;order:initial}
+.site-navigation a{display:flex;align-items:center;justify-content:center;min-height:32px;max-width:100%;padding:4px 2px;text-align:center;overflow-wrap:anywhere;text-decoration:none}
+.site-navigation a[aria-current=page]{color:#526643;border-bottom:1px solid #7a8969}
+.site-navigation a:focus-visible{outline:2px solid #647951;outline-offset:4px}
+@media(max-width:700px){body>.a1-site-header{height:auto;min-height:78px;padding:14px 5%;gap:14px;flex-wrap:nowrap}.site-navigation{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 9px;padding:12px 5%;font-size:9px}.site-navigation a{min-height:38px;line-height:1.6}.site-navigation a:last-child{grid-column:2}}
+@media(min-width:701px) and (max-width:1000px){.site-navigation{gap:8px 18px;font-size:9px}}

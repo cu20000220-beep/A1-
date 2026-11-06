@@ -250,9 +250,9 @@ test('a promotion ending during an async read cannot leave an out-of-budget sale
   }finally{f.close();}
 });
 
-test('this review branch excludes deferred GPT files and public packaging cannot expose server/catalog data',()=>{
-  for(const relative of ['stylist.html','functions/api/stylist.js','server/ai-stylist.mjs','assets/stylist.js'])assert.equal(existsSync(resolve(__dirname,'..',relative)),false,relative);
+test('unified release includes AI behind the server boundary and public packaging cannot expose server/catalog data',()=>{
+  for(const relative of ['stylist.html','functions/api/stylist.js','server/ai-stylist.mjs','assets/stylist.js'])assert.equal(existsSync(resolve(__dirname,'..',relative)),true,relative);
   const builder=readFileSync(resolve(__dirname,'../scripts/build-site.cjs'),'utf8');
   assert.doesNotMatch(builder,/['"](?:server|functions|workers)(?:\/|['"])/);
-  assert.doesNotMatch(readFileSync(resolve(__dirname,'../global.html'),'utf8'),/stylist\.html|api\.openai\.com/);
+  for(const relative of ['global.html','stylist.html','assets/stylist.js'])assert.doesNotMatch(readFileSync(resolve(__dirname,'..',relative),'utf8'),/api\.openai\.com|OPENAI_API_KEY/);
 });
