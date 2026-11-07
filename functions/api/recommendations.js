@@ -14,6 +14,12 @@ export async function onRequest({ request, env }) {
     // A previous membership check is not an authorization grant for this call.
     await authorizePremium(request, env);
     const input = await readRecommendationRequest(request);
+    // Reading a streamed body may outlive the original paid grant. Query the
+    // current subscription again, then check the actual completion time too.
+    const access = await authorizePremium(request, env);
+    if (!Number.isSafeInteger(access.accessUntil) || access.accessUntil <= Date.now()) {
+      throw new AccessError(403, 'subscription_required');
+    }
     const language = requestLanguage(request);
     return jsonResponse(recommendForMember(input, { language }), 200, {
       'Content-Language': language,

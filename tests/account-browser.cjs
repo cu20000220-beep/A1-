@@ -361,7 +361,8 @@ async function noCredentialStorage(page) {
     await responseFor(home, '/api/recommendations', () => home.locator('#premium-recommend').click(), 200);
     await home.waitForFunction(() => document.querySelectorAll('#ai-cards article').length > 0);
     assert.equal(await home.locator('#ai-shopping-queries a').count(), 6);
-    assert.equal(databaseReads, 3);
+    // Recommendation authorization runs before and after reading the body.
+    assert.equal(databaseReads, 4);
 
     await responseFor(page, '/api/auth/logout', () => page.locator('#auth-logout').click(), 200);
     await page.waitForFunction(() => document.querySelector('#auth-member').hidden);
@@ -394,7 +395,7 @@ async function noCredentialStorage(page) {
     assert.equal(deleted, true);
     assert.equal((await context.cookies()).filter(cookie => cookie.name === '__Host-a1-session').length, 0);
     assert.equal(await page.locator('#auth-delete-password').inputValue(), '');
-    assert.equal(databaseReads, 3, 'Account lifecycle does not create or update paid access');
+    assert.equal(databaseReads, 4, 'Account lifecycle does not create or update paid access');
     await noCredentialStorage(page);
     await page.locator('#auth-tab-signup').click();
     await page.screenshot({ path: '/tmp/a1-account-signup-mobile.png', fullPage: true });

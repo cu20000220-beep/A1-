@@ -32,5 +32,7 @@ window.A1I18n.register({
   '{count}개 예시 스타일': '{count} example styles',
   '현재 자료는 실제 판매 상품이 아닌 참고용 예시입니다. 실시간 상품 목록 연동은 준비 중입니다.': 'These are illustrative examples, not actual products for sale. Live product feeds are not connected yet.',
   '외부몰에는 의류 검색어만 전달하며 A1에서 고른 예산 제한은 판매처에서 직접 설정해야 합니다.': 'Only clothing search terms are sent to retailers. Set your price limit on the retailer’s website.',
-  '찜 목록을 갱신했습니다.': 'Favorites updated.', '이번 방문에서만 찜을 보관합니다.': 'Favorites are saved for this visit only.'
+  '내 계정의 예시 스타일 찜 목록을 갱신했습니다.': 'Your account’s saved example styles were updated.',
+  '로그인·구독 권한을 다시 확인해주세요. 찜을 변경하지 못했습니다.': 'Check your sign-in and subscription again. Your saved styles were not changed.',
+  '찜 목록을 확인하거나 저장하지 못했습니다. 잠시 후 다시 시도해주세요.': 'We could not check or save your favorites. Please try again shortly.'
 });

@@ -10,6 +10,7 @@ const MESSAGES = Object.freeze({
   setup_required: '회원 인증과 결제 확인 연결을 준비 중입니다. 사진 분석은 무료로 이용할 수 있습니다.',
   authentication_required: '구독 회원 인증이 필요합니다.',
   subscription_required: '결제가 확인된 이용 기간에만 의류 추천과 쇼핑몰 연결을 이용할 수 있습니다.',
+  premium_required: '프리미엄 구독에서만 가격 비교와 알림 기능을 이용할 수 있습니다.',
   invalid_request: '요청 형식을 확인해주세요. 사진은 서버로 전송하지 않습니다.',
   request_too_large: '요청이 허용된 크기를 초과했습니다.',
   method_not_allowed: '지원하지 않는 요청 방식입니다.',
@@ -65,8 +66,7 @@ function configuration(env) {
   const jwks = secureUrl(env?.AUTH_JWKS_URL);
   if (!issuer || issuer.search || !jwks || jwks.origin !== issuer.origin
     || typeof env?.AUTH_AUDIENCE !== 'string' || !env.AUTH_AUDIENCE.trim()
-    || env.AUTH_AUDIENCE.length > 512 || env.AUTH_AUDIENCE !== env.AUTH_AUDIENCE.trim()
-    || typeof env?.MEMBERSHIP_DB?.prepare !== 'function') {
+    || env.AUTH_AUDIENCE.length > 512 || env.AUTH_AUDIENCE !== env.AUTH_AUDIENCE.trim()) {
     throw new AccessError(503, 'setup_required');
   }
   return { issuer: env.AUTH_ISSUER, audience: env.AUTH_AUDIENCE, jwksUrl: jwks.href };
@@ -128,38 +128,61 @@ async function authenticate(request, config, now, fetchImpl) {
   }
 }
 
-/** Re-run for every protected request; no earlier browser decision grants access. */
-export async function authorizePremium(request, env, { now = Date.now(), fetchImpl = globalThis.fetch } = {}) {
-  if (!Number.isSafeInteger(now) || now < 0 || typeof fetchImpl !== 'function') {
-    throw new AccessError(503, 'setup_required');
-  }
-  let identity;
+/** Authentication alone does not need a paid membership row or a D1 binding. */
+export async function authenticateMember(request, env, { now = Date.now(), fetchImpl = globalThis.fetch } = {}) {
+  if (!Number.isSafeInteger(now) || now < 0 || typeof fetchImpl !== 'function') throw new AccessError(503, 'setup_required');
   if (isFirebaseAuthSelected(env)) {
-    try { identity = await authenticateFirebaseSession(request, env, { now, fetchImpl }); }
+    try { return await authenticateFirebaseSession(request, env, { now, fetchImpl }); }
     catch (error) {
       if (error instanceof FirebaseAuthError) throw new AccessError(error.status, error.code === 'email_verification_required' ? 'authentication_required' : error.code);
       throw error;
     }
-    if (typeof env?.MEMBERSHIP_DB?.prepare !== 'function') throw new AccessError(503, 'setup_required');
-  } else {
-    const config = configuration(env);
-    identity = await authenticate(request, config, now, fetchImpl);
   }
+  return authenticate(request, configuration(env), now, fetchImpl);
+}
+
+function missingPlanColumn(error) {
+  // D1 wraps SQLite errors in cause. Only this known old-schema condition may
+  // use the legacy query; transport/query/permission failures always fail closed.
+  for (let current = error, depth = 0; current && depth < 4; current = current.cause, depth++) {
+    if (typeof current.message === 'string' && /no such column:\s*(?:memberships\.)?plan_code\b/i.test(current.message)) return true;
+  }
+  return false;
+}
+
+export async function authorizeMember(request, env, { requiredTier = 'GENERAL', now = Date.now(), fetchImpl = globalThis.fetch } = {}) {
+  if (!['FREE', 'GENERAL', 'PREMIUM'].includes(requiredTier)) throw new AccessError(400, 'invalid_request');
+  if (requiredTier !== 'FREE' && typeof env?.MEMBERSHIP_DB?.prepare !== 'function') throw new AccessError(503, 'setup_required');
+  const identity = await authenticateMember(request, env, { now, fetchImpl });
+  if (requiredTier === 'FREE') return { allowed: true, accessUntil: null, plan: 'FREE', identity };
   let row;
   try {
-    row = await env.MEMBERSHIP_DB.prepare(
-      'SELECT issuer, subject, subscription_status, paid_through, payment_verified_at FROM memberships WHERE issuer = ? AND subject = ? LIMIT 1'
-    ).bind(identity.issuer, identity.subject).first();
+    try {
+      row = await env.MEMBERSHIP_DB.prepare(
+        'SELECT issuer, subject, subscription_status, paid_through, payment_verified_at, plan_code FROM memberships WHERE issuer = ? AND subject = ? LIMIT 1'
+      ).bind(identity.issuer, identity.subject).first();
+    } catch (error) {
+      if (!missingPlanColumn(error)) throw error;
+      row = await env.MEMBERSHIP_DB.prepare(
+        'SELECT issuer, subject, subscription_status, paid_through, payment_verified_at FROM memberships WHERE issuer = ? AND subject = ? LIMIT 1'
+      ).bind(identity.issuer, identity.subject).first();
+    }
   } catch { throw new AccessError(503, 'setup_required'); }
-  if (!row || row.issuer !== identity.issuer || row.subject !== identity.subject) {
-    throw new AccessError(403, 'subscription_required');
-  }
-  const decision = evaluateAccess({
+  if (!row || row.issuer !== identity.issuer || row.subject !== identity.subject) throw new AccessError(403, 'subscription_required');
+  const stored = {
     issuer: row.issuer, subject: row.subject, subscriptionStatus: row.subscription_status,
-    paidThrough: row.paid_through, paymentVerifiedAt: row.payment_verified_at
-  }, now);
-  if (!decision.allowed) throw new AccessError(403, 'subscription_required');
-  return { allowed: true, accessUntil: decision.accessUntil };
+    paidThrough: row.paid_through, paymentVerifiedAt: row.payment_verified_at,
+    ...(Object.hasOwn(row, 'plan_code') ? { planCode: row.plan_code } : {})
+  };
+  const decision = evaluateAccess(stored, now, requiredTier);
+  if (!decision.allowed) throw new AccessError(403, decision.reason === 'higher-plan-required' ? 'premium_required' : 'subscription_required');
+  return { allowed: true, accessUntil: decision.accessUntil, plan: decision.plan, identity };
+}
+
+/** Recheck trusted identity + paid DB state for every protected request. */
+export async function authorizePremium(request, env, options = {}) {
+  const { identity, ...access } = await authorizeMember(request, env, options);
+  return access;
 }
 
 export function assertSameOrigin(request) {

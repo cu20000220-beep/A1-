@@ -114,6 +114,7 @@
   }
   function errorMessage(data) {
     const messages = {
+      "preview_isolated": "이 미리보기는 회원·구독·외부 서비스에 연결하지 않습니다. 화면과 무료 기기 내 사진 분석을 확인할 수 있습니다.",
       "setup_required": "회원 연결 설정을 확인해야 합니다. 관리자에게 알려주세요. [AUTH-CONFIG]",
       "provider_key_invalid": "회원 인증 연결값을 확인해야 합니다. 관리자에게 알려주세요. [AUTH-KEY]",
       "provider_access_denied": "회원 인증 서비스의 연결 권한을 확인해야 합니다. 관리자에게 알려주세요. [AUTH-ACCESS]",
@@ -175,7 +176,7 @@
       if (!config.response.ok || config.data.configured !== true) {
         showGuest();
         text('#auth-config-status', config.response.ok ? '회원 연결 설정을 확인해야 합니다. 무료 사진 분석은 계속 이용할 수 있습니다. [AUTH-CONFIG]' : errorMessage(config.data));
-        $('#auth-retry').hidden = false;
+        $('#auth-retry').hidden = config.data.error === 'preview_isolated';
         return;
       }
       configured = true;

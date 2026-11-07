@@ -13,6 +13,7 @@ window.A1I18n.register({
   "다시 만나 반가워요.": "Welcome back.",
   "이메일로 로그인하고 나의 계정을 확인하세요.": "Sign in with email to access your account.",
   "회원 서비스 연결을 확인하고 있습니다.": "Checking the account service connection.",
+  "이 미리보기는 회원·구독·외부 서비스에 연결하지 않습니다. 화면과 무료 기기 내 사진 분석을 확인할 수 있습니다.": "This preview does not connect member, subscription or external services. You can check the pages and free on-device photo analysis.",
   "연결 상태 다시 확인 ↗": "Check connection again ↗",
   "계정 메뉴": "Account menu",
   "로그인": "Sign in",
@@ -91,5 +92,8 @@ window.A1I18n.register({
   "지원하지 않는 요청 방식입니다.": "This request method is not supported.",
   "비밀번호가 가입 조건에 맞지 않습니다. 더 긴 비밀번호에 영문·숫자·기호를 조합해 다시 시도해주세요.": "Your password does not meet the signup requirements. Try a longer password with letters, numbers and symbols.",
   "요청이 많습니다. 잠시 후 다시 시도해주세요. [AUTH-LIMIT]": "There have been too many requests. Please try again shortly. [AUTH-LIMIT]",
-  "요청이 많아 잠시 기다려야 합니다. 잠시 후 다시 시도해주세요.": "There have been too many requests. Please wait a moment and try again."
+  "요청이 많아 잠시 기다려야 합니다. 잠시 후 다시 시도해주세요.": "There have been too many requests. Please wait a moment and try again.",
+  "내 멤버십·알림·관심 상품 ↗": "My membership, alerts and watchlist ↗",
+  "알림 동의·연락처 관리 ↗": "Manage alert consent and contact details ↗",
+  "A1 AI 스타일리스트 ↗": "A1 AI Stylist ↗"
 });

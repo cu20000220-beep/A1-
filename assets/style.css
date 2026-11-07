@@ -27,3 +27,7 @@
 @media(max-width:1000px){.header-actions{gap:12px}.header-actions>.text-button{font-size:11px}.language-control select{width:92px}}
 @media(max-width:600px){.header-actions{order:2;gap:8px}.header-actions>.text-button{font-size:10px;line-height:1.5;max-width:110px}.language-control select{font-size:11px;width:85px;min-height:34px;padding:6px}.hero .dark-link{max-width:100%;gap:20px}.hero .dark-link>span{flex-shrink:0}html[lang=en] .premium-lock h3{font-size:21px}html[lang=en] .hero-desc{font-size:12px}}
 @media(max-width:380px){body:not(.account-page)>header{height:auto;min-height:98px}.header-actions{flex-direction:column-reverse;align-items:flex-end;gap:2px}.header-actions>.text-button{padding:4px 0;max-width:none;font-size:9px}body:not(.account-page)>header>nav{margin-top:5px}}
+/* Global plan comparison preserves the existing responsive card design. */
+.membership-plans-global{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(min-width:601px) and (max-width:1000px){.membership-plans-global{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.membership-plans-global{grid-template-columns:1fr}}
