@@ -7,7 +7,8 @@ import { listGlobalRetailers } from './global-retailers.mjs';
 import { compareStoredProduct } from './global-comparison.mjs';
 import { getOpenAIStylistConfiguration, callOpenAIStylist, OpenAIStylistError } from './openai-stylist.mjs';
 import { readAiUsageLimits, reserveAiUsage, finishAiUsage, AiUsageError } from './ai-usage.mjs';
-import { STYLE_ADVICE, stylistPlanSchema, validateStylistPlan, demoStylistPlan, renderStylistGuidance } from './stylist-knowledge.mjs';
+import { STYLE_ADVICE, stylistPlanSchema, validateStylistPlan, renderStylistGuidance } from './stylist-knowledge.mjs';
+import { A1_ENGINE_METADATA, createA1StylePlan, renderA1Reasons } from './a1-style-engine.mjs';
 
 if(typeof window!=='undefined'||typeof document!=='undefined')throw new Error('AI stylist is server-only.');
 export class StylistError extends Error { constructor(status,code){super(code);this.status=status;this.code=code;} }
@@ -100,9 +101,12 @@ export async function handleStylistRequest({request,env},options={}){
   const currentTime=()=>{const value=clock();if(!Number.isSafeInteger(value)||value<now||value>253402300799999)throw new StylistError(503,'ai_unavailable');return value;};
   try{
     if(new URL(request.url).search)throw new StylistError(400,'invalid_request');
-    const config=getOpenAIStylistConfiguration(env);
+    // The owned engine is the default. Legacy external mode needs a separate
+    // server-side selection as well as every existing approval/budget guard.
+    const config=env?.A1_STYLIST_ENGINE==='openai'?getOpenAIStylistConfiguration(env):{liveRequested:false,ready:false,model:null};
     const liveReady=config.ready&&readAiUsageLimits(env).configured&&typeof env?.MEMBERSHIP_DB?.prepare==='function';
-    if(request.method==='GET')return jsonResponse({mode:config.liveRequested?(liveReady?'LIVE':'UNAVAILABLE'):'DEMO',liveEnabled:liveReady,photoUploads:false,available:!config.liveRequested||liveReady,plans:{style:'GENERAL',compare:'PREMIUM',discount:'PREMIUM'}},200,{'Content-Language':language});
+    const engine=()=>config.liveRequested?{id:'openai',externalAI:true}:A1_ENGINE_METADATA;
+    if(request.method==='GET')return jsonResponse({mode:config.liveRequested?(liveReady?'LIVE':'UNAVAILABLE'):'DEMO',engine:engine(),liveEnabled:liveReady,photoUploads:false,available:!config.liveRequested||liveReady,plans:{style:'GENERAL',compare:'PREMIUM',discount:'PREMIUM'}},200,{'Content-Language':language});
     if(request.method!=='POST')return jsonResponse({ok:false,error:'method_not_allowed'},405,{Allow:'GET, POST'});
     const input=await readInput(request);language=input.language;
     const requiredTier=input.intent==='style'?'GENERAL':'PREMIUM';
@@ -123,7 +127,7 @@ export async function handleStylistRequest({request,env},options={}){
     if(live&&!input.consents.externalAI)throw new StylistError(409,'external_ai_consent_required');
     const catalogOptions={...input.preferences,limit:8,allowLiveCatalog:env.ENABLE_LIVE_CATALOG==='true'&&env.GLOBAL_CATALOG_APPROVED==='true'&&env.A1_AI_CATALOG_APPROVED==='true'};
     let catalog=await loadVerifiedCatalog(env.MEMBERSHIP_DB,{...catalogOptions,now:currentTime(),clock:currentTime});
-    let plan,usage=null;
+    let plan,usage=null,ownResult;
     if(live){
       const body=providerBody(input,catalog,config,requiredTier==='PREMIUM'),serialized=JSON.stringify(body);
       if(new TextEncoder().encode(serialized).byteLength>MAX_PROMPT)throw new StylistError(413,'request_too_large');
@@ -141,10 +145,14 @@ export async function handleStylistRequest({request,env},options={}){
       try{plan=validateStylistPlan(result.plan,catalog.products.map(row=>row.id));}catch{throw new StylistError(502,'provider_invalid_response');}
       await finishAiUsage(env.MEMBERSHIP_DB,reservation,{state:'succeeded',...result.usage,now:currentTime()});
       usage={reservedMicroUsd:reservation.reservedMicroUsd};reservation=null;
-    }else plan=validateStylistPlan(demoStylistPlan(input,catalog.products),catalog.products.map(row=>row.id));
+    }else{
+      ownResult=createA1StylePlan(input,catalog.products,{now:currentTime()});
+      plan=validateStylistPlan(ownResult.plan,catalog.products.map(row=>row.id));
+    }
     // Price, stock, promotion and retention can change while the model is
     // responding. The shared repository also rechecks its clock after SQL.
     catalog=await loadVerifiedCatalog(env.MEMBERSHIP_DB,{...catalogOptions,now:currentTime(),clock:currentTime});
+    if(!live){ownResult=createA1StylePlan(input,catalog.products,{now:currentTime()});plan=ownResult.plan;}
     try{plan=validateStylistPlan(plan,catalog.products.map(row=>row.id));}catch{throw new StylistError(502,'provider_invalid_response');}
     const selected=selectVerifiedProducts(catalog,plan.productIds);
     let comparison=null,discounts=[];
@@ -168,11 +176,11 @@ export async function handleStylistRequest({request,env},options={}){
     const directory=listGlobalRetailers({country:market,destination:input.preferences.destination,currency:input.preferences.currency,gender:input.preferences.gender,style:input.preferences.style,category:input.preferences.category,maxPrice:input.preferences.budget},{language});
     if(input.intent==='discount')discounts=verifiedDiscounts({...catalog,products:selected});
     const en=language==='en';
-    const notices=[live?(en?'Product and price information comes from verified sources.':'상품·가격 정보는 확인된 자료를 바탕으로 안내합니다.'):(en?'DEMO: rule-based preview. GPT was not called and no API cost was incurred.':'DEMO: 규칙 기반 미리보기입니다. GPT를 호출하거나 API 비용을 발생시키지 않았습니다.'),
+    const notices=[live?(en?'Product and price information comes from verified sources.':'상품·가격 정보는 확인된 자료를 바탕으로 안내합니다.'):(en?'A1 prototype: a question classifier trained on synthetic development examples with rule-based scoring. Real-user performance is unverified. No external AI call was made.':'A1 시험 버전: 개발용 합성 예제로 학습한 질문 분류와 규칙·점수 기반 추천입니다. 실사용 성능은 미검증이며 외부 AI를 호출하지 않았습니다.'),
       en?'Retailer links are searches, not imported product results. Check availability and shipping with the retailer.':'판매처 연결은 검색 링크입니다. 상품 연동 결과가 아니며 배송·재고는 판매처에서 확인하세요.',
       ...(catalog.status!=='ready'?[en?'No verified product feed is available for these filters. Products, prices and discounts have not been invented.':'선택한 조건의 검증된 상품 피드가 없습니다. 상품·가격·할인 정보를 생성하지 않았습니다.']:[])];
-    return jsonResponse({mode:live?'LIVE':'DEMO',accessUntil:currentAccess.accessUntil,...guidance,products:selected.map(row=>publicProduct(row,{premium:requiredTier==='PREMIUM'})),
-      searchLinks:directory.retailers.map(row=>({store:row.name,label:row.name,url:row.searchUrl})),comparison,discounts,dataStatus:catalog.status,usage,notices},200,
+    return jsonResponse({mode:live?'LIVE':'DEMO',engine:engine(),...(!live?renderA1Reasons(ownResult,language):{}),accessUntil:currentAccess.accessUntil,...guidance,products:selected.map(row=>publicProduct(row,{premium:requiredTier==='PREMIUM'})),
+      searchLinks:plan.scope==='fashion'?directory.retailers.map(row=>({store:row.name,label:row.name,url:row.searchUrl})):[],comparison,discounts,dataStatus:catalog.status,usage,notices},200,
       {'Content-Language':language,Vary:'Authorization, Cookie, Accept-Language'});
   }catch(error){
     if(reservation)try{await finishAiUsage(env.MEMBERSHIP_DB,reservation,{state:providerAttempted?'uncertain':'failed',now:clock()});}catch{/* Never retry a potentially billed provider request. */}

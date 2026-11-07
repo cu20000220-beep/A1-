@@ -1,0 +1,36 @@
+{"id":"eval-outfit-ko-01","language":"ko","label":"outfit","text":"매일 입을 캐주얼 코디 조합이 필요해요","source":"synthetic-development"}
+{"id":"eval-outfit-ko-02","language":"ko","label":"outfit","text":"단순한 데일리룩 옷 조합을 알려주세요","source":"synthetic-development"}
+{"id":"eval-outfit-en-01","language":"en","label":"outfit","text":"Put together a simple casual outfit for me","source":"synthetic-development"}
+{"id":"eval-outfit-en-02","language":"en","label":"outfit","text":"Suggest an everyday clothing combination","source":"synthetic-development"}
+{"id":"eval-fit-ko-01","language":"ko","label":"fit","text":"바지의 실제 치수표와 기장을 확인하고 싶어요","source":"synthetic-development"}
+{"id":"eval-fit-ko-02","language":"ko","label":"fit","text":"편안한 셔츠 핏을 어떻게 비교하나요","source":"synthetic-development"}
+{"id":"eval-fit-en-01","language":"en","label":"fit","text":"Help me compare garment measurements and fit","source":"synthetic-development"}
+{"id":"eval-fit-en-02","language":"en","label":"fit","text":"How do I choose a comfortable shirt size","source":"synthetic-development"}
+{"id":"eval-color-ko-01","language":"ko","label":"color","text":"차분한 컬러로 상하의 색을 맞추고 싶어요","source":"synthetic-development"}
+{"id":"eval-color-ko-02","language":"ko","label":"color","text":"네이비와 아이보리를 옷에 조합해도 될까요","source":"synthetic-development"}
+{"id":"eval-color-en-01","language":"en","label":"color","text":"Suggest colors for a calm outfit palette","source":"synthetic-development"}
+{"id":"eval-color-en-02","language":"en","label":"color","text":"How can I combine navy and ivory clothes","source":"synthetic-development"}
+{"id":"eval-occasion-ko-01","language":"ko","label":"occasion","text":"회사 면접에 어떤 복장을 입어야 할까요","source":"synthetic-development"}
+{"id":"eval-occasion-ko-02","language":"ko","label":"occasion","text":"결혼식에 참석할 의상이 필요해요","source":"synthetic-development"}
+{"id":"eval-occasion-en-01","language":"en","label":"occasion","text":"What clothes would work for an interview","source":"synthetic-development"}
+{"id":"eval-occasion-en-02","language":"en","label":"occasion","text":"I need a suitable outfit for a wedding occasion","source":"synthetic-development"}
+{"id":"eval-budget-ko-01","language":"ko","label":"budget","text":"의류 쇼핑 지출을 예산 안으로 줄이고 싶어요","source":"synthetic-development"}
+{"id":"eval-budget-ko-02","language":"ko","label":"budget","text":"기본 옷을 사기 전에 상품당 예산을 정하고 싶어요","source":"synthetic-development"}
+{"id":"eval-budget-en-01","language":"en","label":"budget","text":"Help me reduce clothing shopping costs","source":"synthetic-development"}
+{"id":"eval-budget-en-02","language":"en","label":"budget","text":"Plan my per item wardrobe spending budget","source":"synthetic-development"}
+{"id":"eval-care-ko-01","language":"ko","label":"care","text":"옷 세탁과 건조 안내 라벨을 확인하려고 해요","source":"synthetic-development"}
+{"id":"eval-care-ko-02","language":"ko","label":"care","text":"니트 관리 표시를 읽어주세요","source":"synthetic-development"}
+{"id":"eval-care-en-01","language":"en","label":"care","text":"Where should I check garment washing and drying instructions","source":"synthetic-development"}
+{"id":"eval-care-en-02","language":"en","label":"care","text":"Explain the care instructions on clothing labels","source":"synthetic-development"}
+{"id":"eval-compare-ko-01","language":"ko","label":"compare","text":"똑같은 의류의 판매처별 총구매가를 비교해주세요","source":"synthetic-development"}
+{"id":"eval-compare-ko-02","language":"ko","label":"compare","text":"같은 셔츠의 배송비 포함 가격 비교가 필요해요","source":"synthetic-development"}
+{"id":"eval-compare-en-01","language":"en","label":"compare","text":"Compare total costs for the identical garment at different sellers","source":"synthetic-development"}
+{"id":"eval-compare-en-02","language":"en","label":"compare","text":"Compare prices including shipping for the same shirt","source":"synthetic-development"}
+{"id":"eval-discount-ko-01","language":"ko","label":"discount","text":"현재 진행하는 옷 할인 행사 기간을 보고 싶어요","source":"synthetic-development"}
+{"id":"eval-discount-ko-02","language":"ko","label":"discount","text":"의류 프로모션 가격이 아직 유효한가요","source":"synthetic-development"}
+{"id":"eval-discount-en-01","language":"en","label":"discount","text":"Check whether a clothing promotion price is still valid","source":"synthetic-development"}
+{"id":"eval-discount-en-02","language":"en","label":"discount","text":"When does the discount period for this garment end","source":"synthetic-development"}
+{"id":"eval-out_of_scope-ko-01","language":"ko","label":"out_of_scope","text":"자동차 엔진 수리 방법이 궁금해요","source":"synthetic-development"}
+{"id":"eval-out_of_scope-ko-02","language":"ko","label":"out_of_scope","text":"은행 계좌의 금리를 비교해주세요","source":"synthetic-development"}
+{"id":"eval-out_of_scope-en-01","language":"en","label":"out_of_scope","text":"How can I repair a car engine","source":"synthetic-development"}
+{"id":"eval-out_of_scope-en-02","language":"en","label":"out_of_scope","text":"Compare interest rates for a savings account","source":"synthetic-development"}

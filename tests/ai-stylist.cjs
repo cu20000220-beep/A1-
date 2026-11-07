@@ -53,7 +53,7 @@ function fixture(){
     sql.prepare('INSERT OR REPLACE INTO memberships(issuer,subject,subscription_status,plan_code,paid_through,payment_verified_at) VALUES(?,?,?,?,?,?)').run(ISSUER,subject,status,tier,expires,NOW-10000);
     sql.exec('PRAGMA ignore_check_constraints=OFF');
   }
-  function approved(extra={}){Object.assign(env,{A1_AI_MODE:'live',A1_AI_LIVE_APPROVED:'true',A1_AI_MODEL:'gpt-4.1-mini-2025-04-14',OPENAI_API_KEY:KEY,
+  function approved(extra={}){Object.assign(env,{A1_STYLIST_ENGINE:'openai',A1_AI_MODE:'live',A1_AI_LIVE_APPROVED:'true',A1_AI_MODEL:'gpt-4.1-mini-2025-04-14',OPENAI_API_KEY:KEY,
     A1_AI_DAILY_USER_LIMIT:'20',A1_AI_DAILY_BUDGET_MICRO_USD:'1000000',A1_AI_MONTHLY_BUDGET_MICRO_USD:'30000000',
     A1_AI_INPUT_MICRO_USD_PER_MILLION_TOKENS:'400000',A1_AI_OUTPUT_MICRO_USD_PER_MILLION_TOKENS:'1600000',...extra});}
   function retailer(){sql.prepare(`INSERT INTO retailers(id,name,country,integration_status,provider_kind,source_url,terms_url,image_rights_note,retention_seconds,minimum_refresh_seconds,updated_at)
@@ -124,7 +124,9 @@ test('photo ratios require separate consent and never include original images, e
     const metrics={shoulderHipRatio:1.1,legTorsoRatio:1.6};
     const denied=await f.call(payload({metrics}));assert.equal(denied.status,400);assert.equal(denied.value.error,'analysis_consent_required');
     const allowed=await f.call(payload({metrics,consents:{externalAI:false,analysis:true}}));assert.equal(allowed.status,200);assert.equal(allowed.value.mode,'DEMO');
-    assert.ok(allowed.value.advice.some(row=>row.id==='fit_length'));
+    assert.ok(allowed.value.advice.length>0);
+    assert.ok(allowed.value.reasonDetails.some(row=>row.id==='consented_reference_ratios'));
+    assert.doesNotMatch(JSON.stringify(allowed.value),/shoulderHipRatio|legTorsoRatio|image_url|input_image/);
     assert.equal((await f.call(payload({metrics:{...metrics,weight:60},consents:{externalAI:false,analysis:true}}))).status,400);
     f.approved();const live=await f.call(payload({metrics,consents:{externalAI:true,analysis:true}}));assert.equal(live.status,200);
     const provider=JSON.stringify(f.providerCalls[0].body);assert.match(provider,/consentedPhotoRatios/);assert.doesNotMatch(provider,/member-A|ai-members|Bearer|privatePhoto|email|image_url|input_image/);
@@ -134,7 +136,7 @@ test('photo ratios require separate consent and never include original images, e
 test('keys, approval flags, requested live mode and positive budgets all remain independently necessary; consent precedes transmission',async()=>{
   for(const partial of [{OPENAI_API_KEY:KEY},{OPENAI_API_KEY:KEY,A1_AI_LIVE_APPROVED:'true'},
     {A1_AI_MODE:'live',OPENAI_API_KEY:KEY},{A1_AI_MODE:'live',OPENAI_API_KEY:KEY,A1_AI_LIVE_APPROVED:'true'}]){
-    const f=fixture();f.member();try{Object.assign(f.env,partial);const r=await f.call(consent());assert.equal(r.status,partial.A1_AI_MODE==='live'?503:200);assert.equal(f.providerCalls.length,0);}finally{f.close();}
+    const f=fixture();f.member();try{Object.assign(f.env,{A1_STYLIST_ENGINE:'openai'},partial);const r=await f.call(consent());assert.equal(r.status,partial.A1_AI_MODE==='live'?503:200);assert.equal(f.providerCalls.length,0);}finally{f.close();}
   }
   const f=fixture();f.member();try{
     f.approved({A1_AI_DAILY_BUDGET_MICRO_USD:'0'});assert.equal((await f.call(consent())).status,503);assert.equal(f.providerCalls.length,0);
@@ -345,4 +347,33 @@ test('cancellation or nonpayment during an asynchronous cost reservation prevent
       const row=f.sql.prepare('SELECT state,reserved_micro_usd AS cost FROM ai_usage_reservations').get();assert.equal(row.state,'failed');assert.ok(row.cost>0);
     }finally{f.close();}
   }
+});
+
+test('the owned trained-seed engine is the default even when legacy provider flags exist, with no budget reservation or external call',async()=>{
+  const f=fixture();f.member();f.approved();delete f.env.A1_STYLIST_ENGINE;
+  try{
+    const config=await f.call(undefined,{method:'GET'});
+    assert.equal(config.value.mode,'DEMO');assert.equal(config.value.liveEnabled,false);
+    assert.equal(config.value.engine.id,'a1-hybrid-v1');assert.equal(config.value.engine.externalAI,false);
+    assert.equal(config.value.engine.trainingData,'synthetic-development');
+    const result=await f.call();assert.equal(result.status,200);
+    assert.equal(result.value.engine.id,'a1-hybrid-v1');assert.equal(result.value.usage,null);
+    assert.ok(result.value.reasonDetails.some(row=>row.id==='own_engine'));
+    assert.equal(f.providerCalls.length,0);
+    assert.equal(f.sql.prepare('SELECT count(*) AS n FROM ai_usage_reservations').get().n,0);
+    assert.doesNotMatch(JSON.stringify(result.value),/featureLogProb|vocabulary|posterior|selectiveAccuracy/);
+    assert.equal((await f.call(payload({engine:'openai'}))).status,400,'The browser cannot pick a paid provider');
+  }finally{f.close();}
+});
+
+test('unrelated owned-engine questions cannot expose approved products or commercial search links',async()=>{
+  const f=fixture();f.member();f.retailer();f.offer();
+  Object.assign(f.env,{ENABLE_LIVE_CATALOG:'true',GLOBAL_CATALOG_APPROVED:'true',A1_AI_CATALOG_APPROVED:'true'});
+  try{
+    const r=await f.call(payload({message:'Predict the price of bitcoin next month.'}));
+    assert.equal(r.status,200);assert.deepEqual(r.value.products,[]);assert.deepEqual(r.value.searchLinks,[]);
+    assert.deepEqual(r.value.advice,[]);assert.equal(r.value.engine.externalAI,false);
+    assert.ok(r.value.reasonDetails.some(row=>row.id==='fashion_scope_only'));
+    assert.equal(f.providerCalls.length,0);
+  }finally{f.close();}
 });

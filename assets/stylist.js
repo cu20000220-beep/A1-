@@ -23,11 +23,15 @@
   function status(source, error = false, values) { tx('#stylist-status', source, values); $('#stylist-status').classList.toggle('is-error', error); }
   function setBusy(value) { busy = value; $('#stylist-send').disabled = value; form.setAttribute('aria-busy', String(value)); }
   function ratioInputs() { for (const name of ['shoulderHipRatio','legTorsoRatio']) form.elements[name].disabled = !$('#stylist-analysis-consent').checked; }
+  const usesA1Engine = result => result?.engine?.id === 'a1-hybrid-v1' && result.engine.externalAI === false;
   function readiness() {
-    tx('#stylist-config', configuration.liveEnabled === true && configuration.mode === 'LIVE'
+    tx('#stylist-config', usesA1Engine(configuration)
+      ? 'A1 자체 엔진 시험 버전 · 외부 GPT를 호출하지 않습니다. 검증 상품이 없으면 상품·가격을 생성하지 않습니다.'
+      : configuration.liveEnabled === true && configuration.mode === 'LIVE'
       ? 'GPT 상담이 활성화되어 있습니다. 외부 AI 전송에 동의한 경우에만 호출합니다.'
       : configuration.mode === 'UNAVAILABLE' ? '상담 연결을 준비 중입니다. 기존 무료 사진 분석과 회원 기능은 계속 이용할 수 있습니다.'
       : 'DEMO 모의 상담 · 실제 GPT를 호출하지 않습니다. 실제 상품이 확인되지 않으면 상품·가격을 생성하지 않습니다.');
+    $('#stylist-owned-disclosure').hidden = !usesA1Engine(configuration);
   }
   function welcome() {
     const block = node('div', undefined, 'stylist-welcome'); block.id = 'stylist-welcome';
@@ -99,7 +103,20 @@
     if (error.status === 502 || error.status === 504) return 'AI 서비스가 응답하지 않거나 결과를 검증하지 못했습니다. 자동으로 재시도하거나 추가 호출하지 않습니다.';
     return '상담을 불러오지 못했습니다. 기존 무료 사진 분석은 계속 이용할 수 있습니다.';
   }
-  function productCard(product) {
+  function appendReasons(container, details, title, attribute) {
+    if (!Array.isArray(details)) return;
+    const seen = new Set(), valid = details.slice(0,8).filter(row => {
+      if (!row || typeof row.id !== 'string' || !/^[a-zA-Z0-9_.:-]{1,80}$/.test(row.id)
+        || seen.has(row.id) || typeof row.text !== 'string' || !row.text.trim() || row.text.length > 600) return false;
+      seen.add(row.id); return true;
+    });
+    if (!valid.length) return;
+    const block = node('section'); block.setAttribute(attribute,'');
+    block.append(node('h4',t(title)));
+    const list = node('ul'); for (const reason of valid) list.append(node('li',reason.text));
+    block.append(list); container.append(block);
+  }
+  function productCard(product, reasons) {
     if (!product || typeof product.name !== 'string' || !finitePrice(product.price) || !currencies.has(product.currency)) return null;
     const link = safeLink(product.productUrl, t('확인된 상품 보기 →')); if (!link) return null;
     const card = node('article', undefined, 'stylist-product'); card.dataset.i18nIgnore = '';
@@ -107,6 +124,7 @@
     card.append(node('p', t('판매처: {name}',{name:product.retailerName||t('미확인')})), node('p', t('가격 확인: {time}',{time:time(product.checkedAt)}),'stylist-source'));
     if (product.source) card.append(node('p',t('가격 출처: {source}',{source:product.source}),'stylist-source'));
     if (product.sku || product.gtin) card.append(node('p', ['SKU '+(product.sku||'—'),'GTIN '+(product.gtin||'—')].join(' · '),'stylist-source'));
+    appendReasons(card,reasons,'이 상품을 살펴보는 이유','data-product-reasons');
     card.append(link); return card;
   }
   function renderComparison(value) {
@@ -129,11 +147,20 @@
   }
   function renderAnswer(result, intent) {
     const bubble = node('article',undefined,'stylist-message'); bubble.dataset.i18nIgnore = '';
-    bubble.append(node('h3','A1 AI STYLIST'), node('p',result.mode === 'LIVE' ? t('GPT · 검증된 데이터 기반') : t('DEMO · 실제 GPT 호출 없음'),'stylist-answer-mode'));
+    const owned = usesA1Engine(result);
+    bubble.append(node('h3','A1 AI STYLIST'), node('p',owned ? t('DEMO · A1 자체 엔진 시험 버전') : result.mode === 'LIVE' ? t('GPT · 검증된 데이터 기반') : t('DEMO · 실제 GPT 호출 없음'),'stylist-answer-mode'));
+    if (owned && result.engine.trainingData === 'synthetic-development') {
+      const disclosure=node('p',t('개발용 예제로 학습한 패션 질문 분류와 규칙·점수 기반 추천을 결합합니다. 실제 사용자 성능은 아직 검증되지 않았습니다.'),'stylist-source');
+      disclosure.dataset.ownedEngineDetails=''; bubble.append(disclosure);
+    }
     if (typeof result.reply === 'string') bubble.append(node('p',result.reply));
     if (Array.isArray(result.advice)) { const list=node('ul'); for (const item of result.advice.slice(0,8)) if (typeof item?.text === 'string') list.append(node('li',item.text)); bubble.append(list); }
+    if (owned) appendReasons(bubble,result.reasonDetails,'추천을 이렇게 정리했어요','data-style-reasons');
     const products = (Array.isArray(result.products)?result.products:[]).slice(0,12);
-    if (products.length) for (const product of products) { const card = productCard(product); if (card) bubble.append(card); }
+    if (products.length) for (const product of products) {
+      const reasons=owned && Array.isArray(result.productReasons) ? result.productReasons.find(row=>row?.productId===product?.id)?.reasons : undefined;
+      const card = productCard(product,reasons); if (card) bubble.append(card);
+    }
     else bubble.append(node('p',t('현재 조건에 맞는 검증 상품이 없습니다. 상품·가격·할인율을 생성하지 않습니다.')));
     if (Array.isArray(result.searchLinks) && result.searchLinks.length) {
       const links = node('div',undefined,'stylist-search-links'); links.append(node('p',t('판매처 검색 연결 · 개별 상품 연동이 아닙니다.')));
@@ -171,7 +198,7 @@
       $('#stylist-welcome')?.remove();
       const question=node('article',undefined,'stylist-message is-user');question.dataset.i18nIgnore='';question.append(node('h3',t('나의 질문')),node('p',message));chat.append(question);
       renderAnswer(result,request.intent); conversations.push({role:'user',content:message},{role:'assistant',content:typeof result.reply==='string'?result.reply.slice(0,1200):''});while(conversations.length>8)conversations.shift();
-      $('#stylist-message').value='';status(result.mode==='LIVE'?'검증된 정보로 GPT 상담을 완료했습니다.':'모의 상담을 완료했습니다. 실제 GPT를 호출하지 않았습니다.');
+      $('#stylist-message').value='';status(usesA1Engine(result)?'A1 자체 엔진 시험 상담을 완료했습니다. 외부 GPT 호출이나 자동 학습 저장은 하지 않았습니다.':result.mode==='LIVE'?'검증된 정보로 GPT 상담을 완료했습니다.':'모의 상담을 완료했습니다. 실제 GPT를 호출하지 않았습니다.');
     } catch(error) {
       if(token===generation){const source=errorMessage(error);if(error.status===401||error.status===403)clearConversation({resetProfile:false,clearMetrics:true});status(source,true);}
     } finally {if(token===generation)setBusy(false);}

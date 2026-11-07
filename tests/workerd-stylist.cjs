@@ -22,7 +22,7 @@ const endpoint = 'https://api.openai.com/v1/responses';
 const now = Date.now();
 const fixtureKey = 'sk-fixture-workerd-stylist-never-real-123456789';
 const liveSettings = {
-  A1_AI_MODE: 'live', A1_AI_LIVE_APPROVED: 'true', A1_AI_MODEL: 'gpt-4.1-mini-2025-04-14', OPENAI_API_KEY: fixtureKey,
+  A1_STYLIST_ENGINE: 'openai', A1_AI_MODE: 'live', A1_AI_LIVE_APPROVED: 'true', A1_AI_MODEL: 'gpt-4.1-mini-2025-04-14', OPENAI_API_KEY: fixtureKey,
   A1_AI_DAILY_USER_LIMIT: '10', A1_AI_DAILY_BUDGET_MICRO_USD: '10000000', A1_AI_MONTHLY_BUDGET_MICRO_USD: '100000000',
   A1_AI_INPUT_MICRO_USD_PER_MILLION_TOKENS: '1000000', A1_AI_OUTPUT_MICRO_USD_PER_MILLION_TOKENS: '2000000'
 };
@@ -153,6 +153,9 @@ print(json.dumps(statements))
     assert.equal((await call('demo', { authenticated: false })).status, 401);
     assert.equal((await call('demo', { subject: 'free', credential: token('free', { plan: 'PREMIUM', paid: true }) })).status, 403);
     const demo = await call('demo'); assert.equal(demo.status, 200); assert.equal(demo.value.mode, 'DEMO');
+    assert.equal(demo.value.engine.id, 'a1-hybrid-v1'); assert.equal(demo.value.engine.externalAI, false);
+    assert.equal(demo.value.engine.trainingData, 'synthetic-development');
+    assert.ok(demo.value.reasonDetails.some(row => row.id === 'own_engine'));
     assert.deepEqual(demo.value.products, []); assert.equal(demo.value.usage, null); assert.ok(demo.value.searchLinks.length > 0);
     assert.equal((await call('demo', { body: input({ intent: 'compare' }) })).status, 403);
     assert.equal((await call('demo', { body: input({ intent: 'discount' }) })).status, 403);

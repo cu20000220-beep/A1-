@@ -93,4 +93,6 @@ node --test tests/membership-policy.cjs tests/premium-backend.cjs tests/recommen
 
 ## 통합 AI 상담
 
+별도 자체 AI 검토 브랜치에서는 [A1 자체 AI 보고서](../docs/A1-OWNED-AI.md)의 합성 예제 학습형 질문 분류와 검증 상품 추천 엔진이 기본입니다. 외부 API를 호출하지 않지만 기존 GENERAL/PREMIUM 검사·사진 보호·Preview 격리를 유지합니다. 새 DB 마이그레이션은 없습니다. 기존 GPT 경로는 서버의 `A1_STYLIST_ENGINE=openai` 추가 선택과 모든 기존 승인·동의·예산 조건을 요구합니다.
+
 `GET/POST /api/stylist`는 기존 인증·등급 검사와 상품 저장소를 재사용합니다. GENERAL은 스타일, PREMIUM은 비교·할인 의도를 허용합니다. 실제 GPT는 기본 꺼짐이며 [AI 운영 안내](../docs/AI-STYLIST-OPERATIONS.md)의 별도 승인·동의·일/월 예산·0004 적용 전 호출하지 않습니다. 회원 탈퇴는 본인의 글로벌 기록과 AI 사용량을 삭제하되 익명 전체 비용 집계는 보존해 예산을 환급하지 않습니다. 통합 검증·운영 복구 절차는 [통합 보고서](../docs/UNIFIED-RELEASE.md)를 참고합니다.

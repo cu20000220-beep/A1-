@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "datasetId": "a1-synthetic-fashion-intents-v1",
+  "datasetOrigin": "synthetic-development",
+  "purpose": "fashion-intent-classification",
+  "provenance": "Assistant-generated development examples created for this repository. No customer conversations, photographs, collected web text or expert-reviewed labels.",
+  "approvedForTraining": true,
+  "rightsConfirmed": true,
+  "personalDataReviewed": true,
+  "containsCustomerData": false,
+  "useLimit": "Local prototype development and software evaluation only. Not evidence of real-world recommendation accuracy, fit quality or production readiness.",
+  "trainingFile": "train.jsonl",
+  "evaluationFile": "eval.jsonl",
+  "reviewScope": "Synthetic repository development examples checked by the training program. No independent human expert or real-user validation.",
+  "approvedForProduction": false
+}

@@ -39,6 +39,9 @@ jobs:
           tests/preview-isolation.cjs
           tests/member-write-entitlements.cjs
           tests/free-beta.cjs
+          tests/a1-intents.cjs tests/a1-style-engine.cjs
+      - name: Verify owned intent training is reproducible
+        run: node scripts/train-a1-intents.mjs --check
       - name: Package public assets only
         run: node scripts/build-site.cjs
       - name: Check public artifact exposure

@@ -1,5 +1,12 @@
 'use strict';
 window.A1I18n.register({
+  'A1 자체 엔진 시험 버전 · 외부 GPT를 호출하지 않습니다. 검증 상품이 없으면 상품·가격을 생성하지 않습니다.': 'A1 owned-engine prototype · No external GPT request. Products and prices are not invented when verified products are unavailable.',
+  'DEMO · A1 자체 엔진 시험 버전': 'DEMO · A1 owned-engine prototype',
+  '개발용 예제로 학습한 패션 질문 분류와 규칙·점수 기반 추천을 결합합니다. 실제 사용자 성능은 아직 검증되지 않았습니다.': 'Combines fashion-intent classification trained on development examples with rule-based scoring. Performance with real users has not been validated.',
+  'A1 자체 엔진은 외부 AI로 대화를 전송하거나 입력 대화를 자동 학습에 저장하지 않습니다.': 'The A1 owned engine does not send conversations to an external AI or save them for automatic training.',
+  '추천을 이렇게 정리했어요': 'How these suggestions were selected',
+  '이 상품을 살펴보는 이유': 'Why this product is shown',
+  'A1 자체 엔진 시험 상담을 완료했습니다. 외부 GPT 호출이나 자동 학습 저장은 하지 않았습니다.': 'The A1 owned-engine prototype consultation is complete. No external GPT request or automatic training storage was made.',
   "구독 확인 기간이 끝나 이전 상담을 지웠습니다. 상담을 다시 요청해 권한을 확인해주세요.": "The verified subscription period ended and the previous chat was cleared. Request a new consultation to verify access.",
   "상담을 다시 요청해 현재 계정과 구독 권한을 확인해주세요. 이전 대화는 지웠습니다.": "Request a new consultation to verify the current account and subscription. The previous chat was cleared.",
   '취향과 예산으로 대화하는 A1 AI 스타일리스트. 검증된 상품 정보와 별도 동의로 이용합니다.': 'Talk about your style and budget with the A1 AI Stylist, using verified product information and separate consent.',

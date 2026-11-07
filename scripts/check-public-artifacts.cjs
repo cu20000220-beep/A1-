@@ -10,6 +10,7 @@ const rules = [
   ['OpenAI credential', /\bsk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{24,}\b/],
   ['server secret variable', /\b(?:OPENAI_API_KEY|FIREBASE_WEB_API_KEY|AUTH_JWKS_URL)\b/],
   ['direct provider endpoint', /https:\/\/api\.openai\.com(?:\/|\b)/],
+  ['private A1 model parameters', /["']?logLikelihoods["']?\s*:/],
   ['service account credential', /"private_key"\s*:\s*"[^"\s]/]
 ];
 let count = 0, textCount = 0;
@@ -17,8 +18,9 @@ function inspect(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const full = path.join(directory, entry.name), relative = path.relative(root, full).split(path.sep).join('/');
     if (entry.isSymbolicLink()) throw new Error('Public symlink: ' + relative);
-    if (/(?:^|\/)(?:server|functions|workers|tests|docs|\.git|\.env(?:\..*)?)\/?/.test(relative)
-      || /\.(?:sql|sqlite|sqlite3|db|pem|key)$/i.test(relative)) throw new Error('Private artifact: ' + relative);
+    if (/(?:^|\/)(?:server|functions|workers|tests|docs|training|\.git|\.env(?:\..*)?)\/?/.test(relative)
+      || /\.(?:sql|sqlite|sqlite3|db|pem|key|jsonl)$/i.test(relative)
+      || /(?:^|\/)a1-intent[^/]*\.json$/i.test(relative)) throw new Error('Private artifact: ' + relative);
     if (entry.isDirectory()) { inspect(full); continue; }
     count++;
     if (!/\.(?:html|js|css|json|md)$/i.test(relative) && relative !== '_headers') continue;

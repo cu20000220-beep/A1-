@@ -9,15 +9,17 @@ const {chromium} = require('playwright');
 const root = resolve(__dirname,'..');
 const requests = [], posts = [], errors = [];
 const mime = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'};
-let plan='FREE', live=false, nextError=null, includeProducts=false, holdNext=false, held, resume, expiresIn=3600000;
+let plan='FREE', live=false, independent=true, nextError=null, includeProducts=false, holdNext=false, held, resume, expiresIn=3600000;
 let compareOffers;
+const ownedEngine={id:'a1-hybrid-v1',type:'hybrid',trainingData:'synthetic-development',trainedTask:'fashion-intent',externalAI:false,accuracy:0.99999};
+const engine=()=>live?{id:'openai',externalAI:true}:independent?ownedEngine:undefined;
 function result(res,value,status=200){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end(JSON.stringify(value));}
 const fixed = {productId:'fixture-shirt',brand:'Fixture Brand',name:'Verified fixture shirt',sku:'FIXTURE-SHIRT-01',color:'White',size:'M',condition:'new',price:40,currency:'USD',shipping:5,tax:3,duties:0,shippingCountries:['US','KR'],shippingStatus:'confirmed',stock:'in_stock',sourceVerified:true,source:'Approved official fixture; local UI test only',productUrl:'https://ebay.com/itm/local-test-only',retailerName:'Fixture retailer',retailerId:'ebay-us',sellerCountry:'US'};
 const server = createServer(async(req,res)=>{
   try {
     const url = new URL(req.url,`http://${req.headers.host}`);
     if(url.pathname==='/api/stylist'){
-      if(req.method==='GET')return result(res,{mode:live?'LIVE':'DEMO',available:true,liveEnabled:live,photoUploads:false,plans:{style:'GENERAL',compare:'PREMIUM',discount:'PREMIUM'}});
+      if(req.method==='GET')return result(res,{mode:live?'LIVE':'DEMO',available:true,liveEnabled:live,engine:engine(),photoUploads:false,plans:{style:'GENERAL',compare:'PREMIUM',discount:'PREMIUM'}});
       assert.equal(req.method,'POST');assert.equal(req.headers.origin,url.origin);assert.equal(req.headers['content-type'],'application/json');
       let bytes='';for await(const chunk of req)bytes+=chunk;const value=JSON.parse(bytes);posts.push(value);
       if(plan==='FREE')return result(res,{error:'subscription_required'},403);
@@ -26,6 +28,11 @@ const server = createServer(async(req,res)=>{
       if(live&&!value.consents.externalAI)return result(res,{error:'external_ai_consent_required'},409);
       const now=Date.now(),product={...fixed,id:'fixture-1',checkedAt:now-60000,expiresAt:now+3600000};
       const response={accessUntil:Date.now()+expiresIn,mode:live?'LIVE':'DEMO',reply:value.language==='en'?'Choose comfortable layers for your occasion.':'상황에 맞는 편안한 레이어를 골라보세요.',advice:[{id:'fit',text:value.language==='en'?'Try a balanced silhouette without treating photo proportions as measurements.':'사진상 비율을 실제 치수로 판단하지 않고 균형 잡힌 실루엣을 살펴보세요.'}],dataStatus:includeProducts?'ready':'empty',products:includeProducts?[product,{...product,id:'unsafe',name:'<img src=x onerror=alert(1)>',productUrl:'https://evil.example.test/steal'}]:[],searchLinks:[{store:'eBay',label:'eBay search',url:'https://www.ebay.com/sch/i.html?_nkw=shirt'},{store:'unsafe',url:'javascript:alert(1)',label:'must not appear'}],comparison:null,discounts:[],notices:[],usage:live?{reservedMicroUsd:1200,remainingUserRequests:9}:null};
+      response.engine=engine();
+      if(!live&&independent){
+        response.reasonDetails=[{id:'selected_style',text:value.language==='en'?'The selected casual style was considered.':'선택한 캐주얼 스타일을 참고했습니다.'},{id:'literal_markup',text:'<img src=x onerror=alert(1)>'},{id:'invalid reason',text:'Invalid explanation must not appear'}];
+        response.productReasons=[{productId:product.id,reasons:[{id:'item_budget',text:value.language==='en'?'The verified item price is within the selected per-item budget.':'확인된 상품 금액이 선택한 상품당 예산 이내입니다.'}]},{productId:'absent-product',reasons:[{id:'not_selected',text:'Unselected product explanation must not appear'}]}];
+      }
       if(value.intent==='compare')response.comparison=compareOffers({product:fixed,destination:'US',currency:'USD',now,offers:[{...product,id:'valid'},{...product,id:'unknown-shipping',shipping:null},{...product,id:'stale',checkedAt:now-48*3600000},{...product,id:'different-size',size:'L'}]});
       if(value.intent==='discount')response.discounts=[{id:product.id,promotionPrice:30,currency:'USD',startsAt:now-3600000,endsAt:now+3600000}];
       if(holdNext){holdNext=false;held();await new Promise(resolve=>{resume=resolve;});}
@@ -57,7 +64,8 @@ async function englishCheck(page){
     const context=await browser.newContext({locale:'ko-KR',viewport:{width:390,height:844}}),page=await context.newPage();
     page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push({url:r.url(),method:r.method()}));
     await page.goto(origin+'/stylist.html',{waitUntil:'networkidle'});
-    assert.match(await page.locator('#stylist-config').innerText(),/DEMO/);
+    assert.match(await page.locator('#stylist-config').innerText(),/A1 자체 엔진 시험 버전/);
+    assert.ok(await page.locator('#stylist-owned-disclosure').isVisible(),'Only confirmed A1 configuration reveals its training disclosure');assert.match(await page.locator('#stylist-owned-disclosure').innerText(),/개발용 예제.*실제 사용자 성능은 아직 검증되지/);
     const expectedNavigation={home:'index.html',studio:'index.html#ai-studio',shopping:'global.html#shopping',stylist:'stylist.html',comparison:'global.html#comparison',membership:'global.html#membership',account:'account.html'};
     assert.deepEqual(await page.locator('[data-site-navigation] a').evaluateAll(nodes=>Object.fromEntries(nodes.map(n=>[n.dataset.siteLink,n.getAttribute('href')]))),expectedNavigation,'Every main menu points to the integrated feature');
     assert.equal(await page.locator('input[type=file]').count(),0);
@@ -66,17 +74,35 @@ async function englishCheck(page){
     await send(page,'추천해주세요');assert.match(await page.locator('#stylist-status').innerText(),/구독/);assert.equal(await page.locator('.stylist-message').count(),0);
     plan='GENERAL';await send(page,'출근할 때 입을 옷을 추천해주세요');
     assert.match(await page.locator('#stylist-chat').innerText(),/DEMO/);assert.match(await page.locator('#stylist-chat').innerText(),/검증 상품이 없습니다/);assert.equal(posts.at(-1).consents.externalAI,false);assert.equal(posts.at(-1).consents.analysis,false);assert.equal(posts.at(-1).metrics,undefined);
+    assert.match(await page.locator('[data-owned-engine-details]').innerText(),/개발용 예제.*실제 사용자 성능은 아직 검증되지/);
+    assert.match(await page.locator('[data-style-reasons]').innerText(),/선택한 캐주얼 스타일/);
+    assert.match(await page.locator('[data-style-reasons]').innerText(),/<img src=x onerror=alert\(1\)>/);
+    assert.equal(await page.locator('[data-style-reasons] img').count(),0,'Explanations use textContent, never HTML');
+    assert.doesNotMatch(await page.locator('#stylist-chat').innerText(),/Invalid explanation|Unselected product explanation|99\.999|0\.99999/);
     assert.equal(await page.locator('#stylist-chat a').count(),1);assert.equal(await page.locator('#stylist-chat a').getAttribute('href'),'https://www.ebay.com/sch/i.html?_nkw=shirt');
+    independent=false;await page.reload({waitUntil:'networkidle'});assert.match(await page.locator('#stylist-config').innerText(),/DEMO/);assert.ok(await page.locator('#stylist-owned-disclosure').isHidden(),'An unconfirmed legacy engine must not show a trained-component disclosure');
+    await send(page,'이전 모의 응답 호환성');assert.match(await page.locator('.stylist-answer-mode').innerText(),/DEMO/);assert.equal(await page.locator('[data-style-reasons]').count(),0,'Legacy responses without engine metadata remain supported');
+    independent=true;await page.reload({waitUntil:'networkidle'});
     await page.locator('[name=intent]').selectOption('compare');await send(page,'가격을 비교해주세요');assert.match(await page.locator('#stylist-status').innerText(),/프리미엄/);assert.equal(await page.locator('.stylist-message').count(),0,'Higher-tier rejection clears prior private replies');
     plan='PREMIUM';includeProducts=true;await send(page,'같은 상품 가격 비교');
     const comparison=await page.locator('.stylist-comparison').innerText();assert.match(comparison,/48/);assert.match(comparison,/미확인/);assert.match(comparison,/최저가 선정에서 제외/);assert.match(comparison,/사이즈/);
     assert.ok(await page.locator('#stylist-chat a[href^="https://ebay.com/itm/"]').count()>0,'Approved retailer bare domains remain usable');assert.equal(await page.locator('#stylist-chat img').count(),0,'Untrusted text is not injected as HTML');assert.equal(await page.locator('#stylist-chat a[href*="evil"]').count(),0);
+    assert.match(await page.locator('[data-product-reasons]').innerText(),/商品|상품 금액/);
+    for(const lang of ['ko','en']){
+      await page.locator('[data-language-select]').selectOption(lang);
+      if(lang==='en')await englishCheck(page);
+      for(const width of [320,390,820,1440]){
+        await page.setViewportSize({width,height:1000});
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`Owned-engine disclosure/reasons ${lang} ${width}px must not overflow`);
+      }
+    }
+    await page.locator('[data-language-select]').selectOption('ko');await page.setViewportSize({width:390,height:844});
     await page.locator('[name=intent]').selectOption('discount');await send(page,'확인된 할인만 알려주세요');assert.match(await page.locator('#stylist-chat').innerText(),/USD/);assert.match(await page.locator('#stylist-chat').innerText(),/적용 기간/);
     assert.equal(posts.at(-1).history.length,2);assert.ok(posts.at(-1).history.every(row=>['user','assistant'].includes(row.role)&&row.content.length<=1200));
     await page.locator('details').evaluate(e=>e.open=true);await page.locator('#stylist-analysis-consent').check();await page.locator('[name=shoulderHipRatio]').fill('1.1');await page.locator('[name=legTorsoRatio]').fill('1.6');await page.locator('[name=intent]').selectOption('style');await send(page,'두 비율도 참고해주세요');assert.deepEqual(posts.at(-1).metrics,{shoulderHipRatio:1.1,legTorsoRatio:1.6});
     await page.locator('#stylist-analysis-consent').uncheck();await send(page,'수치는 사용하지 말아주세요');assert.equal(posts.at(-1).metrics,undefined);assert.equal(posts.at(-1).consents.analysis,false);
     await page.locator('#stylist-clear').click();assert.equal(await page.locator('.stylist-message').count(),0);assert.equal(await page.locator('[name=shoulderHipRatio]').inputValue(),'');assert.equal(await page.locator('#stylist-external-consent').isChecked(),false);
-    live=true;await page.reload({waitUntil:'networkidle'});await send(page,'실제 GPT 상담');assert.match(await page.locator('#stylist-status').innerText(),/별도로 동의/);assert.equal(await page.locator('.stylist-message').count(),0);
+    live=true;await page.reload({waitUntil:'networkidle'});assert.ok(await page.locator('#stylist-owned-disclosure').isHidden());await send(page,'실제 GPT 상담');assert.match(await page.locator('#stylist-status').innerText(),/별도로 동의/);assert.equal(await page.locator('.stylist-message').count(),0);
     await page.locator('#stylist-external-consent').check();await send(page,'실제 상담에 동의합니다');assert.equal(posts.at(-1).consents.externalAI,true);assert.match(await page.locator('#stylist-chat').innerText(),/GPT ·/);assert.match(await page.locator('#stylist-chat').innerText(),/남은 상담: 9/);assert.doesNotMatch(await page.locator('#stylist-chat').innerText(),/0.001200/);
     for(const failure of [{status:400,code:'invalid_request'},{status:429,code:'budget_exhausted'},{status:502,code:'invalid_model_response'},{status:503,code:'setup_required'}]){const count=posts.length;nextError=failure;await send(page,'오류 처리 확인');assert.equal(posts.length,count+1,'No automatic extra OpenAI-style request');assert.ok(await page.locator('#stylist-status').evaluate(e=>e.classList.contains('is-error')));if(failure.status===400)assert.match(await page.locator('#stylist-status').innerText(),/링크/);}
     for(const lang of ['ko','en']){
@@ -130,8 +156,8 @@ async function englishCheck(page){
     const sibling=await context.newPage();await sibling.goto(origin,{waitUntil:'networkidle'});await sibling.evaluate(()=>localStorage.setItem('a1-fashion:auth-event',JSON.stringify({action:'logout',at:Date.now()})));
     await page.waitForFunction(()=>!document.querySelector('#stylist-send').disabled&&document.querySelectorAll('.stylist-message').length===0);resume();await page.waitForTimeout(150);assert.equal(await page.locator('.stylist-message').count(),0);assert.equal(await page.locator('#stylist-message').inputValue(),'');assert.equal(await page.locator('#stylist-analysis-consent').isChecked(),false);
     const storage=await page.evaluate(()=>Object.keys(localStorage).filter(key=>!['a1-fashion:language','a1-fashion:auth-event'].includes(key)));assert.deepEqual(storage,[],'Chat/profile data must not be stored in localStorage');
-    await page.reload({waitUntil:'networkidle'});assert.match(await page.locator('#stylist-config').innerText(),/DEMO/);await page.setViewportSize({width:390,height:844});await page.screenshot({path:'/tmp/a1-stylist-mobile.png',fullPage:true});
+    await page.reload({waitUntil:'networkidle'});assert.match(await page.locator('#stylist-config').innerText(),/A1 owned-engine prototype/);await page.setViewportSize({width:390,height:844});await page.screenshot({path:'/tmp/a1-owned-stylist-mobile.png',fullPage:true});
     assert.ok(requests.every(request=>new URL(request.url).origin===origin),'Browser makes no external AI, image or translation requests');assert.ok(posts.every(body=>!Object.keys(body).some(key=>/photo|image|key|email/i.test(key))));assert.deepEqual(errors,[]);
-    console.log('Stylist UI passed: server-tier UI fixtures, DEMO/no actual GPT, verified fixture products, safe links/text, Premium comparisons, separate external/analysis consent, memory-only history, errors without retries, cross-tab logout cancels late replies, KO/EN at 320/390/820/1440px, shared seven-menu navigation/language persistence, expiry timer/late reply/focus guards. No provider requests.');
+    console.log('Stylist UI passed: honest owned-engine/synthetic-development disclosure and canonical text-only reasons, legacy DEMO/LIVE compatibility, no displayed model accuracy claims, server-tier fixtures, verified products, consent/privacy, expiry/late reply/focus guards, KO/EN at 320/390/820/1440px and navigation. No provider requests.');
   } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

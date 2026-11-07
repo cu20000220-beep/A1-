@@ -1,0 +1,144 @@
+{"id":"train-outfit-ko-01","language":"ko","label":"outfit","text":"캐주얼한 주말 옷차림을 골라주세요","source":"synthetic-development"}
+{"id":"train-outfit-ko-02","language":"ko","label":"outfit","text":"미니멀한 상의와 바지 조합을 알려주세요","source":"synthetic-development"}
+{"id":"train-outfit-ko-03","language":"ko","label":"outfit","text":"스트리트 스타일로 코디하고 싶어요","source":"synthetic-development"}
+{"id":"train-outfit-ko-04","language":"ko","label":"outfit","text":"옷장에 있는 셔츠로 데일리룩을 만들고 싶어요","source":"synthetic-development"}
+{"id":"train-outfit-ko-05","language":"ko","label":"outfit","text":"여름에 입을 가벼운 코디가 필요해요","source":"synthetic-development"}
+{"id":"train-outfit-ko-06","language":"ko","label":"outfit","text":"유니섹스 데일리 옷 조합을 추천해주세요","source":"synthetic-development"}
+{"id":"train-outfit-ko-07","language":"ko","label":"outfit","text":"니트와 어울리는 하의 코디를 알려주세요","source":"synthetic-development"}
+{"id":"train-outfit-ko-08","language":"ko","label":"outfit","text":"스니커즈에 맞는 편안한 옷차림을 찾고 있어요","source":"synthetic-development"}
+{"id":"train-outfit-en-01","language":"en","label":"outfit","text":"Suggest a casual weekend outfit","source":"synthetic-development"}
+{"id":"train-outfit-en-02","language":"en","label":"outfit","text":"Help me put together a minimal everyday look","source":"synthetic-development"}
+{"id":"train-outfit-en-03","language":"en","label":"outfit","text":"I want a streetwear clothing combination","source":"synthetic-development"}
+{"id":"train-outfit-en-04","language":"en","label":"outfit","text":"How can I style a shirt from my wardrobe","source":"synthetic-development"}
+{"id":"train-outfit-en-05","language":"en","label":"outfit","text":"Build an easy summer outfit with light layers","source":"synthetic-development"}
+{"id":"train-outfit-en-06","language":"en","label":"outfit","text":"Find a unisex everyday outfit idea","source":"synthetic-development"}
+{"id":"train-outfit-en-07","language":"en","label":"outfit","text":"What bottoms can I wear with a knit top","source":"synthetic-development"}
+{"id":"train-outfit-en-08","language":"en","label":"outfit","text":"Give me a comfortable outfit to wear with sneakers","source":"synthetic-development"}
+{"id":"train-fit-ko-01","language":"ko","label":"fit","text":"셔츠 사이즈를 어떻게 비교해야 하나요","source":"synthetic-development"}
+{"id":"train-fit-ko-02","language":"ko","label":"fit","text":"바지 핏이 편한지 고르는 방법이 궁금해요","source":"synthetic-development"}
+{"id":"train-fit-ko-03","language":"ko","label":"fit","text":"재킷의 어깨가 맞는지 확인하고 싶어요","source":"synthetic-development"}
+{"id":"train-fit-ko-04","language":"ko","label":"fit","text":"옷 실측표를 읽는 방법을 알려주세요","source":"synthetic-development"}
+{"id":"train-fit-ko-05","language":"ko","label":"fit","text":"여유 있는 핏과 슬림 핏을 비교하고 싶어요","source":"synthetic-development"}
+{"id":"train-fit-ko-06","language":"ko","label":"fit","text":"사진만으로 옷 사이즈를 정할 수 있나요","source":"synthetic-development"}
+{"id":"train-fit-ko-07","language":"ko","label":"fit","text":"소매와 바지 기장을 비교하는 기준이 궁금해요","source":"synthetic-development"}
+{"id":"train-fit-ko-08","language":"ko","label":"fit","text":"입었을 때 움직이기 편한 치수를 확인하고 싶어요","source":"synthetic-development"}
+{"id":"train-fit-en-01","language":"en","label":"fit","text":"How should I compare shirt sizes","source":"synthetic-development"}
+{"id":"train-fit-en-02","language":"en","label":"fit","text":"How can I tell whether trousers fit comfortably","source":"synthetic-development"}
+{"id":"train-fit-en-03","language":"en","label":"fit","text":"I want to check the shoulder fit of a jacket","source":"synthetic-development"}
+{"id":"train-fit-en-04","language":"en","label":"fit","text":"Explain how to read a clothing size chart","source":"synthetic-development"}
+{"id":"train-fit-en-05","language":"en","label":"fit","text":"Compare a relaxed fit with a slim fit","source":"synthetic-development"}
+{"id":"train-fit-en-06","language":"en","label":"fit","text":"Can a photograph determine my clothing size","source":"synthetic-development"}
+{"id":"train-fit-en-07","language":"en","label":"fit","text":"How should I compare sleeve length and trouser hems","source":"synthetic-development"}
+{"id":"train-fit-en-08","language":"en","label":"fit","text":"Help me check garment measurements for comfortable movement","source":"synthetic-development"}
+{"id":"train-color-ko-01","language":"ko","label":"color","text":"네이비 셔츠에 어떤 색 바지가 어울릴까요","source":"synthetic-development"}
+{"id":"train-color-ko-02","language":"ko","label":"color","text":"아이보리와 차콜을 코디에 같이 쓰고 싶어요","source":"synthetic-development"}
+{"id":"train-color-ko-03","language":"ko","label":"color","text":"옷 색상 조합을 차분하게 만들고 싶어요","source":"synthetic-development"}
+{"id":"train-color-ko-04","language":"ko","label":"color","text":"블랙 의상에 포인트 색을 더하는 방법이 궁금해요","source":"synthetic-development"}
+{"id":"train-color-ko-05","language":"ko","label":"color","text":"톤온톤 컬러 코디를 알려주세요","source":"synthetic-development"}
+{"id":"train-color-ko-06","language":"ko","label":"color","text":"밝은 색 상의와 어두운 하의를 조합하고 싶어요","source":"synthetic-development"}
+{"id":"train-color-ko-07","language":"ko","label":"color","text":"갈색 재킷과 어울리는 컬러를 찾고 있어요","source":"synthetic-development"}
+{"id":"train-color-ko-08","language":"ko","label":"color","text":"기본 옷 색을 세 가지 정도로 고르고 싶어요","source":"synthetic-development"}
+{"id":"train-color-en-01","language":"en","label":"color","text":"What trouser color works with a navy shirt","source":"synthetic-development"}
+{"id":"train-color-en-02","language":"en","label":"color","text":"How can I combine ivory and charcoal clothes","source":"synthetic-development"}
+{"id":"train-color-en-03","language":"en","label":"color","text":"Help me choose a calm clothing color palette","source":"synthetic-development"}
+{"id":"train-color-en-04","language":"en","label":"color","text":"Add one accent color to a black outfit","source":"synthetic-development"}
+{"id":"train-color-en-05","language":"en","label":"color","text":"Explain a tonal color combination for clothes","source":"synthetic-development"}
+{"id":"train-color-en-06","language":"en","label":"color","text":"Pair a light colored top with dark bottoms","source":"synthetic-development"}
+{"id":"train-color-en-07","language":"en","label":"color","text":"What colors work with a brown jacket","source":"synthetic-development"}
+{"id":"train-color-en-08","language":"en","label":"color","text":"Choose three simple colors for my wardrobe","source":"synthetic-development"}
+{"id":"train-occasion-ko-01","language":"ko","label":"occasion","text":"출근할 때 입을 옷을 준비하고 있어요","source":"synthetic-development"}
+{"id":"train-occasion-ko-02","language":"ko","label":"occasion","text":"면접 복장으로 단정한 조합이 필요해요","source":"synthetic-development"}
+{"id":"train-occasion-ko-03","language":"ko","label":"occasion","text":"결혼식 하객 옷차림을 알려주세요","source":"synthetic-development"}
+{"id":"train-occasion-ko-04","language":"ko","label":"occasion","text":"저녁 행사에 입을 옷을 고르고 싶어요","source":"synthetic-development"}
+{"id":"train-occasion-ko-05","language":"ko","label":"occasion","text":"사무실 드레스코드에 맞는 코디가 궁금해요","source":"synthetic-development"}
+{"id":"train-occasion-ko-06","language":"ko","label":"occasion","text":"여행할 때 입기 편한 옷차림을 알려주세요","source":"synthetic-development"}
+{"id":"train-occasion-ko-07","language":"ko","label":"occasion","text":"야외 모임에 맞는 옷과 겉옷을 고민하고 있어요","source":"synthetic-development"}
+{"id":"train-occasion-ko-08","language":"ko","label":"occasion","text":"격식 있는 모임에 입을 의상을 추천해주세요","source":"synthetic-development"}
+{"id":"train-occasion-en-01","language":"en","label":"occasion","text":"I need an outfit to wear to the office","source":"synthetic-development"}
+{"id":"train-occasion-en-02","language":"en","label":"occasion","text":"Suggest neat clothing for a job interview","source":"synthetic-development"}
+{"id":"train-occasion-en-03","language":"en","label":"occasion","text":"What should I wear as a wedding guest","source":"synthetic-development"}
+{"id":"train-occasion-en-04","language":"en","label":"occasion","text":"Help me choose clothes for an evening event","source":"synthetic-development"}
+{"id":"train-occasion-en-05","language":"en","label":"occasion","text":"Plan an outfit for an office dress code","source":"synthetic-development"}
+{"id":"train-occasion-en-06","language":"en","label":"occasion","text":"Suggest comfortable clothing for travel","source":"synthetic-development"}
+{"id":"train-occasion-en-07","language":"en","label":"occasion","text":"I need clothes and an outer layer for an outdoor gathering","source":"synthetic-development"}
+{"id":"train-occasion-en-08","language":"en","label":"occasion","text":"Choose an outfit for a formal occasion","source":"synthetic-development"}
+{"id":"train-budget-ko-01","language":"ko","label":"budget","text":"옷 예산 안에서 오래 입을 아이템을 고르고 싶어요","source":"synthetic-development"}
+{"id":"train-budget-ko-02","language":"ko","label":"budget","text":"상품당 예산이 적어서 기본 옷부터 찾고 있어요","source":"synthetic-development"}
+{"id":"train-budget-ko-03","language":"ko","label":"budget","text":"배송비까지 생각해서 의류 구매 예산을 정하고 싶어요","source":"synthetic-development"}
+{"id":"train-budget-ko-04","language":"ko","label":"budget","text":"저렴한 가격보다 자주 입을 옷을 고르고 싶어요","source":"synthetic-development"}
+{"id":"train-budget-ko-05","language":"ko","label":"budget","text":"이미 가진 옷과 조합해서 쇼핑 비용을 줄이고 싶어요","source":"synthetic-development"}
+{"id":"train-budget-ko-06","language":"ko","label":"budget","text":"상의와 하의에 옷 예산을 나누는 방법이 궁금해요","source":"synthetic-development"}
+{"id":"train-budget-ko-07","language":"ko","label":"budget","text":"가성비 있는 옷을 볼 때 무엇을 확인하나요","source":"synthetic-development"}
+{"id":"train-budget-ko-08","language":"ko","label":"budget","text":"의류 구매할 때 총예산을 넘지 않는 방법을 알려주세요","source":"synthetic-development"}
+{"id":"train-budget-en-01","language":"en","label":"budget","text":"Choose clothing that I can rewear within my budget","source":"synthetic-development"}
+{"id":"train-budget-en-02","language":"en","label":"budget","text":"My per item clothing budget is small","source":"synthetic-development"}
+{"id":"train-budget-en-03","language":"en","label":"budget","text":"Help me plan a clothing budget including delivery costs","source":"synthetic-development"}
+{"id":"train-budget-en-04","language":"en","label":"budget","text":"I want clothes I will wear often rather than just cheap items","source":"synthetic-development"}
+{"id":"train-budget-en-05","language":"en","label":"budget","text":"Reduce shopping costs by using clothes I already own","source":"synthetic-development"}
+{"id":"train-budget-en-06","language":"en","label":"budget","text":"How should I divide my clothing budget between tops and bottoms","source":"synthetic-development"}
+{"id":"train-budget-en-07","language":"en","label":"budget","text":"What should I check when looking for clothing value","source":"synthetic-development"}
+{"id":"train-budget-en-08","language":"en","label":"budget","text":"How can I keep a fashion purchase within my total budget","source":"synthetic-development"}
+{"id":"train-care-ko-01","language":"ko","label":"care","text":"니트의 세탁 라벨을 어떻게 읽나요","source":"synthetic-development"}
+{"id":"train-care-ko-02","language":"ko","label":"care","text":"옷 관리와 세탁 방법을 확인하고 싶어요","source":"synthetic-development"}
+{"id":"train-care-ko-03","language":"ko","label":"care","text":"재킷을 세탁하기 전에 무엇을 봐야 하나요","source":"synthetic-development"}
+{"id":"train-care-ko-04","language":"ko","label":"care","text":"셔츠 건조 방법은 어디에서 확인하나요","source":"synthetic-development"}
+{"id":"train-care-ko-05","language":"ko","label":"care","text":"의류 케어 라벨의 기호를 알려주세요","source":"synthetic-development"}
+{"id":"train-care-ko-06","language":"ko","label":"care","text":"소재 이름만으로 세탁 방법을 정해도 되나요","source":"synthetic-development"}
+{"id":"train-care-ko-07","language":"ko","label":"care","text":"울 코트를 보관할 때 관리 정보를 확인하고 싶어요","source":"synthetic-development"}
+{"id":"train-care-ko-08","language":"ko","label":"care","text":"옷이 줄어들지 않도록 세탁 안내를 확인하려고 해요","source":"synthetic-development"}
+{"id":"train-care-en-01","language":"en","label":"care","text":"How do I read the care label on a knit garment","source":"synthetic-development"}
+{"id":"train-care-en-02","language":"en","label":"care","text":"Help me check clothing care and washing instructions","source":"synthetic-development"}
+{"id":"train-care-en-03","language":"en","label":"care","text":"What should I check before washing a jacket","source":"synthetic-development"}
+{"id":"train-care-en-04","language":"en","label":"care","text":"Where can I find drying instructions for a shirt","source":"synthetic-development"}
+{"id":"train-care-en-05","language":"en","label":"care","text":"Explain the symbols on a garment care label","source":"synthetic-development"}
+{"id":"train-care-en-06","language":"en","label":"care","text":"Can the fabric name alone determine a washing method","source":"synthetic-development"}
+{"id":"train-care-en-07","language":"en","label":"care","text":"I want care information for storing a wool coat","source":"synthetic-development"}
+{"id":"train-care-en-08","language":"en","label":"care","text":"Check laundry instructions to help avoid shrinking clothes","source":"synthetic-development"}
+{"id":"train-compare-ko-01","language":"ko","label":"compare","text":"같은 상품을 판매처별로 가격 비교하고 싶어요","source":"synthetic-development"}
+{"id":"train-compare-ko-02","language":"ko","label":"compare","text":"동일한 사이즈 셔츠의 구매 비용을 비교해주세요","source":"synthetic-development"}
+{"id":"train-compare-ko-03","language":"ko","label":"compare","text":"배송비와 세금을 포함한 의류 가격 비교가 궁금해요","source":"synthetic-development"}
+{"id":"train-compare-ko-04","language":"ko","label":"compare","text":"다른 쇼핑몰의 같은 바지 가격을 비교할 수 있나요","source":"synthetic-development"}
+{"id":"train-compare-ko-05","language":"ko","label":"compare","text":"같은 색상과 상태인 상품의 판매처를 비교해주세요","source":"synthetic-development"}
+{"id":"train-compare-ko-06","language":"ko","label":"compare","text":"서로 다른 통화의 옷 가격을 비교할 때 환율이 필요한가요","source":"synthetic-development"}
+{"id":"train-compare-ko-07","language":"ko","label":"compare","text":"최저 예상 구매가를 확인하고 싶어요","source":"synthetic-development"}
+{"id":"train-compare-ko-08","language":"ko","label":"compare","text":"확인된 동일 의류 상품의 판매 가격을 비교해주세요","source":"synthetic-development"}
+{"id":"train-compare-en-01","language":"en","label":"compare","text":"Compare prices for the same garment across retailers","source":"synthetic-development"}
+{"id":"train-compare-en-02","language":"en","label":"compare","text":"Compare purchase costs for the exact same shirt size","source":"synthetic-development"}
+{"id":"train-compare-en-03","language":"en","label":"compare","text":"I need a clothing price comparison including shipping and tax","source":"synthetic-development"}
+{"id":"train-compare-en-04","language":"en","label":"compare","text":"Can you compare the same trousers at different stores","source":"synthetic-development"}
+{"id":"train-compare-en-05","language":"en","label":"compare","text":"Compare sellers offering the same color and item condition","source":"synthetic-development"}
+{"id":"train-compare-en-06","language":"en","label":"compare","text":"Does comparing clothing prices in different currencies require exchange rates","source":"synthetic-development"}
+{"id":"train-compare-en-07","language":"en","label":"compare","text":"Find the lowest verified estimated purchase cost","source":"synthetic-development"}
+{"id":"train-compare-en-08","language":"en","label":"compare","text":"Compare the selling prices of an identical verified clothing item","source":"synthetic-development"}
+{"id":"train-discount-ko-01","language":"ko","label":"discount","text":"관심 있는 의류 상품의 할인 정보를 확인하고 싶어요","source":"synthetic-development"}
+{"id":"train-discount-ko-02","language":"ko","label":"discount","text":"이 옷의 프로모션 기간을 알 수 있나요","source":"synthetic-development"}
+{"id":"train-discount-ko-03","language":"ko","label":"discount","text":"현재 유효한 의류 세일을 찾아주세요","source":"synthetic-development"}
+{"id":"train-discount-ko-04","language":"ko","label":"discount","text":"상품 할인 가격과 적용 기간을 확인하고 싶어요","source":"synthetic-development"}
+{"id":"train-discount-ko-05","language":"ko","label":"discount","text":"옷 가격이 인하되었는지 확인해주세요","source":"synthetic-development"}
+{"id":"train-discount-ko-06","language":"ko","label":"discount","text":"확인된 브랜드 할인 행사를 알려주세요","source":"synthetic-development"}
+{"id":"train-discount-ko-07","language":"ko","label":"discount","text":"의류 할인 종료 예정 정보를 보고 싶어요","source":"synthetic-development"}
+{"id":"train-discount-ko-08","language":"ko","label":"discount","text":"지금 적용되는 옷 프로모션 가격을 확인해주세요","source":"synthetic-development"}
+{"id":"train-discount-en-01","language":"en","label":"discount","text":"Check discount information for a clothing item I like","source":"synthetic-development"}
+{"id":"train-discount-en-02","language":"en","label":"discount","text":"Can you show the promotion period for this garment","source":"synthetic-development"}
+{"id":"train-discount-en-03","language":"en","label":"discount","text":"Find currently valid clothing sales","source":"synthetic-development"}
+{"id":"train-discount-en-04","language":"en","label":"discount","text":"Check a discounted clothing price and its valid period","source":"synthetic-development"}
+{"id":"train-discount-en-05","language":"en","label":"discount","text":"Has the price of this garment dropped","source":"synthetic-development"}
+{"id":"train-discount-en-06","language":"en","label":"discount","text":"Show a verified brand promotion for clothing","source":"synthetic-development"}
+{"id":"train-discount-en-07","language":"en","label":"discount","text":"I want to know when a clothing discount ends","source":"synthetic-development"}
+{"id":"train-discount-en-08","language":"en","label":"discount","text":"Check the promotional price currently applying to this item","source":"synthetic-development"}
+{"id":"train-out_of_scope-ko-01","language":"ko","label":"out_of_scope","text":"비트코인 투자 수익을 예측해주세요","source":"synthetic-development"}
+{"id":"train-out_of_scope-ko-02","language":"ko","label":"out_of_scope","text":"파스타를 요리하는 방법을 알려주세요","source":"synthetic-development"}
+{"id":"train-out_of_scope-ko-03","language":"ko","label":"out_of_scope","text":"휴대폰 배터리를 수리하고 싶어요","source":"synthetic-development"}
+{"id":"train-out_of_scope-ko-04","language":"ko","label":"out_of_scope","text":"수학 방정식의 해를 구해주세요","source":"synthetic-development"}
+{"id":"train-out_of_scope-ko-05","language":"ko","label":"out_of_scope","text":"감기 증상을 진단해주세요","source":"synthetic-development"}
+{"id":"train-out_of_scope-ko-06","language":"ko","label":"out_of_scope","text":"은행 대출 이자를 계산해주세요","source":"synthetic-development"}
+{"id":"train-out_of_scope-ko-07","language":"ko","label":"out_of_scope","text":"컴퓨터 운영체제를 설치하는 방법이 궁금해요","source":"synthetic-development"}
+{"id":"train-out_of_scope-ko-08","language":"ko","label":"out_of_scope","text":"축구 경기 결과를 알려주세요","source":"synthetic-development"}
+{"id":"train-out_of_scope-en-01","language":"en","label":"out_of_scope","text":"Predict my profit from a bitcoin investment","source":"synthetic-development"}
+{"id":"train-out_of_scope-en-02","language":"en","label":"out_of_scope","text":"Tell me how to cook pasta","source":"synthetic-development"}
+{"id":"train-out_of_scope-en-03","language":"en","label":"out_of_scope","text":"Help me repair a phone battery","source":"synthetic-development"}
+{"id":"train-out_of_scope-en-04","language":"en","label":"out_of_scope","text":"Solve a mathematical equation for me","source":"synthetic-development"}
+{"id":"train-out_of_scope-en-05","language":"en","label":"out_of_scope","text":"Diagnose my cold symptoms","source":"synthetic-development"}
+{"id":"train-out_of_scope-en-06","language":"en","label":"out_of_scope","text":"Calculate the interest on a bank loan","source":"synthetic-development"}
+{"id":"train-out_of_scope-en-07","language":"en","label":"out_of_scope","text":"Explain how to install a computer operating system","source":"synthetic-development"}
+{"id":"train-out_of_scope-en-08","language":"en","label":"out_of_scope","text":"Tell me the result of a football match","source":"synthetic-development"}

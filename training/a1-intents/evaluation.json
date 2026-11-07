@@ -1,0 +1,201 @@
+{
+  "modelVersion": "a1-intent-v1",
+  "algorithm": "multinomial-naive-bayes",
+  "datasetOrigin": "synthetic-development",
+  "evaluationScope": "Held-out synthetic development examples only. These are software prototype results, not real-user or expert validation.",
+  "trainingExamples": 144,
+  "evaluationExamples": 36,
+  "correct": 27,
+  "predicted": 32,
+  "abstained": 4,
+  "accuracy": 0.75,
+  "coverage": 0.888889,
+  "selectiveAccuracy": 0.84375,
+  "macroF1": 0.75776,
+  "perTopic": {
+    "outfit": {
+      "support": 4,
+      "predicted": 3,
+      "precision": 1,
+      "recall": 0.75,
+      "f1": 0.857143
+    },
+    "fit": {
+      "support": 4,
+      "predicted": 5,
+      "precision": 0.8,
+      "recall": 1,
+      "f1": 0.888889
+    },
+    "color": {
+      "support": 4,
+      "predicted": 2,
+      "precision": 1,
+      "recall": 0.5,
+      "f1": 0.666667
+    },
+    "occasion": {
+      "support": 4,
+      "predicted": 4,
+      "precision": 0.75,
+      "recall": 0.75,
+      "f1": 0.75
+    },
+    "budget": {
+      "support": 4,
+      "predicted": 4,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    "care": {
+      "support": 4,
+      "predicted": 3,
+      "precision": 1,
+      "recall": 0.75,
+      "f1": 0.857143
+    },
+    "compare": {
+      "support": 4,
+      "predicted": 6,
+      "precision": 0.666667,
+      "recall": 1,
+      "f1": 0.8
+    },
+    "discount": {
+      "support": 4,
+      "predicted": 4,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    "out_of_scope": {
+      "support": 4,
+      "predicted": 1,
+      "precision": 0,
+      "recall": 0,
+      "f1": 0
+    }
+  },
+  "confusion": {
+    "outfit": {
+      "outfit": 3,
+      "fit": 0,
+      "color": 0,
+      "occasion": 1,
+      "budget": 0,
+      "care": 0,
+      "compare": 0,
+      "discount": 0,
+      "out_of_scope": 0,
+      "abstain": 0
+    },
+    "fit": {
+      "outfit": 0,
+      "fit": 4,
+      "color": 0,
+      "occasion": 0,
+      "budget": 0,
+      "care": 0,
+      "compare": 0,
+      "discount": 0,
+      "out_of_scope": 0,
+      "abstain": 0
+    },
+    "color": {
+      "outfit": 0,
+      "fit": 0,
+      "color": 2,
+      "occasion": 0,
+      "budget": 0,
+      "care": 0,
+      "compare": 0,
+      "discount": 0,
+      "out_of_scope": 0,
+      "abstain": 2
+    },
+    "occasion": {
+      "outfit": 0,
+      "fit": 0,
+      "color": 0,
+      "occasion": 3,
+      "budget": 0,
+      "care": 0,
+      "compare": 0,
+      "discount": 0,
+      "out_of_scope": 0,
+      "abstain": 1
+    },
+    "budget": {
+      "outfit": 0,
+      "fit": 0,
+      "color": 0,
+      "occasion": 0,
+      "budget": 4,
+      "care": 0,
+      "compare": 0,
+      "discount": 0,
+      "out_of_scope": 0,
+      "abstain": 0
+    },
+    "care": {
+      "outfit": 0,
+      "fit": 0,
+      "color": 0,
+      "occasion": 0,
+      "budget": 0,
+      "care": 3,
+      "compare": 0,
+      "discount": 0,
+      "out_of_scope": 1,
+      "abstain": 0
+    },
+    "compare": {
+      "outfit": 0,
+      "fit": 0,
+      "color": 0,
+      "occasion": 0,
+      "budget": 0,
+      "care": 0,
+      "compare": 4,
+      "discount": 0,
+      "out_of_scope": 0,
+      "abstain": 0
+    },
+    "discount": {
+      "outfit": 0,
+      "fit": 0,
+      "color": 0,
+      "occasion": 0,
+      "budget": 0,
+      "care": 0,
+      "compare": 0,
+      "discount": 4,
+      "out_of_scope": 0,
+      "abstain": 0
+    },
+    "out_of_scope": {
+      "outfit": 0,
+      "fit": 1,
+      "color": 0,
+      "occasion": 0,
+      "budget": 0,
+      "care": 0,
+      "compare": 2,
+      "discount": 0,
+      "out_of_scope": 0,
+      "abstain": 1
+    }
+  },
+  "trainSha256": "41fcdf2e6085fc3e36cf5064c38f41d9ff3c237e25165c8e3cbc9a09299cdcf4",
+  "evaluationSha256": "4c6a530fe2f6520f731366f50e673cb6096a80bf2932cafc54b1d4b3dc8b6bad",
+  "manifestSha256": "5e2ea7c11e23a4e096d9f7ad69489006e1d0a076ca921459a3c6e8895ab67eaa",
+  "modelSha256": "dddcd59c9a1b4c05a43e2ba2857f28279aaeda22c523e72df1707425c178232f",
+  "modelBytes": 184885,
+  "limitations": [
+    "No real customer data or real-world recommendation validation is supplied by the seed corpus.",
+    "Classification scores are not calibrated confidence or accuracy.",
+    "No photo analysis, garment fit, size, health or product facts are learned by this model.",
+    "This script does not collect feedback, approve deployment, change a database or enable a paid provider."
+  ]
+}
