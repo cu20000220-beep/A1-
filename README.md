@@ -1,5 +1,7 @@
 # A1 FASHION
 
+2026-11-08 무료 베타 범위·최신 검증·남은 확인·승인 후 iPad 배포 순서는 [무료 베타 출시 준비서](docs/FREE-BETA-RELEASE.md)를 기준으로 검토합니다. 기존 유료 서비스 전체 출시 검토와 구분합니다.
+
 공개 사이트: **https://a1fashion.pages.dev**
 
 최신 출시 판단·검증 범위·운영 설정 미확인 항목·백업/복구 및 승인 후 iPad 배포 순서는 [최종 출시 검증서](docs/LAUNCH-REVIEW.md)를 참고하세요. PR/Preview 성공만으로 운영 배포가 승인된 것은 아닙니다.
@@ -114,7 +116,7 @@ GitHub의 `.github/workflows/global-checks.yml`은 Pull Request 또는 운영자
 Node.js의 서버 테스트:
 
 ```sh
-node --test tests/body-analysis.cjs tests/membership-policy.cjs tests/premium-backend.cjs tests/recommendation-engine.cjs tests/firebase-auth.cjs tests/localization-server.cjs tests/global-entitlements.cjs tests/global-schema.cjs tests/global-api.cjs tests/global-retailers.cjs tests/price-comparison.cjs tests/notifications.cjs tests/catalog-repository.cjs tests/promotion-simulation.cjs tests/consent-context.cjs tests/global-completion-api.cjs tests/ai-catalog.cjs tests/ai-usage.cjs tests/openai-stylist.cjs tests/ai-stylist.cjs tests/unified-migrations.cjs tests/unified-access.cjs tests/preview-isolation.cjs tests/member-write-entitlements.cjs
+node --test tests/body-analysis.cjs tests/membership-policy.cjs tests/premium-backend.cjs tests/recommendation-engine.cjs tests/firebase-auth.cjs tests/localization-server.cjs tests/global-entitlements.cjs tests/global-schema.cjs tests/global-api.cjs tests/global-retailers.cjs tests/price-comparison.cjs tests/notifications.cjs tests/catalog-repository.cjs tests/promotion-simulation.cjs tests/consent-context.cjs tests/global-completion-api.cjs tests/ai-catalog.cjs tests/ai-usage.cjs tests/openai-stylist.cjs tests/ai-stylist.cjs tests/unified-migrations.cjs tests/unified-access.cjs tests/preview-isolation.cjs tests/member-write-entitlements.cjs tests/free-beta.cjs
 ```
 
 브라우저 검증은 위의 정적 서버와 Playwright/Chromium이 설치된 환경에서 실행합니다.

@@ -14,7 +14,10 @@
     '내 계정': 'MY ACCOUNT',
     'A1 AI 스타일 상담 · 현재 모의 운영': 'A1 AI style consultation · currently simulated',
     'AI 가격 비교 상담 · 현재 모의 운영': 'AI price comparison consultation · currently simulated',
-    '미리보기: 회원가입·로그인·구독·AI 상담은 연결하지 않았습니다. 화면과 무료 사진 분석을 확인하세요.': 'Preview: registration, sign-in, subscriptions and AI consultation are disconnected. You can explore the pages and free photo analysis.'
+    '미리보기: 회원가입·로그인·구독·AI 상담은 연결하지 않았습니다. 화면과 무료 사진 분석을 확인하세요.': 'Preview: registration, sign-in, subscriptions and AI consultation are disconnected. You can explore the pages and free photo analysis.',
+    'A1 FASHION · 무료 베타': 'A1 FASHION · FREE BETA',
+    '무료 베타에서는 사진 분석·회원가입·로그인과 기본 쇼핑몰 링크를 제공합니다.': 'The free beta includes photo analysis, registration, sign-in and basic retailer links.',
+    '개인화 추천과 GENERAL/PREMIUM 가입은 준비 중입니다. 실제 결제·유료 GPT 호출·자동 가격 수집·이메일/SMS 프로모션 알림은 비활성입니다.': 'Personalized recommendations and GENERAL/PREMIUM enrollment are coming soon. Payments, paid GPT calls, automatic price collection and promotional email/SMS alerts are disabled.'
   });
   const links = [
     ['home', '홈', 'index.html'],
@@ -46,6 +49,19 @@
         if (button) { event.preventDefault(); button.click(); update(); }
       });
     }
+  }
+  const navigation = document.querySelector('[data-site-navigation]');
+  if (navigation && !document.querySelector('[data-beta-notice]')) {
+    const notice = document.createElement('section');
+    notice.className = 'beta-notice'; notice.dataset.betaNotice = '';
+    const title = document.createElement('p'); title.className = 'beta-notice-title';
+    I.setText(title, 'A1 FASHION · 무료 베타');
+    const available = document.createElement('p');
+    I.setText(available, '무료 베타에서는 사진 분석·회원가입·로그인과 기본 쇼핑몰 링크를 제공합니다.');
+    const planned = document.createElement('p');
+    I.setText(planned, '개인화 추천과 GENERAL/PREMIUM 가입은 준비 중입니다. 실제 결제·유료 GPT 호출·자동 가격 수집·이메일/SMS 프로모션 알림은 비활성입니다.');
+    notice.append(title, available, planned);
+    navigation.insertAdjacentElement('afterend', notice);
   }
   if (location.hostname.toLowerCase().replace(/\.$/, '').endsWith('.a1fashion.pages.dev')) {
     const mount = document.querySelector('[data-site-navigation]');

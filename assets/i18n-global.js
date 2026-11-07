@@ -1,6 +1,11 @@
 /* Prepared public Korean/English global-shopping copy. No translation service. */
 'use strict';
 window.A1I18n.register({
+  "무료로 쇼핑몰 둘러보기": "Explore retailer searches for free",
+  "로그인 없이 국가별 쇼핑몰의 기본 의류 검색을 열 수 있습니다. 개인화 추천·실제 상품 연동·가격 비교 결과가 아니며, 배송·재고·가격은 판매처에서 확인해주세요.": "Open basic clothing searches by country without signing in. These are not personalized recommendations, imported products or price comparisons. Check shipping, stock and prices with the retailer.",
+  "맞춤 검색 · GENERAL 연결 준비 중": "Personalized search · GENERAL coming soon",
+  "아래 맞춤 검색과 관심 상품·프리미엄 기능은 유효한 구독을 서버에서 확인합니다. 무료 베타에서는 유료 가입과 자동 청구를 제공하지 않습니다.": "Personalized search, saved items and Premium features require a valid subscription verified by the server. Paid enrollment and automatic billing are unavailable in the free beta.",
+  "국내·해외 맞춤 쇼핑몰 검색": "Personalized searches of domestic and international retailers",
   "국가별 패션 판매처 검색, 멤버십, 예시 가격 비교와 모의 알림 관리.": "Explore fashion retailers by country, membership plans, demo price comparisons and simulated alerts.",
   "회원가입·로그인": "Sign up / Log in",
   "나라를 넘어 스타일을 탐색하세요.": "Discover style across borders.",

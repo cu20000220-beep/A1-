@@ -1,6 +1,9 @@
 /* Prepared Korean/English privacy and credits text. */
 'use strict';
 window.A1I18n.register({
+  "무료 베타 제공 범위": "Free beta scope",
+  "무료 베타의 사진 분석은 기기 안에서 실행하며 원본 사진을 Firebase나 외부 AI에 전송하지 않습니다. 기본 쇼핑몰 링크는 외부 판매처로 이동하며 해당 사이트의 개인정보 처리방침이 적용됩니다. 실제 결제·자동 가격 수집·이메일/SMS 프로모션 알림은 비활성입니다. 계정 확인·비밀번호 재설정 메일은 프로모션 알림과 별개입니다.": "Free beta photo analysis runs on your device; original photos are not sent to Firebase or an external AI. Basic retailer links take you to external stores, whose privacy policies apply. Payments, automatic price collection and promotional email/SMS alerts are disabled. Account verification and password reset emails are separate from promotional alerts.",
+
   "회원 개인정보 안내 — A1 FASHION": "Member Privacy Notice — A1 FASHION",
   "← 회원가입·로그인": "← Sign up & sign in",
   "회원 개인정보 안내": "Member Privacy Notice",

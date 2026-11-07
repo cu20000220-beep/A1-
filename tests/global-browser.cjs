@@ -122,6 +122,9 @@ async function assertEnglish(page,label){
   const context=await browser.newContext({locale:'ko-KR',viewport:{width:390,height:844}}),page=await context.newPage();
   const errors=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r));
   await page.goto(origin+'/global.html',{waitUntil:'networkidle'});
+  assert.equal(await page.locator('#public-shopping a[data-public-retailer]').count(),11,'Anonymous basic retailer links work without member APIs');
+  assert.equal(await page.locator('[data-beta-notice]').count(),1);
+  assert.equal(calls.length,0,'Opening the basic directory must not request paid or member services');
   await page.addInitScript(()=>{localStorage.setItem('paid','true');localStorage.setItem('plan','PREMIUM');});
   await submit(page,'#global-search button[type=submit]','retailers',401);
   assert.equal(await page.locator('#retailer-results a').count(),0);

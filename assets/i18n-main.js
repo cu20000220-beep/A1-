@@ -1,6 +1,17 @@
 /* Prepared Korean/English public site copy. No translation API is used. */
 'use strict';
 window.A1I18n?.register({
+  "기본 쇼핑몰 무료로 둘러보기 ↗": "Explore basic retailer links for free ↗",
+  "개인화 추천과 맞춤 판매처 검색은": "Personalized suggestions and tailored retailer searches",
+  "국내·해외 맞춤 쇼핑몰 검색": "Tailored searches across local and international retailers",
+  "무료 베타: 체형 참고 분석·회원가입과 기본 쇼핑몰 링크를 제공합니다. 개인화 추천과 구독 가입은 준비 중인 A1 FASHION.": "A1 FASHION free beta includes photo proportion analysis, registration and basic retailer links. Personalized recommendations and subscription enrollment are coming soon.",
+  "A1 FASHION · 무료 베타 · 사진 분석과 회원가입 무료": "A1 FASHION · FREE BETA · Free photo analysis and registration",
+  "무료 베타·출시 예정 기능 보기 ↗": "See free beta and upcoming features ↗",
+  "개인화 스타일 추천은 준비 중입니다.": "Personalized style suggestions are coming soon.",
+  "개인화 스타일은 출시 예정입니다.": "Personalized styling is coming soon.",
+  "사진을 선택해 AI가 추정한 인체 기준점과 사진 속 비율을 먼저 살펴보세요. 개인별 의류 추천·추천 이유·맞춤 쇼핑몰 검색 연결은 유효한 구독을 확인한 회원에게 제공합니다.": "Choose a photo to explore AI-estimated body landmarks and their proportions. Personalized clothing suggestions, explanations and tailored retailer searches require a verified, active subscription.",
+  "무료 베타 · 사진 분석·기본 쇼핑몰 링크 무료": "Free beta · Free photo analysis and basic retailer links",
+
   "전신 사진의 체형 참고 분석은 무료. 스타일 추천과 외부 쇼핑몰 연결은 구독 확인 후 제공하는 A1 FASHION.": "A1 FASHION offers free photo-based proportion analysis. Style suggestions and retailer links require a verified subscription.",
   "A1 STYLE STUDIO · 사진 분석은 무료, 추천은 멤버십으로.": "A1 STYLE STUDIO · Free photo analysis. Style suggestions with membership.",
   "A1 FASHION 홈": "A1 FASHION home",
