@@ -1,6 +1,9 @@
 'use strict';
 (() => {
   window.A1I18n.register({
+    '무료 분석을 완료했습니다. 무료 베타 스타일 예시도 이용할 수 있습니다.': 'Your free analysis is complete. Free beta style examples are also available.',
+    '선택한 사진 미리보기': 'Selected photo preview',
+    '선택한 사진 · 기기 안에서만 표시됩니다.': 'Selected photo · Displayed only on your device.',
     '사진을 선택해주세요. 분석 결과까지 무료로 확인할 수 있습니다.': 'Choose a photo. Viewing the analysis results is free.',
     '사진은 외부 서버로 전송하거나 저장하지 않습니다.': 'Your photo is not sent to or stored on an external server.',
     'AI 분석 중…': 'Analyzing with AI…',

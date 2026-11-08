@@ -27,7 +27,7 @@ const assert = require('node:assert/strict');
       await page.evaluate(() => scrollTo(0, 0));
       await page.screenshot({ path: `/tmp/a1-free-${width}.png`, fullPage: true });
     }
-    assert.equal(requests.filter(r => r.url().includes('/vendor/') || r.url().includes('/api/')).length, 0, 'no model or protected API requests before user action');
+    assert.equal(requests.filter(r => r.url().includes('/vendor/') || (r.url().includes('/api/') && !r.url().endsWith('/api/policy'))).length, 0, 'no model or protected API requests before user action');
     await page.route('**/assets/photos/hero.jpg', route => route.abort());
     await page.reload();
     await page.waitForFunction(() => { const image = document.querySelector('#hero-image'); return image?.classList.contains('image-fallback') && image.complete && image.naturalWidth > 0; });

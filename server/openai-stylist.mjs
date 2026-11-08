@@ -1,4 +1,5 @@
 /** Server-only, text-only Responses API transport. No automatic retries. */
+import { isFreeBetaMode } from './free-beta.mjs';
 if (typeof window !== 'undefined' || typeof document !== 'undefined') throw new Error('OpenAI transport is server-only.');
 
 const ENDPOINT = 'https://api.openai.com/v1/responses';
@@ -15,8 +16,8 @@ const invalid = () => new OpenAIStylistError(502, 'provider_invalid_response');
 
 /** Readiness never returns the secret or accepts a browser-selected model. */
 export function getOpenAIStylistConfiguration(env = {}) {
-  const liveRequested = env.A1_AI_MODE === 'live';
-  const approved = env.A1_AI_LIVE_APPROVED === 'true';
+  const liveRequested = !isFreeBetaMode(env) && env.A1_AI_MODE === 'live';
+  const approved = !isFreeBetaMode(env) && env.A1_AI_LIVE_APPROVED === 'true';
   const model = env.A1_AI_MODEL === MODEL ? MODEL : null;
   return Object.freeze({ liveRequested, approved,
     ready: liveRequested && approved && model !== null && validKey(env.OPENAI_API_KEY), model });

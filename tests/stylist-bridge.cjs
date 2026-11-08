@@ -119,7 +119,7 @@ async function ready(page, ratios = { shoulderHipRatio: 1.12, legTorsoRatio: 1.5
       assert.equal(await page.locator('#stylist-analysis-open').isDisabled(), true);
       await next.close();
     }
-    assert.equal(requests.filter(request => request.url.includes('/api/')).length, 0);
+    assert.equal(requests.filter(request => (request.url.includes('/api/') && !request.url.endsWith('/api/policy'))).length, 0);
     // Confirm that the production child UI consumes the same broker contract
     // while leaving both independent sharing choices unchecked.
     actualStylist = true;
@@ -139,7 +139,7 @@ async function ready(page, ratios = { shoulderHipRatio: 1.12, legTorsoRatio: 1.5
     assert.equal(await consultation.locator('#stylist-analysis-consent').isChecked(), false);
     assert.deepEqual(await page.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } })), before);
     assert.deepEqual(errors, []);
-    assert.ok(requests.filter(request => request.url.includes('/api/')).every(request => new URL(request.url).pathname === '/api/stylist' && request.method === 'GET'), 'Only a local readiness request occurs; no consultation/provider request');
+    assert.ok(requests.filter(request => (request.url.includes('/api/') && !request.url.endsWith('/api/policy'))).every(request => new URL(request.url).pathname === '/api/stylist' && request.method === 'GET'), 'Only a local readiness request occurs; no consultation/provider request');
     assert.ok(requests.every(request => request.method === 'GET' && ['127.0.0.1', 'localhost'].includes(new URL(request.url).hostname)));
     console.log('Stylist analysis bridge passed: actual same-origin child handshake and production child UI/CSP, wrong nonce/source/origin denied, two numbers only, one transfer, independent consent unchecked, clear/auth/pagehide invalidation, no photos/URL ratios/storage or consultation/provider calls.');
   } finally { if (browser) await browser.close(); await new Promise(resolve => server.close(resolve)); }

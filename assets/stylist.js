@@ -54,6 +54,10 @@
     status('구독 확인 기간이 끝나 이전 상담을 지웠습니다. 상담을 다시 요청해 권한을 확인해주세요.', true);
   }
   function protectResponse(result) {
+    if (result.freeBetaMode === true && result.mode === 'DEMO') {
+      clearTimeout(expiryTimer); expiryTimer = undefined; accessUntil = 0;
+      return;
+    }
     if (!Number.isSafeInteger(result.accessUntil) || result.accessUntil <= Date.now()) {
       const error = new Error('expired-response'); error.status = 403; throw error;
     }
@@ -164,7 +168,7 @@
       if (!values.shoulderHipRatio || !values.legTorsoRatio || !Number.isFinite(shoulderHipRatio) || !Number.isFinite(legTorsoRatio) || shoulderHipRatio<0.45 || shoulderHipRatio>2.5 || legTorsoRatio<0.6 || legTorsoRatio>3.5) { status('체형 참고 수치를 사용하려면 별도 동의와 두 비율을 확인해주세요.',true);return; }
       request.metrics={shoulderHipRatio,legTorsoRatio};
     }
-    setBusy(true); status('서버에서 구독·이용량과 검증 데이터를 확인하고 있습니다.');
+    setBusy(true); status(configuration.freeBetaMode ? '무료 베타 이용 중' : '서버에서 구독·이용량과 검증 데이터를 확인하고 있습니다.');
     try {
       const result = await api('POST',request); if(token!==generation)return;
       protectResponse(result);

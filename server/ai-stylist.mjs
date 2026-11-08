@@ -8,6 +8,7 @@ import { compareStoredProduct } from './global-comparison.mjs';
 import { getOpenAIStylistConfiguration, callOpenAIStylist, OpenAIStylistError } from './openai-stylist.mjs';
 import { readAiUsageLimits, reserveAiUsage, finishAiUsage, AiUsageError } from './ai-usage.mjs';
 import { STYLE_ADVICE, stylistPlanSchema, validateStylistPlan, demoStylistPlan, renderStylistGuidance } from './stylist-knowledge.mjs';
+import { isFreeBetaMode } from './free-beta.mjs';
 
 if(typeof window!=='undefined'||typeof document!=='undefined')throw new Error('AI stylist is server-only.');
 export class StylistError extends Error { constructor(status,code){super(code);this.status=status;this.code=code;} }
@@ -100,6 +101,25 @@ export async function handleStylistRequest({request,env},options={}){
   const currentTime=()=>{const value=clock();if(!Number.isSafeInteger(value)||value<now||value>253402300799999)throw new StylistError(503,'ai_unavailable');return value;};
   try{
     if(new URL(request.url).search)throw new StylistError(400,'invalid_request');
+    if (isFreeBetaMode(env)) {
+      if (request.method === 'GET') return jsonResponse({ freeBetaMode: true, mode: 'DEMO', liveEnabled: false,
+        available: true, photoUploads: false, plans: { style: 'FREE', compare: 'FREE', discount: 'FREE' } });
+      if (request.method !== 'POST') return jsonResponse({ error: 'method_not_allowed' }, 405, { Allow: 'GET, POST' });
+      const input = await readInput(request);
+      const plan = validateStylistPlan(demoStylistPlan(input, []), []);
+      const guidance = renderStylistGuidance(plan, { language: input.language, intent: input.intent, planCode: 'FREE', freeBetaMode: true });
+      const market = ['DE','FR','IT','ES','NL'].includes(input.preferences.destination) ? 'EU' : input.preferences.destination;
+      const directory = listGlobalRetailers({ country: market, destination: input.preferences.destination,
+        currency: input.preferences.currency, gender: input.preferences.gender, style: input.preferences.style,
+        category: input.preferences.category, maxPrice: input.preferences.budget }, { language: input.language });
+      return jsonResponse({ freeBetaMode: true, mode: 'DEMO', accessUntil: null, ...guidance, products: [], discounts: [],
+        comparison: null, dataStatus: 'preparing', usage: null,
+        searchLinks: directory.retailers.map(row => ({ store: row.name, label: row.name, url: row.searchUrl })),
+        notices: input.language === 'en'
+          ? ['Free beta · no subscription charge. Rule-based DEMO; no OpenAI call.', 'Verified products, prices and discounts are being prepared. Retailer links are searches.']
+          : ['무료 베타 · 구독료와 결제가 없습니다. 규칙 기반 DEMO이며 OpenAI를 호출하지 않습니다.', '검증된 상품·가격·할인 정보는 준비 중입니다. 판매처 연결은 검색 링크입니다.'] }, 200,
+        { 'Content-Language': input.language });
+    }
     const config=getOpenAIStylistConfiguration(env);
     const liveReady=config.ready&&readAiUsageLimits(env).configured&&typeof env?.MEMBERSHIP_DB?.prepare==='function';
     if(request.method==='GET')return jsonResponse({mode:config.liveRequested?(liveReady?'LIVE':'UNAVAILABLE'):'DEMO',liveEnabled:liveReady,photoUploads:false,available:!config.liveRequested||liveReady,plans:{style:'GENERAL',compare:'PREMIUM',discount:'PREMIUM'}},200,{'Content-Language':language});
