@@ -32,7 +32,7 @@ const assert = require('node:assert/strict');
     // Synthetic geometry tests the UI boundary only; actual model inference is tested separately.
     await page.evaluate(() => document.dispatchEvent(new CustomEvent('a1:analysis-ready', { detail:{ metrics:{ shoulderHipRatio:1.4, legTorsoRatio:1.8 } } })));
     assert.ok(await page.locator('#premium-lock').isVisible());
-    assert.equal(requests.filter(r => r.url().includes('/api/')).length, 0, 'free result never automatically requests a recommendation');
+    assert.equal(requests.filter(r => (r.url().includes('/api/') && !r.url().endsWith('/api/policy'))).length, 0, 'free result never automatically requests a recommendation');
     for (const [code, error, expected] of [
       [401,'authentication_required',/로그인/], [403,'subscription_required',/유효한 구독/], [503,'setup_required',/준비 중/]
     ]) {

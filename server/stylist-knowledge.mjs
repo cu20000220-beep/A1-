@@ -60,12 +60,12 @@ export function demoStylistPlan(input, products = []) {
   if(input.metrics)advice.push('fit_length');
   return {scope:'fashion',topic,adviceIds:advice.slice(0,5),productIds:products.slice(0,4).map(row=>row.id),followUp:'occasion'};
 }
-export function renderStylistGuidance(plan, {language='ko',intent='style',planCode='GENERAL'} = {}) {
+export function renderStylistGuidance(plan, {language='ko',intent='style',planCode='GENERAL',freeBetaMode=false} = {}) {
   const en=language==='en',at=en?1:0;
   if(plan.scope==='out_of_scope')return {reply:en?'I can help with fashion, outfit choices and verified clothing information.':'패션·코디와 검증된 의류 정보에 관해 상담할 수 있습니다.',advice:[]};
   const advice=plan.adviceIds.map(id=>({id,text:STYLE_ADVICE[id][at]}));
   const opening=en?'Let’s explore an outfit that suits your preferences. These suggestions do not guarantee fit or size.':'선택한 취향에 맞춰 코디를 살펴볼게요. 실제 착용감이나 사이즈를 보장하는 안내는 아닙니다.';
-  const premiumHint=planCode!=='PREMIUM'&&['compare','discount'].includes(plan.topic)
+  const premiumHint=!freeBetaMode&&planCode!=='PREMIUM'&&['compare','discount'].includes(plan.topic)
     ?en?'Price comparison and verified discount recommendations require Premium.':'가격 비교와 검증된 할인 추천에는 프리미엄 구독이 필요합니다.':'';
   const intentHint=intent==='compare'?(en?'Only the same verified product variant is compared. Unknown costs do not count as zero.':'확인된 동일 상품·색상·사이즈·상태만 비교하며 미확인 비용을 0으로 계산하지 않습니다.')
     :intent==='discount'?(en?'Only current, verified promotion prices are considered.':'현재 적용 중이며 검증된 프로모션 가격만 살펴봅니다.'):'';

@@ -1,3 +1,4 @@
+import { isFreeBetaMode } from './free-beta.mjs';
 /** Private member data. Every SQL operation scopes ownership to issuer + subject. */
 export class MemberDataError extends Error {
   constructor(status, code) { super(code); this.status = status; this.code = code; }
@@ -100,13 +101,19 @@ function paidWritePermission(tier, includePlan = true) {
 }
 
 export class MemberStore {
-  constructor(db, identity, now = Date.now()) {
+  constructor(db, identity, now = Date.now(), serverPolicy = {}) {
     if (typeof db?.prepare !== 'function' || !identity?.issuer || !identity?.subject) throw new MemberDataError(503, 'setup_required');
+    this.freeBeta = isFreeBetaMode(serverPolicy);
     this.db = db; this.owner = [identity.issuer, identity.subject]; this.now = now;
+  }
+  writePermission(tier, includePlan = true) {
+    // The handler has already verified identity. Keep bound owner/time slots
+    // and every row ownership predicate; beta never creates a membership row.
+    return this.freeBeta ? '(length(?) > 0 AND length(?) > 0 AND ? >= 0 AND ? >= 0)' : paidWritePermission(tier, includePlan);
   }
   statement(sql, ...values) { return this.db.prepare(sql).bind(...this.owner, ...values); }
   async paidWriteAllowed(tier, includePlan = true) {
-    const row = await this.db.prepare(`SELECT ${paidWritePermission(tier, includePlan)} AS allowed`)
+    const row = await this.db.prepare(`SELECT ${this.writePermission(tier, includePlan)} AS allowed`)
       .bind(...this.owner, this.now, this.now).first();
     return row?.allowed === 1;
   }
@@ -128,7 +135,7 @@ export class MemberStore {
       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE
       (EXISTS (SELECT 1 FROM product_watchlists WHERE issuer = ? AND subject = ? AND product_id = ? AND currency = ?)
         OR (SELECT COUNT(*) FROM product_watchlists WHERE issuer = ? AND subject = ?) < 100)
-      AND ${paidWritePermission(tier, includePlan)}
+      AND ${this.writePermission(tier, includePlan)}
       ON CONFLICT(issuer, subject, product_id, currency) DO UPDATE SET target_price = excluded.target_price, brand = excluded.brand, category = excluded.category RETURNING id`,
       watchId, value.productId, value.targetPrice, value.currency, value.brand, value.category, this.now,
       ...this.owner, value.productId, value.currency, ...this.owner, ...this.owner, this.now, this.now).first();
@@ -194,7 +201,7 @@ export class MemberStore {
       SELECT ?, ?, ?, ?, ?, ?, CASE WHEN ? = 1 AND permission.email = 1 THEN 1 ELSE 0 END,
         CASE WHEN ? = 1 AND permission.sms = 1 THEN 1 ELSE 0 END,
         CASE WHEN permission.sms = 1 THEN CASE WHEN ? = 1 THEN ? ELSE permission.saved_phone END ELSE NULL END,
-        0, ?, ?, ? FROM permission WHERE (? = 0 OR permission.sms = 1) AND ${paidWritePermission('PREMIUM')}
+        0, ?, ?, ? FROM permission WHERE (? = 0 OR permission.sms = 1) AND ${this.writePermission('PREMIUM')}
       ON CONFLICT(issuer, subject) DO UPDATE SET country = excluded.country, time_zone = excluded.time_zone, language = excluded.language, frequency = excluded.frequency, email_enabled = excluded.email_enabled, sms_enabled = excluded.sms_enabled, phone_e164 = excluded.phone_e164, phone_verified = 0, brands_json = excluded.brands_json, categories_json = excluded.categories_json, updated_at = excluded.updated_at RETURNING issuer`)
       .bind(...this.owner, ...this.owner, ...this.owner, ...this.owner, value.country, value.timeZone, value.language, value.frequency,
         Number(value.emailEnabled), Number(value.smsEnabled), Number(own(value, 'phone')), value.phone ?? null,
@@ -227,7 +234,7 @@ export class MemberStore {
         values.push(...this.owner, options.language ?? null, ...this.owner, Number(acknowledged), options.language ?? null, ...this.owner,
           consentNotice(channel, 'en', granted), consentNotice(channel, 'ko', granted));
       }
-      const grantCondition = granted ? ` WHERE ${paidWritePermission('PREMIUM')}` : '';
+      const grantCondition = granted ? ` WHERE ${this.writePermission('PREMIUM')}` : '';
       const result = [this.db.prepare(`INSERT INTO notification_consents (${columns.join(', ')}) SELECT ${expressions.join(', ')}${grantCondition}`)
         .bind(...values, ...(granted ? [...this.owner, this.now, this.now] : []))];
       if (!granted) {
@@ -265,7 +272,7 @@ export class MemberStore {
     if (!consent[channel]) throw new MemberDataError(403, 'consent_required');
     const event = 'DEMO-preview-' + new Date(this.now).toISOString().slice(0, 10);
     const dedupe = `preview:${channel}:${event}`;
-    const premium = paidWritePermission('PREMIUM');
+    const premium = this.writePermission('PREMIUM');
     try {
       await this.db.prepare(`INSERT INTO notification_deliveries (issuer, subject, id, channel, event_id, dedupe_key, status, created_at, payload_json) SELECT ?, ?, ?, ?, ?, ?, 'dry-run', ?, ? WHERE (SELECT granted FROM notification_consents WHERE issuer = ? AND subject = ? AND channel = ? ORDER BY occurred_at DESC, id DESC LIMIT 1) = 1 AND ${premium} ON CONFLICT(issuer, subject, channel, dedupe_key) DO NOTHING`)
         .bind(...this.owner, id(), channel, event, dedupe, this.now, JSON.stringify(template), ...this.owner, channel, ...this.owner, this.now, this.now).run();

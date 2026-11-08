@@ -39,6 +39,7 @@ const publicEntries = [
   'assets/i18n-stylist.js',
   'assets/stylist-analysis-bridge.js',
   'assets/site-navigation.js',
+  'assets/free-beta.js',
   'assets/site-navigation.css',
   'assets/global.css',
   'assets/global.js',

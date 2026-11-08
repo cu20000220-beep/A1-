@@ -8,6 +8,7 @@ import { requestLanguage } from '../../../server/locale.mjs';
 import { loadVerifiedCatalog } from '../../../server/catalog-repository.mjs';
 import { compareStoredProduct } from '../../../server/global-comparison.mjs';
 import { runMemberPromotionSimulation } from '../../../server/promotion-simulation.mjs';
+import { isFreeBetaMode } from '../../../server/free-beta.mjs';
 
 const methods = { account: ['GET'], retailers: ['POST'], products: ['POST'], comparison: ['POST'], watchlist: ['GET', 'POST', 'DELETE'],
   preferences: ['GET', 'PUT', 'DELETE'], consents: ['GET', 'POST'], history: ['GET', 'DELETE'], preview: ['POST'], simulate: ['POST'] };
@@ -63,6 +64,7 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
   const respond = (value, status = 200) => jsonResponse(value, status, { 'Content-Language': language,
     Vary: 'Authorization, Cookie, Cf-Access-Jwt-Assertion, Accept-Language' });
   try {
+    const beta = isFreeBetaMode(env);
     if (!methods[resource]) throw new MemberDataError(404, 'not_found');
     if (!methods[resource].includes(request.method)) return errorResponse(new MemberDataError(405, 'method_not_allowed'), language, methods[resource]);
     if (new URL(request.url).search) throw new MemberDataError(400, 'invalid_request');
@@ -74,6 +76,11 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
       return value;
     };
     const recheck = async (access, requiredTier) => {
+      if (beta) {
+        const identity = await authenticateMember(request, env, { ...authOptions, now: currentTime() });
+        if (identity.issuer !== access.identity.issuer || identity.subject !== access.identity.subject) throw new MemberDataError(401, 'authentication_required');
+        return currentTime();
+      }
       const current = await authorizeMember(request, env, { ...authOptions, now: currentTime(), requiredTier });
       if (current.identity.issuer !== access.identity.issuer || current.identity.subject !== access.identity.subject) throw new MemberDataError(401, 'authentication_required');
       const completedAt = currentTime();
@@ -84,6 +91,11 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
     };
     const paidResponse = async (value, access, tier, status = 200) => { await recheck(access, tier); return respond(value, status); };
     if (resource === 'account') {
+      if (beta) {
+        await authenticateMember(request, env, authOptions);
+        return respond({ plan: 'FREE', freeBetaMode: true, subscription: { active: false, accessUntil: null },
+          mode: 'DRY_RUN', databaseConfigured: typeof env?.MEMBERSHIP_DB?.prepare === 'function' });
+      }
       if (typeof env?.MEMBERSHIP_DB?.prepare !== 'function') {
         await authenticateMember(request, env, authOptions);
         return respond({ plan: 'FREE', subscription: { active: false, accessUntil: null }, mode: 'DRY_RUN', databaseConfigured: false });
@@ -99,14 +111,26 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
       return respond({ plan: active ? access.plan : 'FREE', subscription: { active, accessUntil: active ? access.accessUntil : null }, mode: 'DRY_RUN', databaseConfigured: true });
     }
     const value = request.method === 'GET' ? null : await body(request);
+    // Public beta reads do not touch authentication, member DBs or providers.
+    if (beta && ['retailers', 'products', 'comparison'].includes(resource)) {
+      if (resource === 'retailers') return respond({ ...listGlobalRetailers(safeFilters(value), { language }), freeBetaMode: true });
+      if (resource === 'products') {
+        safeFilters(value);
+        return respond({ mode: 'verified-offers', status: 'disabled', reason: 'verified_data_preparing', products: [],
+          noCurrencyConversion: true, liveFeedFetchEnabled: false, freeBetaMode: true });
+      }
+      exactFields(value, ['destination', 'currency', 'productId'], ['destination', 'currency']);
+      const comparison = await compareStoredProduct(null, { ...value, productId: value.productId || 'pending', now: currentTime(), allowLiveCatalog: false });
+      return respond({ ...comparison, reason: 'verified_data_preparing', freeBetaMode: true });
+    }
     const withdrawal = resource === 'consents' && value?.granted === false;
     const deletion = request.method === 'DELETE';
     const ownRecordRead = request.method === 'GET' && ['watchlist', 'preferences', 'history', 'consents'].includes(resource);
     const tier = ['comparison', 'preferences', 'consents', 'history', 'preview', 'simulate'].includes(resource) ? 'PREMIUM' : 'GENERAL';
-    const access = withdrawal || deletion || ownRecordRead
+    const access = beta || withdrawal || deletion || ownRecordRead
       ? { identity: await authenticateMember(request, env, authOptions), plan: 'FREE' }
       : await authorizeMember(request, env, { ...authOptions, requiredTier: tier });
-    const store = new MemberStore(env.MEMBERSHIP_DB, access.identity, now);
+    const store = new MemberStore(env.MEMBERSHIP_DB, access.identity, now, env);
     // Reads consume the same owner-scoped quota as writes. Privacy withdrawal
     // and erasure remain available even when the hourly quota is exhausted.
     if (!withdrawal && !deletion) await store.rateLimit();
@@ -152,13 +176,15 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
       if (request.method === 'GET') return respond({ items: await store.watches() });
       if (request.method === 'DELETE') { exactFields(value, ['id']); await store.deleteWatch(value.id); return respond({ ok: true }); }
       const watch = normalizeWatchlist(value);
-      if (watch.targetPrice !== null && access.plan !== 'PREMIUM') throw new MemberDataError(403, 'premium_required');
+      if (watch.targetPrice !== null && access.plan !== 'PREMIUM' && !beta) throw new MemberDataError(403, 'premium_required');
       return await paidResponse({ ok: true, items: await store.saveWatch(watch) }, access, watch.targetPrice === null ? tier : 'PREMIUM', 201);
     }
     if (resource === 'preferences') {
       if (request.method === 'GET') return respond(await preferencesResult(store));
       if (request.method === 'DELETE') { empty(value); await store.eraseNotificationData(); return respond({ ok: true, ...(await preferencesResult(store)) }); }
       const normalized = normalizePreferences(value);
+      // Beta can save preferences, but cannot opt a user into real delivery.
+      if (beta) { normalized.emailEnabled = false; normalized.smsEnabled = false; }
       if (normalized.phone && !validateE164(normalized.phone, normalized.country).valid) throw new MemberDataError(400, 'invalid_request');
       await store.savePreferences(normalized);
       return await paidResponse({ ok: true, ...(await preferencesResult(store)) }, access, tier);
@@ -190,6 +216,7 @@ export async function handleGlobalRequest(resource, { request, env }, options = 
     }
     if (resource === 'simulate') {
       empty(value);
+      if (beta) return respond({ mode: 'DRY_RUN', freeBetaMode: true, sent: false, created: 0, duplicates: 0, suppressed: 0, eventCount: 0, previews: [], status: 'preparing' });
       const result = await runMemberPromotionSimulation(env.MEMBERSHIP_DB, { identity: access.identity, now: currentTime(), clock: currentTime, origin: new URL(request.url).origin });
       return await paidResponse(result, access, tier);
     }

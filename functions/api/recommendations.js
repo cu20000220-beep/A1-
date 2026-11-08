@@ -4,6 +4,7 @@ import {
 } from '../../server/premium-access.mjs';
 import { recommendForMember } from '../../server/recommendation-engine.mjs';
 import { requestLanguage } from '../../server/locale.mjs';
+import { isFreeBetaMode } from '../../server/free-beta.mjs';
 
 export async function onRequest({ request, env }) {
   if (request.method !== 'POST') {
@@ -11,6 +12,11 @@ export async function onRequest({ request, env }) {
   }
   try {
     assertSameOrigin(request);
+    if (isFreeBetaMode(env)) {
+      const input = await readRecommendationRequest(request);
+      return jsonResponse({ ...recommendForMember(input, { language: requestLanguage(request) }), freeBetaMode: true }, 200,
+        { 'Content-Language': requestLanguage(request) });
+    }
     // A previous membership check is not an authorization grant for this call.
     await authorizePremium(request, env);
     const input = await readRecommendationRequest(request);

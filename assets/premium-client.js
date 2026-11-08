@@ -1,8 +1,15 @@
 'use strict';
 (() => {
   const $ = selector => document.querySelector(selector);
-  const tx = (selector, source) => window.A1I18n.setText($(selector), source);
+  const betaCopy = source => {
+    if (!freeBeta) return source;
+    if (/구독|결제/.test(source)) return '무료 베타 이용 중 · 현재 결제되지 않습니다. 추천은 참고용 예시이며, 계정 저장은 무료 로그인이 필요합니다.';
+    return source;
+  };
+  const tx = (selector, source) => window.A1I18n.setText($(selector), betaCopy(source));
   let metrics = null, allowed = false, busy = false, revision = 0, presented = false, operation = null, activeController;
+  let freeBeta = false;
+  window.A1I18n.register({ '무료 베타 이용 중': 'Free beta active', '무료 베타 이용 중 · 현재 결제되지 않습니다. 추천은 참고용 예시이며, 계정 저장은 무료 로그인이 필요합니다.': 'Free beta active · No payment is taken. Recommendations are style examples; sign in for free to save to your account.' });
   function status(text) { tx('#premium-status', text); tx('#premium-result-status', text); }
   function clearResults() { presented = false; window.A1UI.clearPremium(); }
   function lock(text) {
@@ -39,7 +46,8 @@
     try {
       const { response, data } = await api('api/membership'); if (token !== revision) return;
       if (!response.ok || data.allowed !== true) { rejected(response, data); return; }
-      allowed = true; $('#premium-lock').hidden = true; $('#premium-controls').hidden = false; tx('#premium-badge', '구독 확인됨');
+      freeBeta = data.freeBetaMode === true;
+      allowed = true; $('#premium-lock').hidden = true; $('#premium-controls').hidden = false; tx('#premium-badge', freeBeta ? '무료 베타 이용 중' : '구독 확인됨');
       tx('#premium-member-status', metrics ? '구독을 확인했습니다. 원하는 조건을 고르고 추천을 요청하세요.' : '구독을 확인했습니다. 먼저 무료 사진 분석을 완료해주세요.');
       status('구독을 확인했습니다.');
     } catch { if (token === revision) lock('구독 상태를 확인하지 못했습니다. 다시 시도해주세요. 무료 사진 분석은 계속 이용할 수 있습니다.'); }
@@ -67,6 +75,11 @@
   document.addEventListener('a1:analysis-ready', event => {
     invalidate(); metrics = { shoulderHipRatio: event.detail.metrics.shoulderHipRatio, legTorsoRatio: event.detail.metrics.legTorsoRatio };
     lock('무료 분석을 완료했습니다. 분석 결과는 구독 없이 볼 수 있습니다. 의류 추천과 판매처 연결은 로그인·구독 확인 후 열립니다.'); buttons();
+    if (freeBeta) checkMembership();
+  });
+  document.addEventListener('a1:policy-ready', event => {
+    freeBeta = event.detail.freeBetaMode === true;
+    if (freeBeta) checkMembership();
   });
   document.addEventListener('a1:language-changed', () => {
     const repeat = allowed && metrics && (presented || operation === 'recommendation');
