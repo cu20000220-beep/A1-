@@ -17,10 +17,12 @@ const assert = require('node:assert/strict');
       window.A1Catalog = { products:[{ id:'injected', name:'주입 상품', source:'example', price:10000 }] };
     });
     await page.goto(base);
-    assert.equal(await page.locator('#membership .membership-plan').count(), 2);
+    assert.equal(await page.locator('#membership .membership-plan').count(), 3);
+    assert.equal(await page.locator('[data-site-navigation] a[data-site-link="shopping"][href="global.html#shopping"]').count(), 1);
+    assert.equal(await page.locator('#membership button:disabled').count(), 2);
     assert.match(await page.locator('.plan-price').innerText(), /무료/);
-    assert.match(await page.locator('.plan-pending').innerText(), /월 구독료 준비 중/);
-    assert.ok(await page.locator('.membership-pending').isDisabled());
+    assert.match(await page.locator('.plan-pending').first().innerText(), /월 구독료 준비 중/);
+    assert.equal(await page.locator('.membership-pending:disabled').count(), 2);
     assert.match(await page.locator('.membership-badge').innerText(), /분석 무료 · 추천 구독/);
     assert.equal(await page.locator('input[type=email],input[type=tel],input[autocomplete=cc-number]').count(), 0);
     assert.equal(await page.getByRole('button', { name: /결제하기|구독하기|주문 확정/ }).count(), 0);
@@ -30,7 +32,7 @@ const assert = require('node:assert/strict');
     // Synthetic geometry tests the UI boundary only; actual model inference is tested separately.
     await page.evaluate(() => document.dispatchEvent(new CustomEvent('a1:analysis-ready', { detail:{ metrics:{ shoulderHipRatio:1.4, legTorsoRatio:1.8 } } })));
     assert.ok(await page.locator('#premium-lock').isVisible());
-    assert.equal(requests.filter(r => r.url().includes('/api/')).length, 0, 'free result never automatically requests a recommendation');
+    assert.equal(requests.filter(r => (r.url().includes('/api/') && !r.url().endsWith('/api/policy'))).length, 0, 'free result never automatically requests a recommendation');
     for (const [code, error, expected] of [
       [401,'authentication_required',/로그인/], [403,'subscription_required',/유효한 구독/], [503,'setup_required',/준비 중/]
     ]) {

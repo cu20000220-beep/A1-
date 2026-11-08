@@ -1,6 +1,17 @@
 /* Prepared Korean/English public site copy. No translation API is used. */
 'use strict';
 window.A1I18n?.register({
+  "기본 쇼핑몰 무료로 둘러보기 ↗": "Explore basic retailer links for free ↗",
+  "개인화 추천과 맞춤 판매처 검색은": "Personalized suggestions and tailored retailer searches",
+  "국내·해외 맞춤 쇼핑몰 검색": "Tailored searches across local and international retailers",
+  "무료 베타: 체형 참고 분석·회원가입과 기본 쇼핑몰 링크를 제공합니다. 개인화 추천과 구독 가입은 준비 중인 A1 FASHION.": "A1 FASHION free beta includes photo proportion analysis, registration and basic retailer links. Personalized recommendations and subscription enrollment are coming soon.",
+  "A1 FASHION · 무료 베타 · 사진 분석과 회원가입 무료": "A1 FASHION · FREE BETA · Free photo analysis and registration",
+  "무료 베타·출시 예정 기능 보기 ↗": "See free beta and upcoming features ↗",
+  "개인화 스타일 추천은 준비 중입니다.": "Personalized style suggestions are coming soon.",
+  "개인화 스타일은 출시 예정입니다.": "Personalized styling is coming soon.",
+  "사진을 선택해 AI가 추정한 인체 기준점과 사진 속 비율을 먼저 살펴보세요. 개인별 의류 추천·추천 이유·맞춤 쇼핑몰 검색 연결은 유효한 구독을 확인한 회원에게 제공합니다.": "Choose a photo to explore AI-estimated body landmarks and their proportions. Personalized clothing suggestions, explanations and tailored retailer searches require a verified, active subscription.",
+  "무료 베타 · 사진 분석·기본 쇼핑몰 링크 무료": "Free beta · Free photo analysis and basic retailer links",
+
   "전신 사진의 체형 참고 분석은 무료. 스타일 추천과 외부 쇼핑몰 연결은 구독 확인 후 제공하는 A1 FASHION.": "A1 FASHION offers free photo-based proportion analysis. Style suggestions and retailer links require a verified subscription.",
   "A1 STYLE STUDIO · 사진 분석은 무료, 추천은 멤버십으로.": "A1 STYLE STUDIO · Free photo analysis. Style suggestions with membership.",
   "A1 FASHION 홈": "A1 FASHION home",
@@ -98,5 +109,23 @@ window.A1I18n?.register({
   "무료 회원가입 · 구독 결제 연결 준비 중 · 현재 자동 청구 없음": "Free registration · Subscription payment coming later · No automatic billing",
   "사진·AI 모델 출처 및 이용 안내 ↗": "Photo and AI model credits ↗",
   "회원 개인정보 안내 ↗": "Account privacy notice ↗",
-  "스타일 상세 닫기": "Close style details"
+  "스타일 상세 닫기": "Close style details",
+  "글로벌 쇼핑": "Global shopping",
+  "국내·해외 쇼핑몰 검색 연결": "Search links to local and international retailers",
+  "가격 비교와 알림": "Price comparison and alerts",
+  "GENERAL의 모든 기능": "All GENERAL features",
+  "확인된 동일 상품 가격 비교": "Compare verified offers for the same product",
+  "관심 상품 목표 가격·할인 알림": "Target price and discount alerts for watched products",
+  "이메일·SMS 채널별 별도 동의": "Separate email and SMS marketing consent",
+  "가격 비교는 DEMO이며 알림은 실제 발송 없는 모의 모드입니다.": "Price comparisons are DEMO examples. Alerts run in simulation mode without sending messages.",
+  "세 가지 멤버십 비교 ↗": "Compare all three memberships ↗",
+  "별도의 DEMO 가격 비교 보기 ↗": "View a separate DEMO price comparison ↗",
+  "현재 추천 예시의 실제 판매 가격 비교가 아닙니다. 가격 비교에는 PREMIUM 권한이 필요합니다.": "This does not compare real sale prices for the style examples above. Price comparison requires PREMIUM access.",
+  "A1 AI 스타일리스트 ↗": "A1 AI Stylist ↗",
+  "A1 AI 스타일 상담 · 현재 모의 운영": "A1 AI style consultations · Simulation mode",
+  "분석 비율로 A1 AI 상담하기 ↗": "Discuss my analysis ratios with A1 AI ↗",
+  "무료 분석 후 비율 두 개를 A1 상담 화면으로 가져올 수 있습니다. 사진은 전달하지 않습니다.": "After free analysis, you can bring two ratios to the A1 consultation page. Your photo is not transferred.",
+  "분석 비율을 상담 화면으로 가져올 수 있습니다. 외부 AI 전송은 상담 화면에서 별도로 동의해야 합니다.": "You can bring your analysis ratios to the consultation page. Sending them to an external AI requires separate consent there.",
+  "상담 창을 열지 못했습니다. 새 창을 허용하거나 A1 AI 스타일리스트 링크를 이용해주세요.": "The consultation window could not be opened. Allow a new window or use the A1 AI Stylist link.",
+  "비율 두 개만 A1 상담 화면에 전달합니다. 사진은 기기 안에 남습니다.": "Only two ratios are transferred to the A1 consultation page. Your photo stays on your device."
 });

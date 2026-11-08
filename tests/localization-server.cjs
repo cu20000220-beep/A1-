@@ -109,7 +109,8 @@ test('an English request still requires signed identity and current paid DB stat
   const body = await response.json();
   assert.doesNotMatch(body.recommendations[0].product.name, /[가-힣]/);
   assert.equal(body.recommendations.length, 4);
-  assert.equal(reads, 2);
+  // One rejected unpaid lookup plus pre-body and final paid reauthorization.
+  assert.equal(reads, 3);
 });
 
 test('email verification and reset use a whitelisted locale without new credential fields or tokens in JSON', async () => {

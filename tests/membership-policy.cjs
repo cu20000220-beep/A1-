@@ -11,7 +11,7 @@ const paid = Object.freeze({
 test('only a verified active paid period grants recommendation access', async () => {
   const { evaluateAccess } = await policy;
   assert.deepEqual(evaluateAccess(paid, NOW), {
-    allowed: true, reason: 'subscription-active', source: 'subscription', accessUntil: NOW + 1000
+    allowed: true, reason: 'subscription-active', source: 'subscription', accessUntil: NOW + 1000, plan: 'GENERAL'
   });
   for (const subscriptionStatus of [undefined, null, true, 'inactive', 'canceled', 'past_due', 'unpaid', 'trialing']) {
     assert.equal(evaluateAccess({ ...paid, subscriptionStatus }, NOW).allowed, false);
@@ -68,4 +68,18 @@ test('policy is immutable and expiration never performs billing or extends acces
   assert.equal(JSON.stringify(paid), snapshot);
   assert.ok(Object.isFrozen(decision));
   assert.throws(() => { decision.allowed = true; }, TypeError);
+});
+
+
+test('GENERAL and legacy members never gain PREMIUM while verified PREMIUM includes GENERAL', async () => {
+  const { evaluateAccess } = await policy;
+  for (const member of [paid, { ...paid, planCode: 'GENERAL' }]) {
+    assert.equal(evaluateAccess(member, NOW, 'GENERAL').allowed, true);
+    assert.equal(evaluateAccess(member, NOW, 'PREMIUM').allowed, false);
+  }
+  assert.equal(evaluateAccess({ ...paid, planCode: 'PREMIUM' }, NOW, 'PREMIUM').allowed, true);
+  assert.equal(evaluateAccess({ ...paid, planCode: 'PREMIUM' }, NOW, 'GENERAL').plan, 'PREMIUM');
+  for (const planCode of [null, '', 'premium', true, 'ADMIN', 'FREE']) assert.equal(evaluateAccess({ ...paid, planCode }, NOW).allowed, false);
+  for (const subscriptionStatus of ['refunded','expired','past_due','unpaid','canceled']) assert.equal(evaluateAccess({ ...paid, planCode: 'PREMIUM', subscriptionStatus }, NOW, 'PREMIUM').allowed, false);
+  assert.equal(evaluateAccess(paid, NOW, 'ADMIN').allowed, false);
 });

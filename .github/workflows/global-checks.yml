@@ -1,0 +1,47 @@
+name: Unified platform checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: global-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  isolated-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Offline unit, authorization, SQLite and privacy checks
+        run: >-
+          node --test
+          tests/body-analysis.cjs tests/membership-policy.cjs
+          tests/premium-backend.cjs tests/recommendation-engine.cjs
+          tests/firebase-auth.cjs tests/localization-server.cjs
+          tests/global-entitlements.cjs tests/global-schema.cjs
+          tests/global-api.cjs tests/global-retailers.cjs
+          tests/price-comparison.cjs tests/notifications.cjs
+          tests/catalog-repository.cjs tests/promotion-simulation.cjs
+          tests/consent-context.cjs tests/global-completion-api.cjs
+          tests/ai-catalog.cjs tests/ai-usage.cjs
+          tests/openai-stylist.cjs tests/ai-stylist.cjs
+          tests/unified-migrations.cjs tests/unified-access.cjs
+          tests/preview-isolation.cjs
+          tests/member-write-entitlements.cjs
+          tests/free-beta.cjs tests/free-beta-policy.cjs
+      - name: Package public assets only
+        run: node scripts/build-site.cjs
+      - name: Check public artifact exposure
+        run: node scripts/check-public-artifacts.cjs
+      - name: Check whitespace
+        run: git diff --check

@@ -3,7 +3,9 @@
   const $ = selector => document.querySelector(selector);
   const advisor = window.A1BodyAnalysis;
   const vendor = new URL('vendor/mediapipe/', new URL('.', document.currentScript.src));
+  let freeBeta = false;
   let photograph = null;
+  let pendingPhoto = null;
   let analysis = null;
   let busy = false;
   let revision = 0;
@@ -49,7 +51,7 @@
   function status(message, error = false) {
     statusSource = message;
     statusError = error;
-    text($('#ai-status'), message);
+    text($('#ai-status'), freeBeta && message === '무료 분석을 완료했습니다. 결과는 구독 없이 볼 수 있으며, 스타일 추천은 구독 확인 후 이용합니다.' ? '무료 분석을 완료했습니다. 무료 베타 스타일 예시도 이용할 수 있습니다.' : message);
     $('#ai-status').classList.toggle('is-error', error);
   }
 
@@ -57,7 +59,7 @@
     $('#ai-analyze').disabled = busy || !photograph;
     text($('#ai-analyze'), busy ? 'AI 분석 중…' : analysis ? '무료 분석 완료' : '무료로 사진 분석하기');
     $('#ai-photo').disabled = busy;
-    $('#ai-clear').disabled = !photograph && !analysis && !busy;
+    $('#ai-clear').disabled = !photograph && !analysis && !busy && !pendingPhoto;
     $('#ai-output').setAttribute('aria-busy', String(busy));
   }
 
@@ -67,6 +69,8 @@
 
   function clear() {
     revision++;
+    pendingPhoto?.cancel();
+    pendingPhoto = null;
     activeRun?.cancel();
     activeRun = null;
     busy = false;
@@ -74,6 +78,8 @@
     photograph = null;
     analysis = null;
     eraseCanvas($('#ai-canvas'));
+    eraseCanvas($('#ai-preview-canvas'));
+    $('#ai-photo-preview').hidden = true;
     $('#ai-photo').value = '';
     fileInfo('사진은 외부 서버로 전송하거나 저장하지 않습니다.');
     $('#ai-result').hidden = true;
@@ -91,9 +97,26 @@
     if (!file.type.startsWith('image/')) throw new Error('사진 파일을 선택해주세요. JPG나 PNG를 권장합니다.');
     const url = URL.createObjectURL(file);
     const image = new Image();
+    let rejectLoad;
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      image.onload = image.onerror = null;
+      image.removeAttribute('src');
+      URL.revokeObjectURL(url);
+    };
+    const load = { cancel() { release(); rejectLoad(new Error('분석을 취소했습니다.')); } };
+    pendingPhoto = load;
+    controls();
     try {
-      image.src = url;
-      await image.decode();
+      // Load events work in iPad Safari too; the URL is used only on-device.
+      await new Promise((resolve, reject) => {
+        rejectLoad = reject;
+        image.onload = resolve;
+        image.onerror = () => reject(new Error('이 사진 형식을 열 수 없습니다. JPG·PNG 또는 사진의 스크린샷을 선택해주세요.'));
+        image.src = url;
+      });
       if (!image.naturalWidth || image.naturalWidth * image.naturalHeight > 30000000) {
         throw new Error('사진이 너무 큽니다. 사진을 줄이거나 스크린샷을 선택해주세요.');
       }
@@ -107,8 +130,8 @@
       if (error.name === 'EncodingError') throw new Error('이 사진 형식을 열 수 없습니다. JPG·PNG 또는 사진의 스크린샷을 선택해주세요.');
       throw error;
     } finally {
-      image.src = '';
-      URL.revokeObjectURL(url);
+      release();
+      if (pendingPhoto === load) pendingPhoto = null;
     }
   }
 
@@ -176,6 +199,12 @@
       const decoded = await readPhoto(file);
       if (token !== revision) { eraseCanvas(decoded); return; }
       photograph = decoded;
+      const preview = $('#ai-preview-canvas');
+      preview.width = decoded.width;
+      preview.height = decoded.height;
+      preview.getContext('2d').drawImage(decoded, 0, 0);
+      $('#ai-photo-preview').hidden = false;
+      $('#ai-placeholder').hidden = true;
       fileInfo('{name} · 사진 준비 완료', { name: file.name });
       status('사진이 준비됐습니다. 무료 분석 버튼을 눌러주세요.');
     } catch (error) { if (token === revision) status(error.message, true); }
@@ -221,6 +250,8 @@
       analysis = result;
       drawResult(source, points);
       renderAnalysisCopy();
+      $('#ai-photo-preview').hidden = true;
+      eraseCanvas($('#ai-preview-canvas'));
       $('#ai-result').hidden = false;
       $('#ai-placeholder').hidden = true;
       document.dispatchEvent(new CustomEvent('a1:analysis-ready',{detail:Object.freeze({metrics:Object.freeze({shoulderHipRatio:result.metrics.shoulderHipRatio,legTorsoRatio:result.metrics.legTorsoRatio})})}));
@@ -244,6 +275,7 @@
     }
   });
 
+  document.addEventListener('a1:policy-ready', event => { freeBeta = event.detail.freeBetaMode === true; });
   document.addEventListener('a1:language-changed', () => {
     // Language selection never re-runs inference, clears a photo, or sends data.
     status(statusSource, statusError);

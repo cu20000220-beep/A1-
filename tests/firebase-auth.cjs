@@ -317,6 +317,68 @@ test('self-service deletion requires a current session and fresh same-user passw
   assert.deepEqual(noSession.state.calls, []);
 });
 
+test('account deletion erases owned global data before provider deletion and stops safely on a DB failure', async () => {
+  const fx = fixture(), erased = [];
+  const tables = ['product_watchlists', 'notification_preferences', 'notification_consents', 'notification_deliveries', 'api_rate_limits'];
+  const database = {
+    prepare(sql) { return { bind(...params) { return {
+      async first() { assert.match(sql, /sqlite_master/); return tables.includes(params[0]) ? { name: params[0] } : null; },
+      sql, params
+    }; } }; },
+    async batch(statements) {
+      assert.equal(fx.state.deleted, false, 'Identity must still exist until erasure succeeds');
+      assert.ok(fx.state.calls.some(call => call.action === 'signInWithPassword'));
+      for (const statement of statements) {
+        assert.match(statement.sql, /^DELETE FROM \w+ WHERE issuer = \? AND subject = \?$/);
+        assert.deepEqual(statement.params, [ISSUER, 'fixture-user']);
+        erased.push(statement.sql.split(' ')[2]);
+      }
+    }
+  };
+  assert.equal((await call('delete-account', { password: PASSWORD }, { fixture: fx,
+    cookie: `__Host-a1-session=${token()}`, env: { ...env, MEMBERSHIP_DB: database } })).status, 200);
+  assert.deepEqual(erased, tables); assert.equal(fx.state.deleted, true);
+  const failed = fixture();
+  await expectError(await call('delete-account', { password: PASSWORD }, { fixture: failed,
+    cookie: `__Host-a1-session=${token()}`, env: { ...env, MEMBERSHIP_DB: { prepare() { throw new Error('private database unavailable'); } } } }), 503, 'service_unavailable');
+  assert.equal(failed.state.deleted, false);
+  assert.equal(failed.state.calls.filter(call => call.action === 'delete').length, 0);
+});
+
+test('account deletion removes only its real AI usage records while preserving anonymous cost totals and other members', async () => {
+  const { DatabaseSync } = require('node:sqlite');
+  const { readFileSync } = require('node:fs');
+  const { readAiUsageLimits, reserveAiUsage, hashAiIdentity } = await import('../server/ai-usage.mjs');
+  const sql = new DatabaseSync(':memory:');
+  sql.exec(readFileSync(new URL('../server/schema.sql', `file://${__filename}`), 'utf8'));
+  sql.exec(readFileSync(new URL('../server/migrations/0004_ai_stylist_usage.sql', `file://${__filename}`), 'utf8'));
+  const database = { prepare(query) { const statement = sql.prepare(query); return { bind(...values) { return {
+    first: async () => statement.get(...values) || null,
+    all: async () => ({ results: statement.all(...values) }),
+    run: async () => ({ meta: { changes: Number(statement.run(...values).changes) } })
+  }; } }; }, async batch(statements) { sql.exec('BEGIN'); try { const result = [];
+    for (const statement of statements) result.push(await statement.run()); sql.exec('COMMIT'); return result;
+  } catch (error) { sql.exec('ROLLBACK'); throw error; } } };
+  try {
+    const limits = readAiUsageLimits({ A1_AI_DAILY_USER_LIMIT:'10', A1_AI_DAILY_BUDGET_MICRO_USD:'100000',
+      A1_AI_MONTHLY_BUDGET_MICRO_USD:'1000000', A1_AI_INPUT_MICRO_USD_PER_MILLION_TOKENS:'400000', A1_AI_OUTPUT_MICRO_USD_PER_MILLION_TOKENS:'1600000' });
+    for (const subject of ['fixture-user','other-user']) {
+      await reserveAiUsage(database, { identity:{issuer:ISSUER,subject},limits,serializedInput:'fixture',maxOutputTokens:100,now:NOW });
+      sql.prepare('INSERT INTO product_watchlists(id,issuer,subject,product_id,currency,created_at) VALUES(?,?,?,?,?,?)').run('watch',ISSUER,subject,'fixture-product','USD',NOW);
+    }
+    const totals = sql.prepare("SELECT SUM(reserved_micro_usd) AS amount FROM ai_usage_buckets WHERE owner_hash='' ").get().amount;
+    const fx = fixture();
+    assert.equal((await call('delete-account', {password:PASSWORD}, {fixture:fx,cookie:`__Host-a1-session=${token()}`,env:{...env,MEMBERSHIP_DB:database}})).status,200);
+    const owner = await hashAiIdentity({issuer:ISSUER,subject:'fixture-user'}), other = await hashAiIdentity({issuer:ISSUER,subject:'other-user'});
+    assert.equal(sql.prepare('SELECT COUNT(*) AS count FROM ai_usage_reservations WHERE owner_hash=?').get(owner).count,0);
+    assert.equal(sql.prepare('SELECT COUNT(*) AS count FROM ai_usage_buckets WHERE owner_hash=?').get(owner).count,0);
+    assert.equal(sql.prepare('SELECT COUNT(*) AS count FROM ai_usage_reservations WHERE owner_hash=?').get(other).count,1);
+    assert.equal(sql.prepare("SELECT SUM(reserved_micro_usd) AS amount FROM ai_usage_buckets WHERE owner_hash='' ").get().amount,totals);
+    assert.equal(sql.prepare('SELECT COUNT(*) AS count FROM product_watchlists WHERE subject=?').get('other-user').count,1);
+    assert.equal(fx.state.deleted,true);
+  } finally { sql.close(); }
+});
+
 test('Firebase signup/session never bypasses paid D1 entitlement, and revoked identities are rejected before DB reads', async () => {
   const cookie = `__Host-a1-session=${token()}`;
   const makeRequest = () => new Request(`${ORIGIN}/api/membership`, { headers: { Cookie: cookie, 'X-Paid': 'true' } });

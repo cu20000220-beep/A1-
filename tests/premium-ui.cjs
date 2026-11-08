@@ -3,7 +3,9 @@
 // Local integration fixture only: real API handlers, real RSA verification, and
 // an in-memory D1-shaped test database. No production users or payments exist.
 // The analysis-ready event supplies fixed ratios; actual photo inference is
-// exercised separately by tests/ai-studio.cjs.
+// exercised separately by tests/ai-studio.cjs. Watchlist CRUD is an explicit
+// UI persistence fixture after real RSA/entitlement checks; real D1 isolation
+// and mutation validation are separately tested by tests/global-api.cjs.
 const assert = require('node:assert/strict');
 const { generateKeyPairSync, sign } = require('node:crypto');
 const { createServer } = require('node:http');
@@ -31,6 +33,8 @@ const calls = [];
 let row = null;
 let configured = false;
 let databaseReads = 0;
+let watches = [], failWatchWrite = false, delayWatchWrite = false, releaseWatchWrite;
+let watchCounter=0;
 const environment = {
   AUTH_ISSUER: issuer, AUTH_AUDIENCE: audience, AUTH_JWKS_URL: jwksUrl,
   MEMBERSHIP_DB: {
@@ -70,6 +74,7 @@ async function assertLocked(page) {
 (async () => {
   const membership = await import('../functions/api/membership.js');
   const recommendations = await import('../functions/api/recommendations.js');
+  const access = await import('../server/premium-access.mjs');
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url, options) => {
     assert.equal(String(url), jwksUrl, 'The fixture must never contact an external service');
@@ -80,7 +85,7 @@ async function assertLocked(page) {
   const server = createServer(async (incoming, outgoing) => {
     try {
       const url = new URL(incoming.url, `http://${incoming.headers.host}`);
-      if (url.pathname === '/api/membership' || url.pathname === '/api/recommendations') {
+      if (url.pathname === '/api/membership' || url.pathname === '/api/recommendations' || url.pathname === '/api/global/watchlist') {
         const chunks = [];
         for await (const chunk of incoming) chunks.push(chunk);
         const body = Buffer.concat(chunks);
@@ -88,8 +93,33 @@ async function assertLocked(page) {
           method: incoming.method, headers: incoming.headers,
           ...(incoming.method === 'GET' || incoming.method === 'HEAD' ? {} : { body })
         });
-        const handler = url.pathname === '/api/membership' ? membership : recommendations;
-        const response = await handler.onRequest({ request, env: configured ? environment : {} });
+        let response;
+        if(url.pathname === '/api/global/watchlist') {
+          // These item responses are local UI fixtures, not a replacement for
+          // the real SQL/ownership tests. Server identity/tier checks are real.
+          try {
+            const env=configured ? environment : {};
+            if(request.method==='GET')await access.authenticateMember(request,env);
+            else await access.authorizeMember(request,env,{requiredTier:'GENERAL'});
+            const value=body.length?JSON.parse(body.toString()):null;
+            if(request.method==='POST') {
+              if(delayWatchWrite)await new Promise(resolve=>{releaseWatchWrite=resolve;});
+              if(failWatchWrite)response=access.jsonResponse({error:'fixture-unavailable'},503);
+              else {
+                assert.deepEqual(Object.keys(value).sort(),['brand','category','currency','productId','targetPrice']);
+                assert.equal(value.targetPrice,null);assert.equal(value.currency,'KRW');assert.equal(value.brand,'A1 EDIT');
+                const existing=watches.find(item=>item.productId===value.productId&&item.currency===value.currency);
+                if(!existing)watches.push({id:'ui-watch-'+(++watchCounter),...value});
+                response=access.jsonResponse({ok:true,items:watches},201);
+              }
+            } else if(request.method==='DELETE') {
+              assert.deepEqual(Object.keys(value),['id']);watches=watches.filter(item=>item.id!==value.id);response=access.jsonResponse({ok:true});
+            } else response=access.jsonResponse({items:watches});
+          }catch(error){response=access.jsonResponse({error:error.code||'fixture-error'},error.status||500);}
+        } else {
+          const handler=url.pathname === '/api/membership' ? membership : recommendations;
+          response=await handler.onRequest({request,env:configured ? environment : {}});
+        }
         calls.push({ path: url.pathname, status: response.status,
           body: body.length ? JSON.parse(body.toString()) : null,
           cacheControl: response.headers.get('Cache-Control') });
@@ -124,6 +154,7 @@ async function assertLocked(page) {
       localStorage.setItem('subscriptionStatus', 'active');
       localStorage.setItem('a1:membership', JSON.stringify({ allowed: true, paid: true }));
       localStorage.setItem('trialStartedAt', String(Date.now()));
+      localStorage.setItem('a1-fashion:wishlist:v1',JSON.stringify(['legacy-saved-example']));
     });
     await page.goto(origin, { waitUntil: 'networkidle' });
     await assertLocked(page);
@@ -172,8 +203,26 @@ async function assertLocked(page) {
     assert.equal(await page.locator('#detail').isVisible(), true);
     await page.locator('#close-detail').click();
     const wish = page.locator('[data-wish]').first();
+    await page.waitForFunction(()=>![...document.querySelectorAll('[data-wish]')].some(button=>button.disabled));
+    assert.equal(await wish.getAttribute('aria-pressed'),'false','Legacy local favorites never import into a member account');
+    failWatchWrite=true;
     await wish.click();
-    assert.equal(await wish.getAttribute('aria-pressed'), 'true');
+    await page.waitForFunction(()=>!document.querySelector('[data-wish]').disabled);
+    assert.equal(await wish.getAttribute('aria-pressed'),'false','Failed server save never becomes an optimistic favorite');
+    assert.match(await page.locator('#toast').textContent(),/저장하지 못했습니다/);
+    failWatchWrite=false;
+    await wish.click();
+    await page.waitForFunction(()=>document.querySelector('[data-wish]').getAttribute('aria-pressed')==='true');
+    assert.equal(watches.length,1);
+    const savedProduct=await wish.getAttribute('data-wish');
+    assert.equal(watches[0].productId,savedProduct);
+    assert.doesNotMatch(JSON.stringify(calls.filter(call=>call.path==='/api/global/watchlist').map(call=>call.body)),/shoulder|hip|torso|photo|landmark|base64/i);
+    assert.equal(await page.evaluate(()=>localStorage.getItem('a1-fashion:wishlist:v1')),JSON.stringify(['legacy-saved-example']),'No server favorites written to shared browser storage');
+    await wish.click();
+    await page.waitForFunction(()=>!document.querySelector('[data-wish]').disabled);
+    assert.equal(await wish.getAttribute('aria-pressed'),'false');assert.equal(watches.length,0);
+    await wish.click();
+    await page.waitForFunction(()=>document.querySelector('[data-wish]').getAttribute('aria-pressed')==='true');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: '/tmp/a1-premium-mobile.png', fullPage: true });
 
@@ -191,10 +240,25 @@ async function assertLocked(page) {
     await page.evaluate(() => document.dispatchEvent(new CustomEvent('a1:analysis-cleared')));
     await assertLocked(page);
     assert.equal(await page.locator('#premium-recommend').isDisabled(), true);
+    // Returning to an authorized recommendation loads only this server account.
+    await ratiosReady(page);await checkMembership(page,200);
+    await page.locator('#premium-recommend').click();
+    await page.waitForFunction(()=>!document.querySelector('#premium-results').hidden&&!document.querySelector('[data-wish]').disabled);
+    assert.equal(await page.locator('[data-wish="'+savedProduct+'"]').getAttribute('aria-pressed'),'true');
+    const unsaved=page.locator('[data-wish][aria-pressed="false"]').first();
+    delayWatchWrite=true;await unsaved.click();
+    await page.waitForTimeout(30);
+    assert.equal(typeof releaseWatchWrite,'function');
+    await page.evaluate(()=>window.dispatchEvent(new StorageEvent('storage',{key:'a1-fashion:auth-event',newValue:'changed-local-fixture'})));
+    await assertLocked(page);
+    releaseWatchWrite();delayWatchWrite=false;
+    await page.waitForTimeout(80);
+    await assertLocked(page);
+    assert.equal(await page.locator('#toast.show').count(),0,'Late previous-account save cannot revive private state or success UI');
     assert.ok(calls.every(call => call.cacheControl === 'private, no-store'));
     assert.ok(databaseReads >= 5, 'Protected POST requests independently check the payment record');
     assert.deepEqual(errors, []);
-    console.log('Premium UI passed: setup/anonymous/unpaid locked, signed paid access, explicit minimal request, four examples/six searches, detail/wishlist, revocation and clear, mobile layout. Test fixtures only; no live login or billing.');
+    console.log('Premium UI passed: setup/anonymous/unpaid locked, signed paid access, explicit minimal request, four examples/six searches, server-backed example favorites, failed saves, owner reload, stale-response logout isolation, revocation and clear, mobile layout. Test fixtures only; no live login or billing.');
     await context.close();
   } finally {
     if (browser) await browser.close();

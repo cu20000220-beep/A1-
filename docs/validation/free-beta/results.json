@@ -1,0 +1,199 @@
+{
+  "results": [
+    {
+      "engine": "chromium",
+      "tier": "ANONYMOUS",
+      "language": "ko",
+      "width": 390,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "FREE",
+      "language": "ko",
+      "width": 390,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "GENERAL",
+      "language": "ko",
+      "width": 390,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "PREMIUM",
+      "language": "ko",
+      "width": 390,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "ANONYMOUS",
+      "language": "en",
+      "width": 390,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "FREE",
+      "language": "en",
+      "width": 390,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "GENERAL",
+      "language": "en",
+      "width": 390,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "PREMIUM",
+      "language": "en",
+      "width": 390,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "ANONYMOUS",
+      "language": "ko",
+      "width": 820,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "FREE",
+      "language": "ko",
+      "width": 820,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "GENERAL",
+      "language": "ko",
+      "width": 820,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "PREMIUM",
+      "language": "ko",
+      "width": 820,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "ANONYMOUS",
+      "language": "en",
+      "width": 820,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "FREE",
+      "language": "en",
+      "width": 820,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "GENERAL",
+      "language": "en",
+      "width": 820,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    },
+    {
+      "engine": "chromium",
+      "tier": "PREMIUM",
+      "language": "en",
+      "width": 820,
+      "metrics": {
+        "shoulderHipRatio": 1.4285714285714286,
+        "legTorsoRatio": 1.8
+      },
+      "recommendation": 200,
+      "comparison": 200
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "calls": 215
+}
