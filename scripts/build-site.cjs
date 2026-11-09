@@ -36,6 +36,7 @@ const publicEntries = [
   'stylist.html',
   'product-lab.html',
   'assets/product-lab.js',
+  'assets/lab-entry.js',
   'assets/product-lab.css',
   'assets/product-matching.js',
   'assets/lab-garment.svg',

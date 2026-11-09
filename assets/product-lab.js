@@ -1,9 +1,10 @@
 'use strict';
-(()=>{
+function initializeProductLab(){
  const root=document.querySelector('#lab-root');
- if(!root||!window.A1Preview)return;
+ if(!root||!window.A1Preview||root.dataset.initialized)return;
+ root.dataset.initialized='true';
  document.dispatchEvent(new CustomEvent('a1:policy-ready',{detail:{freeBetaMode:true}}));
- root.hidden=false;document.querySelector('#lab-unavailable').hidden=true;
+ root.hidden=false;const unavailable=document.querySelector('#lab-unavailable');if(unavailable)unavailable.hidden=true;
  const I=window.A1I18n,M=window.A1ProductMatching,$=s=>document.querySelector(s);
  const dictionary={
   '원본 사진은 기기 안에서 분석합니다. 분석 후 아래 무료 연구실에서 조건을 입력하세요.':'The original photo is analyzed on your device. Enter your preferences in the free lab below after analysis.',
@@ -30,6 +31,7 @@
   '입력 조건을 확인해주세요.':'Check your preferences.','시험 결과를 갱신했습니다. 실제 상품·가격 정보가 아닙니다.':'Fixture results updated. These are not real product or price records.',
   '자료 출처':'Source','로컬 원본 도식 · 시험용':'Original local diagram · fixture only','상품명':'Name','점수':'Score','금액':'Amount','사이즈':'Size',
   '선택된 시험 의류':'Selected fictional garment','2D 참고 배치 · 생성형 피팅 아님':'2D reference placement · not generative try-on','배치 이미지를 준비하지 못했습니다.':'The placement image could not be prepared.',
+  '상품 카드에서 비교에 추가를 눌러주세요.':'Choose Add to comparison on a garment card.',
   '디자인 세부 정보 미확인':'Design details unknown',
   '범위 내 예산':'Within budget','선택한 스타일 일치':'Selected style matches','선택한 색상 일치':'Selected color matches','선택한 용도 일치':'Selected occasion matches','상품 목록의 사이즈 표기 일치':'Listed size label matches','선택한 컬렉션 일치':'Selected collection matches','동의한 사진상 비율의 참고 규칙 일치':'Consented photo-ratio reference rule matches',
   '판매처 사이즈표·의류 실측 확인 필요':'Check the retailer size chart and garment measurements','점수는 실제 착용 확률이 아님':'The score is not a fit probability','상품 금액만 비교 · 배송·세금 별도':'Item amount only · shipping and taxes excluded','용도 정보 미확인':'Occasion data unknown','사이즈 정보 미확인':'Size data unknown','사진 비율은 신체 치수가 아님':'Photo ratios are not body measurements'
@@ -48,7 +50,7 @@
   {id:'LAB-C',name:'LAB SHIRT C',brand:'A1 FICTIONAL',price:29000,styles:['streetwear'],occasions:['casual'],sizes:['M','L'],tags:['cropped','logos']}
  ].map(p=>({...p,fixture:true,designTagsComplete:true,currency:'KRW',color:'navy',gender:'unisex',stock:'in_stock',checkedAt:now,expiresAt:now+1800000,productUrl:null,imageUrl:'assets/lab-garment.svg',source:'original-local-fixture'}));}
  function input(){const v=Object.fromEntries(new FormData(form));return {style:v.style,gender:v.gender,budget:Number(v.budget),currency:v.currency,color:v.color,occasion:v.occasion,size:v.size,avoid:new FormData(form).getAll('avoid'),bodyConsent:$('#lab-body-consent').checked,...($('#lab-body-consent').checked?{metrics}:{})};}
- function renderComparison(){const target=$('#lab-comparison');target.replaceChildren();const items=ranked.filter(r=>compare.has(r.product.id));if(!items.length)return;
+ function renderComparison(){const target=$('#lab-comparison');target.replaceChildren();const items=ranked.filter(r=>compare.has(r.product.id));if(!items.length){target.append(node('p',t('상품 카드에서 비교에 추가를 눌러주세요.')));return;}
   const table=node('table'),head=node('tr');for(const label of ['상품명','점수','금액','사이즈','자료 출처'])head.append(node('th',t(label)));table.append(head);
   for(const {product:p,score}of items){const tr=node('tr');for(const value of [p.name,score+' / 100',t('시험 금액')+' '+p.price.toLocaleString(I.locale)+' '+p.currency,p.sizes.join(', ')||t('정보 없음'),t('로컬 원본 도식 · 시험용')])tr.append(node('td',value));table.append(tr);}target.append(table);
  }
@@ -92,8 +94,11 @@
  $('#lab-fit-consent').addEventListener('change',()=>{if(!$('#lab-fit-consent').checked)eraseFit();});
  function clear(){generation++;metrics=null;fixtures=false;rows=[];ranked=[];selected=null;compare.clear();form.reset();$('#lab-body-consent').checked=false;$('#lab-body-consent').disabled=true;$('#lab-fit-consent').checked=false;eraseFit();$('#lab-selected').textContent='';$('#lab-status').textContent='';$('#lab-searches').replaceChildren();render();}
  document.addEventListener('a1:analysis-cleared',clear);window.addEventListener('pagehide',clear);
+ document.addEventListener('a1:lab-enter',e=>{if(!metrics&&M.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#lab-body-consent').disabled=false;}});
  document.addEventListener('a1:analysis-ready',e=>{if(M.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#lab-body-consent').checked=false;$('#lab-body-consent').disabled=false;tx('#ai-notes','사진상 2D 참고 비율이며 실제 치수·건강·의류 사이즈를 판단하지 않습니다. 원본 사진은 외부로 전송하지 않으며 연구실 기능은 무료입니다.');}});
  $('#lab-clear').addEventListener('click',()=>{$('#ai-clear').click();clear();});
  document.addEventListener('a1:language-changed',()=>{render();if(metrics)tx('#ai-notes','사진상 2D 참고 비율이며 실제 치수·건강·의류 사이즈를 판단하지 않습니다. 원본 사진은 외부로 전송하지 않으며 연구실 기능은 무료입니다.');if(!fitCanvas.hidden)tx('#lab-fit-status','2D 참고 배치 · 생성형 피팅 아님');});
  tx($('.ai-intro'),'원본 사진은 기기 안에서 분석합니다. 분석 후 아래 무료 연구실에서 조건을 입력하세요.');render();I.refresh();
-})();
+}
+initializeProductLab();
+document.addEventListener('a1:lab-mounted',initializeProductLab);
