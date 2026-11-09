@@ -35,3 +35,10 @@
 - 새 실제 Preview는 리디렉션 비추적 네트워크·콘솔·실제 MediaPipe·WebGL/2D 픽셀로 검증하며 최종 URL·화면은 PR #4 본문에 기록.
 
 브라우저 엔진은 Linux 터치 Chromium입니다. WebKit 실행 시도는 `/home/agent/.cache/ms-playwright/webkit-2336/pw_run.sh` 부재로 불가했습니다. 실제 iPad Safari·ChatGPT 앱 WKWebView 기기는 연결돼 있지 않습니다. 표준 리디렉션 실패는 재현했으나 실기기 최종 합격으로 대체하지 않으며, 그 전 PR #4 병합을 보류합니다.
+
+## 실제 배포 증거
+
+- 코드 561d6ce / Preview 711715b4에서 `maxRedirects:0`을 유지한 실제 응답으로 검사. 실제 MediaPipe 분석→동의→3D 픽셀 변화·사진 비교·의류·수동 보정·추천 카드 3개·비교 표·2D·전체 삭제 통과. canonical 템플릿은 모두 200 text/html, 리디렉션 없음. UI API 요청 0건·JS 예외 0건·격리 503 유지.
+- GitHub isolated-checks 전체 238개 및 Pages 성공. 별도 Worker a1 실패는 유지하며 삭제/우회하지 않음.
+- [기존 실제 오류 재현](validation/lab-loader/old-errors.png) · [수정 후 실제 사진/3D](validation/lab-loader/new-photo-avatar.png) · [시험 의류 전후](validation/lab-loader/new-clothed.png) · [추천 카드](validation/lab-loader/new-cards.png) · [2D 결과](validation/lab-loader/new-2d.png). 모두 저장소 예시 사진이며 사용자 회원/사진이 아닙니다.
+- 증거 기록 커밋은 문서/화면만 추가합니다. 최종 고정 Preview와 추가 실제 콘솔 검증 결과는 PR #4 본문에 기록합니다.
