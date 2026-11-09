@@ -29,6 +29,9 @@ function collect(relative) {
 const publicEntries = [
   '_headers',
   'index.html',
+  'assets/shopping-query.js',
+  'assets/shopping-search.js',
+  'assets/shopping-search.css',
   'credits.html',
   'account.html',
   'privacy.html',
