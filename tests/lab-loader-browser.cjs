@@ -1,6 +1,6 @@
 'use strict';
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),origin='https://canonical.a1fashion.pages.dev';const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg':'image/jpeg','.svg':'image/svg+xml'};
+const root=path.resolve(__dirname,'..'),origin='https://canonical.a1fashion.pages.dev';const mime={'.json':'application/json','.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg':'image/jpeg','.svg':'image/svg+xml'};
 (async()=>{const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});try{
 for(const [kind,mode,code]of [['avatar','network','REQUEST'],['avatar','http','HTTP'],['avatar','mime','MIME'],['avatar','template','TEMPLATE'],['avatar','script','SCRIPT'],['avatar','init','INIT'],['avatar','webgl','WEBGL'],['product','http','HTTP'],['product','init','INIT']]){
  let allow=false,htmlRedirects=0;const context=await browser.newContext({viewport:{width:820,height:1180},hasTouch:true,locale:'ko-KR'});

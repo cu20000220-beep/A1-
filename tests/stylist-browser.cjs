@@ -8,7 +8,7 @@ const {resolve,extname} = require('node:path');
 const {chromium} = require('playwright');
 const root = resolve(__dirname,'..');
 const requests = [], posts = [], errors = [];
-const mime = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'};
+const mime = {'.json':'application/json','.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'};
 let plan='FREE', live=false, nextError=null, includeProducts=false, holdNext=false, held, resume, expiresIn=3600000;
 let compareOffers;
 function result(res,value,status=200){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end(JSON.stringify(value));}

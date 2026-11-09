@@ -7,6 +7,12 @@ const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist');
 const marker = '.a1-static-output';
 const signature = 'A1 FASHION generated static output\n';
+// Recheck private operator approval/content hashes; never publish raw seller files.
+if(fs.statSync(path.join(root,'assets/approved-products.json')).size>1000000)throw Error('Public snapshot exceeds 1 MB');
+require('./lib/product-catalog.cjs').validateSnapshot(
+  JSON.parse(fs.readFileSync(path.join(root,'assets/approved-products.json'),'utf8')),
+  JSON.parse(fs.readFileSync(path.join(root,'catalog/source-approvals.json'),'utf8'))
+);
 const files = [];
 
 function collect(relative) {
@@ -30,6 +36,10 @@ const publicEntries = [
   '_headers',
   'index.html',
   'assets/shopping-query.js',
+  'assets/product-catalog.js',
+  'assets/approved-products.json',
+  'templates/seller-products.csv',
+  'templates/seller-products.json',
   'assets/shopping-search.js',
   'assets/shopping-search.css',
   'credits.html',
