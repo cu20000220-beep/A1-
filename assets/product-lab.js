@@ -2,7 +2,7 @@
 function initializeProductLab(){
  const root=document.querySelector('#lab-root');
  if(!root||!window.A1Preview||root.dataset.initialized)return;
- root.dataset.initialized='true';
+ root.dataset.initialized='true';root.dataset.loadState='initializing';
  document.dispatchEvent(new CustomEvent('a1:policy-ready',{detail:{freeBetaMode:true}}));
  root.hidden=false;const unavailable=document.querySelector('#lab-unavailable');if(unavailable)unavailable.hidden=true;
  const I=window.A1I18n,M=window.A1ProductMatching,$=s=>document.querySelector(s);
@@ -140,7 +140,7 @@ function initializeProductLab(){
  document.addEventListener('a1:analysis-ready',e=>{if(M.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#lab-body-consent').checked=false;$('#lab-body-consent').disabled=false;tx('#ai-notes','사진상 2D 참고 비율이며 실제 치수·건강·의류 사이즈를 판단하지 않습니다. 원본 사진은 외부로 전송하지 않으며 연구실 기능은 무료입니다.');}});
  $('#lab-clear').addEventListener('click',()=>{$('#ai-clear').click();clear();});
  document.addEventListener('a1:language-changed',()=>{render();if(metrics)tx('#ai-notes','사진상 2D 참고 비율이며 실제 치수·건강·의류 사이즈를 판단하지 않습니다. 원본 사진은 외부로 전송하지 않으며 연구실 기능은 무료입니다.');if(!fitCanvas.hidden)tx('#lab-fit-status','2D 참고 배치 · 생성형 피팅 아님');});
- tx($('.ai-intro'),'원본 사진은 기기 안에서 분석합니다. 분석 후 아래 무료 연구실에서 조건을 입력하세요.');render();I.refresh();
+ tx($('.ai-intro'),'원본 사진은 기기 안에서 분석합니다. 분석 후 아래 무료 연구실에서 조건을 입력하세요.');render();I.refresh();root.dataset.loadState='ready';
 }
 initializeProductLab();
 document.addEventListener('a1:lab-mounted',initializeProductLab);

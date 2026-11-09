@@ -1,4 +1,10 @@
 'use strict';
+// Cloudflare Pages canonicalizes .html documents with a real HTTP redirect.
+async function pagesRedirect(route,url){
+ if(!['/avatar-lab.html','/product-lab.html'].includes(url.pathname))return false;
+ await route.fulfill({status:308,headers:{Location:url.pathname.slice(0,-5)+url.search},body:''});return true;
+}
+function pagesPath(url){return ['/avatar-lab','/product-lab'].includes(url.pathname)?url.pathname.slice(1)+'.html':url.pathname==='/'?'index.html':url.pathname.slice(1);}
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),origin='https://research.a1fashion.pages.dev',out=process.env.A1_LAB_SCREENSHOTS||'/workspace/work/product-lab';fs.mkdirSync(out,{recursive:true});
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg':'image/jpeg','.svg':'image/svg+xml'};
@@ -6,7 +12,7 @@ const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg'
 try{for(const width of [390,820])for(const lang of ['ko','en']){
  const context=await browser.newContext({viewport:{width,height:1180},hasTouch:true,locale:lang==='ko'?'ko-KR':'en-US'}),requests=[],errors=[];
  await context.route('**/*',async route=>{const req=route.request(),url=new URL(req.url());requests.push({url:req.url(),method:req.method()});assert.equal(url.origin,origin);assert.equal(req.method(),'GET');assert.ok(!url.pathname.startsWith('/api/'));
-  const file=path.resolve(root,url.pathname.slice(1));assert.ok(file.startsWith(root+'/'));await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});
+  if(await pagesRedirect(route,url))return;const file=path.resolve(root,pagesPath(url));assert.ok(file.startsWith(root+'/'));await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});
  });
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{window.Pose=class{setOptions(){}onResults(fn){this.result=fn;}async initialize(){}async reset(){}async close(){}async send(){const points=Array.from({length:33},()=>({x:.5,y:.5,visibility:.99}));for(const[i,[x,y]]of Object.entries({11:[.3,.2],12:[.7,.2],23:[.36,.45],24:[.64,.45],25:[.36,.65],26:[.64,.65],27:[.36,.9],28:[.64,.9]}))points[i]={x,y,visibility:.99};this.result({poseLandmarks:points});}};});
@@ -29,5 +35,5 @@ try{for(const width of [390,820])for(const lang of ['ko','en']){
  await page.locator('#lab-clear').click();assert.equal(await page.locator('#ai-result').isVisible(),false);assert.equal(await page.locator('.lab-card').count(),0);assert.equal(await page.locator('#lab-body-consent').isChecked(),false);assert.equal(await page.locator('#lab-fit-consent').isChecked(),false);assert.equal(await page.locator('#ai-canvas').evaluate(c=>c.width*c.height),1);
  assert.deepEqual(errors,[]);console.log(`Lab ${lang} ${width}: photo/analysis/preferences/fixture scoring/comparison/consent/2D placement/revoke/clear passed; requests GET self only (${requests.length}).`);await context.close();
  }
- const context=await browser.newContext();await context.route('**/*',async route=>{const u=new URL(route.request().url());const file=path.resolve(root,u.pathname.slice(1));await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});});const page=await context.newPage();await page.goto('https://a1fashion.pages.dev/product-lab.html',{waitUntil:'networkidle'});assert.equal(await page.locator('#lab-root').isVisible(),false);assert.equal(await page.locator('#lab-unavailable').isVisible(),true);await context.close();
+ const context=await browser.newContext();await context.route('**/*',async route=>{const u=new URL(route.request().url());if(await pagesRedirect(route,u))return;const file=path.resolve(root,pagesPath(u));await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});});const page=await context.newPage();await page.goto('https://a1fashion.pages.dev/product-lab.html',{waitUntil:'networkidle'});assert.equal(await page.locator('#lab-root').isVisible(),false);assert.equal(await page.locator('#lab-unavailable').isVisible(),true);await context.close();
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

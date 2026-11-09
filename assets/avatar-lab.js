@@ -1,6 +1,6 @@
 'use strict';
 function initializeAvatarLab(){
- const root=document.querySelector('#avatar-root');if(!root||!window.A1Preview||root.dataset.initialized)return;root.dataset.initialized='true';
+ const root=document.querySelector('#avatar-root');if(!root||!window.A1Preview||root.dataset.initialized)return;root.dataset.initialized='true';root.dataset.loadState='initializing';
  const G=window.A1AvatarGeometry,I=window.A1I18n,$=s=>document.querySelector(s);
  I.register({
  '사용자 보정값':'User correction','기본 예시값 · 사진 측정 아님':'Example default · not measured from photo',
@@ -63,7 +63,7 @@ function initializeAvatarLab(){
  const schedule=()=>{if(!scheduled&&!disposed){scheduled=true;requestAnimationFrame(render);}};
  function update(){try{const next=Object.fromEntries(Object.keys(G.defaults).map(k=>[k,k==='shape'?form.elements.namedItem(k).value:Number(form.elements.namedItem(k).value)]));params=G.validate(next);upload();render();status('3D 미리보기를 표시했습니다. 시험 의류이며 실제 착용감·사이즈를 예측하지 않습니다.');}catch{status('입력값을 확인해주세요. 각 범위와 안쪽 다리 길이(키의 60% 이하)를 확인하세요.');}}
  function reset(){referenceMetrics=null;manual.clear();clearPhoto();updateSources();params={...G.defaults};form.reset();selector.value='LAB-A';yaw=pitch=0;zoom=3.5;update();}
- try{for(const canvas of canvases)views.push(createView(canvas));upload();render();status('3D 미리보기를 표시했습니다. 시험 의류이며 실제 착용감·사이즈를 예측하지 않습니다.');}catch{status('WebGL 3D 표시를 시작하지 못했습니다. Safari를 업데이트하고 다른 탭을 닫은 뒤 다시 열어주세요.');return;}
+ try{for(const canvas of canvases)views.push(createView(canvas));upload();render();status('3D 미리보기를 표시했습니다. 시험 의류이며 실제 착용감·사이즈를 예측하지 않습니다.');}catch{root.dataset.loadState='webgl-error';root.dataset.initialized='';for(const v of views){v.gl.deleteBuffer(v.buffer);v.gl.deleteProgram(v.program);}status('WebGL 3D 표시를 시작하지 못했습니다. Safari를 업데이트하고 다른 탭을 닫은 뒤 다시 열어주세요.');return;}
  form.addEventListener('submit',e=>{e.preventDefault();update();});form.addEventListener('input',e=>{if(Object.hasOwn(G.defaults,e.target.name))manual.add(e.target.name);updateSources();if(form.checkValidity())update();});selector.addEventListener('change',update);$('#avatar-reset').addEventListener('click',reset);
  const controls={left:()=>{yaw-=.3;},right:()=>{yaw+=.3;},'zoom-in':()=>{zoom=Math.max(2,zoom-.25);},'zoom-out':()=>{zoom=Math.min(6,zoom+.25);},front:()=>{yaw=pitch=0;zoom=3.5;},side:()=>{yaw=Math.PI/2;pitch=0;},back:()=>{yaw=Math.PI;pitch=0;}};
  for(const [id,action]of Object.entries(controls))$('#avatar-'+id).addEventListener('click',()=>{action();render();});
@@ -97,7 +97,7 @@ function initializeAvatarLab(){
  });
  document.addEventListener('a1:avatar-reference-clear',()=>{reset();root.hidden=true;});
  document.addEventListener('a1:avatar-open',e=>{root.hidden=false;if(['LAB-A','LAB-B','LAB-C'].includes(e.detail?.garment))selector.value=e.detail.garment;upload();render();updateSources();});
- updateSources();
+ root.dataset.loadState='ready';updateSources();
 
  const observer=new ResizeObserver(schedule);for(const canvas of canvases)observer.observe(canvas);
  window.addEventListener('pagehide',()=>{disposed=true;observer.disconnect();params=null;referenceMetrics=null;manual.clear();clearPhoto();form.reset();selector.value='LAB-A';yaw=pitch=0;zoom=3.5;for(const v of views){v.gl.clear(v.gl.COLOR_BUFFER_BIT|v.gl.DEPTH_BUFFER_BIT);v.gl.deleteBuffer(v.buffer);v.gl.deleteProgram(v.program);v.canvas.width=v.canvas.height=1;}});

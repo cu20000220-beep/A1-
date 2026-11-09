@@ -42,6 +42,7 @@ const publicEntries = [
   'assets/avatar-lab.css',
   'assets/product-lab.js',
   'assets/lab-entry.js',
+  'assets/lab-loader.js',
   'assets/product-lab.css',
   'assets/product-matching.js',
   'assets/lab-garment.svg',
