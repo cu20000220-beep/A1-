@@ -21,6 +21,8 @@ test('budget, currency, known size, avoided design, stock, source and retention 
  for(const [change,reason]of [[{price:100001},'over_budget'],[{currency:'USD'},'currency_mismatch'],[{sizes:['S']},'size_unavailable'],[{tags:['logos']},'avoided_design'],[{stock:'unknown'},'stock_unconfirmed'],[{expiresAt:now},'expired_source'],[{checkedAt:now+1},'expired_source'],[{fixture:false},'unverified_source']]){
   const r=rank([{...product,...change}],{...prefs,avoid:['logos']});assert.equal(r.matches.length,0);assert.equal(r.excluded[0].reason,reason);
  }
+ assert.equal(rank([null]).excluded[0].reason,'invalid_record');
+ assert.equal(rank([{...product,checkedAt:0}]).excluded[0].reason,'expired_source');
  assert.equal(M.rank([product],prefs,{now,mode:'approved'}).matches.length,0);
  assert.throws(()=>rank([product],{...prefs,photo:'data:image/png;base64,PRIVATE'}));
 });

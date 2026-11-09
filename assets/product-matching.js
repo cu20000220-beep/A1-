@@ -21,11 +21,12 @@
    let reason=null;
    if(!product||typeof product.id!=='string'||!/^[A-Za-z0-9_.:-]{1,160}$/.test(product.id)||typeof product.name!=='string'||!product.name.trim()||product.name.length>160||typeof product.brand!=='string'||!product.brand.trim()||product.brand.length>80||!Number.isFinite(product.price)||product.price<0||!currencies.includes(product.currency))reason='invalid_record';
    else if(mode==='fixture'?product.fixture!==true:product.sourceVerified!==true||product.fixture===true||product.demo===true)reason='unverified_source';
-   else if(!Number.isSafeInteger(product.checkedAt)||product.checkedAt>now||!Number.isSafeInteger(product.expiresAt)||product.expiresAt<=now)reason='expired_source';
+   else if(!Number.isSafeInteger(product.checkedAt)||product.checkedAt<=0||product.checkedAt>now||!Number.isSafeInteger(product.expiresAt)||product.expiresAt<=now)reason='expired_source';
    else if(product.stock!=='in_stock')reason='stock_unconfirmed';
    else if(product.currency!==p.currency)reason='currency_mismatch';
    else if(product.price>p.budget)reason='over_budget';
    else if(p.gender!=='all'&&product.gender!=='unisex'&&product.gender!==p.gender)reason='collection_mismatch';
+   if(reason){excluded.push({id:product?.id||null,reason});continue;}
    const tags=Array.isArray(product.tags)?product.tags:[],sizes=Array.isArray(product.sizes)?product.sizes:product.size?[product.size]:[];
    if(!reason&&p.avoid.some(t=>tags.includes(t)))reason='avoided_design';
    if(!reason&&p.size&&sizes.length&&!sizes.some(v=>fold(v)===fold(p.size)))reason='size_unavailable';

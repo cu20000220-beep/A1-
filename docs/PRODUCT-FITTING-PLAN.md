@@ -128,3 +128,12 @@
 5. 최종 main/Production 배포는 별도 승인. 유료 전환은 결제 시스템 검증 후 다시 별도 승인.
 
 새 Draft PR/Preview 주소·최종 실행 수치·스크린샷은 완료 보고와 PR에서 확인합니다. 실제 상품 데이터나 생성형 피팅이 이미 연동된 서비스로 소개하지 않습니다.
+
+## 이번 실행 결과
+
+- 자동 테스트 232개 통과, 정적 자산 59개 빌드·공개 산출물 60개 노출 검사 통과.
+- 기존 흐름 회귀와 신규 연구실 각각 KO/EN × 390/820px 4개 흐름 통과. 고정 자세 fixture와 기존 분석 계산/UI를 사용했습니다.
+- 최초 Preview 990017da에서 실제 MediaPipe 모델을 사용한 사진 분석→시험 추천/비교→개별 동의→로컬 배치→철회/삭제·언어 전환 통과. 외부 호출·UI API 요청 0건, JS 오류 0건, /api/policy는 503 preview_isolated 유지. TLS를 검증하는 환경 프록시와 Linux Chromium을 사용했으며 실제 iPad Safari 검증은 아닙니다.
+- [Draft PR #4](https://github.com/cu20000220-beep/A1-/pull/4)는 PR #3 위의 별도 브랜치이며 기존 무료 베타와 독립적입니다. 최종 Preview와 커밋은 PR 본문에 기록합니다.
+- [한국어 추천](validation/product-fitting/matching-ko-390.png), [영어 추천](validation/product-fitting/matching-en-390.png), [2D 배치](validation/product-fitting/placement-ko-820.png). 모두 가상 시험 자료 화면입니다.
+- GitHub 검사와 Pages는 성공했고 별도 Worker a1 빌드 실패는 유지됩니다. Pages 배포/연구실의 클라이언트 무료 기능 동작을 차단하지 않았으며 검사를 삭제하거나 우회하지 않았습니다.
