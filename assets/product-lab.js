@@ -99,7 +99,7 @@ function initializeProductLab(){
    const warnings=node('ul');warnings.className='lab-warnings';for(const code of row.warnings)warnings.append(node('li',t(warningLabels[code])));card.append(warnings,node('p',t('시험 자료 시각')+': '+new Date(p.checkedAt).toLocaleString(I.locale)));
    const comparison=node('button',t('비교에 추가'));comparison.type='button';comparison.dataset.labCompare=p.id;comparison.setAttribute('aria-pressed',String(compare.has(p.id)));
    comparison.addEventListener('click',()=>{if(compare.has(p.id))compare.delete(p.id);else if(compare.size<3)compare.add(p.id);render();});
-   const fit=node('button',t('2D 배치 대상으로 선택'));fit.type='button';fit.dataset.labSelect=p.id;fit.addEventListener('click',()=>{selected=p;$('#lab-fit-consent').checked=false;eraseFit();tx('#lab-selected','선택된 시험 의류');$('#lab-selected').append(document.createTextNode(': '+p.name));tx('#lab-fit-status','시험 의류를 선택했습니다. 사진 사용에 동의하면 아래에 큰 2D 결과가 표시됩니다.');reveal('#lab-fit-flow');});const avatar=node('a',t('3D 아바타에서 시험 의류 보기'));avatar.href='/avatar-lab.html#'+p.id;card.append(comparison,fit,avatar);target.append(card);
+   const fit=node('button',t('2D 배치 대상으로 선택'));fit.type='button';fit.dataset.labSelect=p.id;fit.addEventListener('click',()=>{selected=p;$('#lab-fit-consent').checked=false;eraseFit();tx('#lab-selected','선택된 시험 의류');$('#lab-selected').append(document.createTextNode(': '+p.name));tx('#lab-fit-status','시험 의류를 선택했습니다. 사진 사용에 동의하면 아래에 큰 2D 결과가 표시됩니다.');reveal('#lab-fit-flow');});const avatar=node('a',t('3D 아바타에서 시험 의류 보기'));avatar.href='/avatar-lab.html#'+p.id;avatar.dataset.avatarGarment=p.id;card.append(comparison,fit,avatar);target.append(card);
   }
   renderComparison();
  }

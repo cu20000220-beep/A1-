@@ -38,6 +38,7 @@ const publicEntries = [
   'avatar-lab.html',
   'assets/avatar-geometry.js',
   'assets/avatar-lab.js',
+  'assets/avatar-photo-bridge.js',
   'assets/avatar-lab.css',
   'assets/product-lab.js',
   'assets/lab-entry.js',

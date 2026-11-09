@@ -40,7 +40,7 @@
  for(const [id,label,target]of [['recommend','내 체형에 맞는 의류 추천 보기','#lab-preferences'],['compare','추천 의류 비교하기','#lab-comparison'],['fitting','내 사진으로 가상 피팅하기 · 2D 시험','#lab-fitting']]){
   const b=document.createElement('button');b.id='lab-open-'+id;b.type='button';b.className='dark-button';I.setText(b,label);b.addEventListener('click',()=>open(target));nav.append(b);
  }
- const avatar=document.createElement('button');avatar.type='button';avatar.addEventListener('click',()=>location.assign('/avatar-lab.html'));avatar.id='lab-open-avatar';I.setText(avatar,'3D 아바타 · 무료 시각적 미리보기');nav.append(avatar,status);result.querySelector('.ai-result-copy').append(nav);
+ const avatar=document.createElement('button');avatar.type='button';avatar.id='lab-open-avatar';I.setText(avatar,'3D 아바타 · 무료 시각적 미리보기');nav.append(avatar,status);result.querySelector('.ai-result-copy').append(nav);
  document.addEventListener('a1:analysis-ready',e=>{if(!window.A1ProductMatching.validMetrics(e.detail?.metrics))return;metrics={...e.detail.metrics};nav.hidden=false;});
  document.addEventListener('a1:analysis-cleared',()=>{metrics=null;nav.hidden=true;status.textContent='';});
  window.addEventListener('pagehide',()=>{metrics=null;nav.hidden=true;});

@@ -1,10 +1,22 @@
 'use strict';
-(()=>{
- const root=document.querySelector('#avatar-root');if(!root||!window.A1Preview)return;
+function initializeAvatarLab(){
+ const root=document.querySelector('#avatar-root');if(!root||!window.A1Preview||root.dataset.initialized)return;root.dataset.initialized='true';
  const G=window.A1AvatarGeometry,I=window.A1I18n,$=s=>document.querySelector(s);
  I.register({
+ '사용자 보정값':'User correction','기본 예시값 · 사진 측정 아님':'Example default · not measured from photo',
+ '사진상 두 비율 적용 중 · 실제 치수 아님. 허리·가슴둘레·깊이는 추정하지 않습니다. 치수는 기본값 또는 직접 입력값입니다.':'Two photo ratios applied · not measurements. Waist/chest circumference and depth are not estimated. Measurement fields are defaults or your inputs.',
+ '사진 비율 미적용 · 기본 형상과 사용자 보정값입니다.':'No photo reference · default geometry and user corrections.',
+ '비교할 분석 이미지가 없습니다. 원래 화면에서 사진을 분석해주세요.':'No analysis image is available. Analyze a photo on the original page.',
+ '분석 비율이 부족합니다. 기본 아바타를 사용하고 직접 보정해주세요.':'Insufficient analysis ratios. Use the default avatar and manual corrections.',
+ '분석 이미지를 아바타 옆에 기기 안에서 표시하는 데 별도로 동의합니다.':'I separately agree to display the analysis image beside the avatar on this device.',
+ '어깨 위쪽을 자른 분석 이미지 · 별도 동의 후 표시':'Analysis image cropped above the shoulders · shown with separate consent',
+ '사진에서 cm를 측정하지 않습니다. 아래 수치는 기본 예시값이며 직접 고칠 수 있습니다.':'No centimetres are measured from the photo. The values below are editable example defaults.',
+ '어깨/골반 기준점 비율 {shoulder} · 다리/몸통 기준점 비율 {leg} · 사진상 참고값':'Shoulder/hip landmark ratio {shoulder} · leg/torso landmark ratio {leg} · photo references only',
+ '기기 내 분석 이미지':'On-device analysis image',
+ '사진·분석·아바타 모두 지우기':'Delete photo, analysis & avatar',
+ '측면':'Side','후면':'Back',
  '연구실로 돌아가기':'Back to the lab','무료 브라우저 3D 아바타 · 시각적 미리보기':'Free browser 3D avatar · visual preview',
- '입력한 치수로 만든 단순 3D 인체와 시험 의류입니다. 실제 판매 상품·정확한 신체 복제·의복 물리 시뮬레이션·사이즈 보장이 아닙니다. 사진을 사용하거나 외부로 전송하지 않습니다.':'A simplified 3D body and fictional garment made from entered measurements. Not a real product, exact body replica, cloth simulation or size guarantee. No photo is used or transmitted.',
+ '입력한 치수로 만든 단순 3D 인체와 시험 의류입니다. 실제 판매 상품·정확한 신체 복제·의복 물리 시뮬레이션·사이즈 보장이 아닙니다. 동의한 사진상 비율만 기기 안에서 참고하며 외부로 전송하지 않습니다.':'A simplified 3D body and fictional garment made from entered measurements. Not a real product, exact body replica, cloth simulation or size guarantee. Consented photo ratios are used only on this device and are not transmitted.',
  '직접 입력한 치수 · cm':'Self-reported measurements · cm','키':'Height','가슴둘레':'Chest circumference','허리둘레':'Waist circumference','엉덩이둘레':'Hip circumference','어깨너비':'Shoulder width','안쪽 다리 길이':'Inseam','체형 시각 프리셋':'Visual shape preset','중립':'Neutral','직선형':'Straight','곡선형':'Curved','시험 의류':'Fictional garment',
  'LAB-A · 네이비 셔츠 도식':'LAB-A · navy shirt diagram','LAB-B · 루즈 네이비 도식':'LAB-B · loose navy diagram','LAB-C · 짧은 네이비 도식':'LAB-C · cropped navy diagram','의류 도식 없음':'No garment diagram',
  '입력 치수로 아바타 갱신':'Update avatar from measurements','치수·의류·시점 초기화':'Reset measurements, garment & view',
@@ -18,8 +30,9 @@
  'WebGL 3D 표시를 시작하지 못했습니다. Safari를 업데이트하고 다른 탭을 닫은 뒤 다시 열어주세요.':'WebGL could not start. Update Safari, close other tabs and reopen this page.',
  '3D 그래픽 연결이 중단됐습니다. 페이지를 다시 열어주세요. 치수는 저장되지 않습니다.':'The 3D graphics context was lost. Reopen this page; measurements are not saved.'
  });
- root.hidden=false;$('#avatar-unavailable').hidden=true;
+ root.hidden=false;const unavailable=$('#avatar-unavailable');if(unavailable)unavailable.hidden=true;
  const form=$('#avatar-form'),selector=$('#avatar-garment'),canvases=[$('#avatar-before'),$('#avatar-after')];
+ let referenceMetrics=null;const manual=new Set();
  let params={...G.defaults},yaw=0,pitch=0,zoom=3.5,scheduled=false,disposed=false,lost=false;
  if(['LAB-A','LAB-B','LAB-C'].includes(location.hash.slice(1)))selector.value=location.hash.slice(1);
  const status=s=>I.setText($('#avatar-status'),s),views=[];
@@ -36,7 +49,7 @@
   canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;status('3D 그래픽 연결이 중단됐습니다. 페이지를 다시 열어주세요. 치수는 저장되지 않습니다.');});
   return view;
  }
- function upload(){views.forEach((v,i)=>{const scene=G.scene(params,i?selector.value:'none');v.gl.bindBuffer(v.gl.ARRAY_BUFFER,v.buffer);v.gl.bufferData(v.gl.ARRAY_BUFFER,scene.vertices,v.gl.STATIC_DRAW);v.count=scene.vertices.length/9;});}
+ function upload(){views.forEach((v,i)=>{const scene=G.scene(params,i?selector.value:'none',referenceMetrics);v.gl.bindBuffer(v.gl.ARRAY_BUFFER,v.buffer);v.gl.bufferData(v.gl.ARRAY_BUFFER,scene.vertices,v.gl.STATIC_DRAW);v.count=scene.vertices.length/9;});}
  function render(){scheduled=false;if(disposed||lost)return;
   const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
   const model=new Float32Array([cy,sp*sy,-cp*sy,0,0,cp,sp,0,sy,-sp*cy,cp*cy,0,0,0,-zoom,1]);
@@ -49,10 +62,10 @@
  }
  const schedule=()=>{if(!scheduled&&!disposed){scheduled=true;requestAnimationFrame(render);}};
  function update(){try{const next=Object.fromEntries(Object.keys(G.defaults).map(k=>[k,k==='shape'?form.elements.namedItem(k).value:Number(form.elements.namedItem(k).value)]));params=G.validate(next);upload();render();status('3D 미리보기를 표시했습니다. 시험 의류이며 실제 착용감·사이즈를 예측하지 않습니다.');}catch{status('입력값을 확인해주세요. 각 범위와 안쪽 다리 길이(키의 60% 이하)를 확인하세요.');}}
- function reset(){params={...G.defaults};form.reset();selector.value='LAB-A';yaw=pitch=0;zoom=3.5;update();}
+ function reset(){referenceMetrics=null;manual.clear();clearPhoto();updateSources();params={...G.defaults};form.reset();selector.value='LAB-A';yaw=pitch=0;zoom=3.5;update();}
  try{for(const canvas of canvases)views.push(createView(canvas));upload();render();status('3D 미리보기를 표시했습니다. 시험 의류이며 실제 착용감·사이즈를 예측하지 않습니다.');}catch{status('WebGL 3D 표시를 시작하지 못했습니다. Safari를 업데이트하고 다른 탭을 닫은 뒤 다시 열어주세요.');return;}
- form.addEventListener('submit',e=>{e.preventDefault();update();});form.addEventListener('input',()=>{if(form.checkValidity())update();});selector.addEventListener('change',update);$('#avatar-reset').addEventListener('click',reset);
- const controls={left:()=>{yaw-=.3;},right:()=>{yaw+=.3;},'zoom-in':()=>{zoom=Math.max(2,zoom-.25);},'zoom-out':()=>{zoom=Math.min(6,zoom+.25);},front:()=>{yaw=pitch=0;zoom=3.5;}};
+ form.addEventListener('submit',e=>{e.preventDefault();update();});form.addEventListener('input',e=>{if(Object.hasOwn(G.defaults,e.target.name))manual.add(e.target.name);updateSources();if(form.checkValidity())update();});selector.addEventListener('change',update);$('#avatar-reset').addEventListener('click',reset);
+ const controls={left:()=>{yaw-=.3;},right:()=>{yaw+=.3;},'zoom-in':()=>{zoom=Math.max(2,zoom-.25);},'zoom-out':()=>{zoom=Math.min(6,zoom+.25);},front:()=>{yaw=pitch=0;zoom=3.5;},side:()=>{yaw=Math.PI/2;pitch=0;},back:()=>{yaw=Math.PI;pitch=0;}};
  for(const [id,action]of Object.entries(controls))$('#avatar-'+id).addEventListener('click',()=>{action();render();});
  for(const canvas of canvases){const pointers=new Map();let previousDistance=0;
   canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});previousDistance=0;});
@@ -64,7 +77,31 @@
   canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(2,Math.min(6,zoom+e.deltaY*.002));schedule();},{passive:false});
   canvas.addEventListener('keydown',e=>{const action={ArrowLeft:controls.left,ArrowRight:controls.right,'+':controls['zoom-in'],'-':controls['zoom-out'],Home:controls.front}[e.key];if(action){e.preventDefault();action();render();}});
  }
+
+ function clearPhoto(){const c=$('#avatar-photo-canvas');c.width=c.height=1;$('#avatar-photo-figure').hidden=true;$('#avatar-compare-photo').checked=false;root.querySelector('.avatar-views').classList.remove('photo-mode');}
+ function updateSources(){
+  if(referenceMetrics)I.setText($('#avatar-reference-values'),'어깨/골반 기준점 비율 {shoulder} · 다리/몸통 기준점 비율 {leg} · 사진상 참고값',{shoulder:referenceMetrics.shoulderHipRatio.toFixed(2),leg:referenceMetrics.legTorsoRatio.toFixed(2)});else I.setText($('#avatar-reference-values'),'');
+  for(const key of Object.keys(G.defaults)){const badge=root.querySelector('[data-avatar-source="'+key+'"]');if(badge)I.setText(badge,manual.has(key)?'사용자 보정값':'기본 예시값 · 사진 측정 아님');}
+  I.setText($('#avatar-reference'),referenceMetrics?'사진상 두 비율 적용 중 · 실제 치수 아님. 허리·가슴둘레·깊이는 추정하지 않습니다. 치수는 기본값 또는 직접 입력값입니다.':'사진 비율 미적용 · 기본 형상과 사용자 보정값입니다.');
+ }
+ $('#avatar-delete-all').addEventListener('click',()=>{const clear=document.querySelector('#ai-clear');if(clear)clear.click();else {reset();root.hidden=true;}});
+ $('#avatar-compare-photo').addEventListener('change',()=>{
+  if(!$('#avatar-compare-photo').checked){clearPhoto();return;}
+  const source=document.querySelector('#ai-canvas'),result=document.querySelector('#ai-result');
+  if(!source||source.width<=1||!result||result.hidden){clearPhoto();status('비교할 분석 이미지가 없습니다. 원래 화면에서 사진을 분석해주세요.');return;}
+  const target=$('#avatar-photo-canvas');target.width=source.width;target.height=source.height;target.getContext('2d').drawImage(source,0,0);$('#avatar-photo-figure').hidden=false;root.querySelector('.avatar-views').classList.add('photo-mode');
+ });
+ document.addEventListener('a1:avatar-photo-apply',e=>{
+  try{G.photoReference(e.detail?.metrics);referenceMetrics={...e.detail.metrics};root.hidden=false;update();updateSources();}
+  catch{referenceMetrics=null;clearPhoto();upload();render();updateSources();status('분석 비율이 부족합니다. 기본 아바타를 사용하고 직접 보정해주세요.');}
+ });
+ document.addEventListener('a1:avatar-reference-clear',()=>{reset();root.hidden=true;});
+ document.addEventListener('a1:avatar-open',e=>{root.hidden=false;if(['LAB-A','LAB-B','LAB-C'].includes(e.detail?.garment))selector.value=e.detail.garment;upload();render();updateSources();});
+ updateSources();
+
  const observer=new ResizeObserver(schedule);for(const canvas of canvases)observer.observe(canvas);
- window.addEventListener('pagehide',()=>{disposed=true;observer.disconnect();params=null;form.reset();selector.value='LAB-A';yaw=pitch=0;zoom=3.5;for(const v of views){v.gl.clear(v.gl.COLOR_BUFFER_BIT|v.gl.DEPTH_BUFFER_BIT);v.gl.deleteBuffer(v.buffer);v.gl.deleteProgram(v.program);v.canvas.width=v.canvas.height=1;}});
+ window.addEventListener('pagehide',()=>{disposed=true;observer.disconnect();params=null;referenceMetrics=null;manual.clear();clearPhoto();form.reset();selector.value='LAB-A';yaw=pitch=0;zoom=3.5;for(const v of views){v.gl.clear(v.gl.COLOR_BUFFER_BIT|v.gl.DEPTH_BUFFER_BIT);v.gl.deleteBuffer(v.buffer);v.gl.deleteProgram(v.program);v.canvas.width=v.canvas.height=1;}});
  window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
-})();
+}
+initializeAvatarLab();
+document.addEventListener('a1:avatar-mounted',initializeAvatarLab);
