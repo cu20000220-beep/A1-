@@ -25,6 +25,7 @@
  '규칙 상담이 아래 등록 상품의 검색·추천·비교 결과에 연결됐습니다. 생성형 AI는 호출하지 않습니다.':'Rule-based advice is linked to the registered product search, ranking and comparison below. No generative AI is called.',
  '상품 이미지가 열리지 않습니다. 판매처 상품 페이지에서 확인해주세요.':'The product image did not load. Check the seller product page.',
  '원화 예산은 KRW에서 검색해주세요. 통화를 바꿀 때 임의 환산하지 않습니다.':'Search KRW budgets in KRW. No currency conversion is invented.',
+ '사이즈 정보 미확인':'Size data unknown','용도 정보 미확인':'Occasion data unknown','사진 비율은 실제 신체 치수가 아닙니다.':'Photo ratios are not body measurements.',
  '사이즈와 직접 입력 치수를 확인해주세요.':'Check the size and entered measurements.',
  '검색·개인정보 안내':'Search & privacy details',
  '앱 안에서 쇼핑몰이 열리지 않나요?':'Retailer blocked in the in-app browser?',
@@ -79,8 +80,9 @@
   if(!matches.length)target.append(node('p',I.t('조건에 맞는 상품이 없습니다. 통화·예산·카테고리·색상·사이즈를 확인하거나 공식 검색을 이용하세요.')));
   for(const row of matches){const p=row.product,card=node('article');card.dataset.catalogId=p.id;card.className='catalog-card';
    const image=node('img');image.src=p.imageUrl;image.alt=p.name;image.referrerPolicy='no-referrer';image.loading='lazy';image.addEventListener('error',()=>{if(!card.querySelector('[data-image-error]')){const text=node('p',I.t('상품 이미지가 열리지 않습니다. 판매처 상품 페이지에서 확인해주세요.'));text.dataset.imageError='';card.append(text);}});
-   card.append(image,node('h3',p.name),node('p',p.brand+' · '+p.retailerName),node('p',money(p)),node('p',I.t('조건 일치 점수')+': '+row.score+'/100'));
+   card.append(image,node('h3',p.name),node('p',p.brand+' · '+p.retailerName),node('p',money(p)),node('p',p.category+' · '+p.color+' · '+I.t('사이즈')+': '+(p.sizes.join(', ')||I.t('사이즈 정보 미확인'))),node('p',I.t('조건 일치 점수')+': '+row.score+'/100'));
    const reasons=node('ul');for(const code of row.reasons){if(code==='within_budget'&&conditions?.budget==null)continue;reasons.append(node('li',I.t(labels[code])));}card.append(node('h4',I.t('추천 이유')),reasons,node('p',I.t('상품 금액만 비교하며 배송·세금은 별도 확인이 필요합니다. 착용감·사이즈를 보장하지 않습니다.')));
+   for(const code of row.warnings){const warning={size_unknown:'사이즈 정보 미확인',occasion_unknown:'용도 정보 미확인',photo_ratios_not_measurements:'사진 비율은 실제 신체 치수가 아닙니다.'}[code];if(warning)card.append(node('p',I.t(warning)));}
    chart(card,p);card.append(node('p',I.t('마지막 확인')+': '+new Date(p.checkedAt).toLocaleString(I.locale)),node('p',I.t('이용 허락')+': '+I.t('공개 표시 허가 확인')));
    for(const [key,url,label]of [['buy',p.productUrl,I.t('상품 페이지 열기')],['source',p.sourceUrl,I.t('자료 출처')]]){const a=node('a',label);a.href=url;a.rel='noopener noreferrer';a.referrerPolicy='no-referrer';if(key==='buy')a.dataset.catalogBuy=p.id;else a.dataset.catalogSource=p.id;card.append(a);}
    const compare=node('button',I.t(comparison.has(p.id)?'비교에서 제외':'비교에 추가'));compare.type='button';compare.dataset.catalogCompare=p.id;compare.setAttribute('aria-pressed',String(comparison.has(p.id)));compare.addEventListener('click',()=>{if(comparison.has(p.id))comparison.delete(p.id);else if(comparison.size<4)comparison.add(p.id);renderCatalog();});card.append(compare);target.append(card);
