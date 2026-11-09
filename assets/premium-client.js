@@ -1,5 +1,6 @@
 'use strict';
 (() => {
+  if (window.A1Preview) { window.A1Preview.mountRecommendations(); return; }
   const $ = selector => document.querySelector(selector);
   const betaCopy = source => {
     if (!freeBeta) return source;

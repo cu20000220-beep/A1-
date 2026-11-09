@@ -1,6 +1,7 @@
 /* Presentation follows the server policy. This script never grants API access. */
 'use strict';
 (() => {
+  if (window.A1Preview) return;
   const I = window.A1I18n;
   I.register({ '찜을 저장하려면 무료 회원으로 로그인해주세요.': 'Sign in for free to save favorites.', '무료 베타 이용 중': 'Free beta active', '검증된 상품·가격·할인 정보는 준비 중입니다.': 'Verified products, prices and discounts are being prepared.' });
   const copies = {

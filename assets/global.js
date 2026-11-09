@@ -1,5 +1,6 @@
 'use strict';
 (() => {
+  const preview=window.A1Preview;
   const $=s=>document.querySelector(s), I=window.A1I18n, t=(s,p)=>I.t(s,p), tx=(el,s,p)=>I.setText(typeof el==='string'?$(el):el,s,p);
   let busy=false, generation=0, currentTab='shopping';
   const data={account:null,retailers:null,products:null,comparison:null,watchlist:[],history:[],preview:null,simulation:null,consentHistory:null};
@@ -23,6 +24,14 @@
     return '서비스 연결 또는 DB 설정을 준비 중입니다. 실제 상품 연동·발송은 활성화되지 않았습니다.';
   }
   async function api(path,method='GET',body){
+    if (preview) {
+      try {
+        if (path==='retailers' && method==='POST') return preview.retailers(body,I.language);
+        if (path==='products') return {status:'disabled',products:[],previewLocal:true};
+        if (path==='comparison') return {previewLocal:true,results:[],warnings:['lowest-price-unavailable'],lowestOfferId:null,minimumAmount:null};
+      } catch { const e=new Error('invalid');e.publicMessage=preview.source('invalid');throw e; }
+      const e=new Error('preview-isolated');e.publicMessage=preview.source('account');throw e;
+    }
     const token=generation,controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);activeRequests.add(controller);
     try{const response=await fetch('api/global/'+path,{method,credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{Accept:'application/json','Accept-Language':I.language,...(body===undefined?{}:{'Content-Type':'application/json'})},...(body===undefined?{}:{body:JSON.stringify(body)})});
       let result;try{result=await response.json();}catch{result={};}
@@ -37,7 +46,7 @@
     finally{if(token===generation)setBusy(false);}
   }
   function warnings(container,list){const ul=node('ul',undefined,'offer-warnings');for(const code of list||[])ul.append(node('li',t(warn[code]||'확인되지 않은 정보가 있습니다.')));container.append(ul);}
-  function renderRetailers(){const target=$('#retailer-results');target.replaceChildren();if(!data.retailers)return;for(const r of data.retailers.retailers||[]){const card=node('article',undefined,'retailer-card');card.append(node('p',r.country+' / '+r.currency),node('h3',r.name),node('p',t('검색 연결만 제공 · 실제 상품 피드 미연결')),node('p',t('선택한 목적지로 배송 가능한지는 판매처에서 확인해야 합니다.')));const a=safeLink(r.searchUrl,t('판매처 검색 열기 →'));if(a)card.append(a);target.append(card);}if(!target.children.length)target.append(node('p',t('조건에 맞는 판매처가 없습니다.')));}
+  function renderRetailers(){const target=$('#retailer-results');target.replaceChildren();if(!data.retailers)return;for(const r of data.retailers.retailers||[]){const card=node('article',undefined,'retailer-card');card.append(node('p',r.country+' / '+r.currency),node('h3',r.name),node('p',t('검색 연결만 제공 · 실제 상품 피드 미연결')),node('p',t('선택한 목적지로 배송 가능한지는 판매처에서 확인해야 합니다.')));if(preview)card.append(preview.retailerActions(r));else{const a=safeLink(r.searchUrl,t('판매처 검색 열기 →'));if(a)card.append(a);}target.append(card);}if(!target.children.length)target.append(node('p',t('조건에 맞는 판매처가 없습니다.')));}
   function renderProducts(){
     const target=$('#product-results');target.replaceChildren();const catalog=data.products;if(!catalog)return;
     if(catalog.status!=='ready'||!Array.isArray(catalog.products)||!catalog.products.length){

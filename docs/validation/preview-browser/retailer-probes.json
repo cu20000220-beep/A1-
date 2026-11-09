@@ -1,0 +1,57 @@
+[
+  {
+    "name": "Coupang",
+    "url": "https://www.coupang.com/np/search?q=clothing",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "Naver Shopping",
+    "url": "https://search.shopping.naver.com/search/all?query=clothing",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "eBay US",
+    "url": "https://www.ebay.com/sch/i.html?_nkw=clothing",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "Amazon US",
+    "url": "https://www.amazon.com/s?k=clothing",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "Amazon Japan",
+    "url": "https://www.amazon.co.jp/s?k=clothing",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "Rakuten Japan",
+    "url": "https://search.rakuten.co.jp/search/mall/clothing/",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "eBay UK",
+    "url": "https://www.ebay.co.uk/sch/i.html?_nkw=clothing",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "Amazon UK",
+    "url": "https://www.amazon.co.uk/s?k=clothing",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "Amazon Germany",
+    "url": "https://www.amazon.de/s?k=clothing",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "eBay Germany",
+    "url": "https://www.ebay.de/sch/i.html?_nkw=clothing",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "Zalando",
+    "url": "https://www.zalando.de/catalog/?q=clothing",
+    "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+  }
+]

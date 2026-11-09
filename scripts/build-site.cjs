@@ -40,6 +40,7 @@ const publicEntries = [
   'assets/stylist-analysis-bridge.js',
   'assets/site-navigation.js',
   'assets/free-beta.js',
+  'assets/preview-experience.js',
   'assets/site-navigation.css',
   'assets/global.css',
   'assets/global.js',

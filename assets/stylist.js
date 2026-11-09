@@ -1,5 +1,7 @@
 'use strict';
 (() => {
+  const preview = window.A1Preview;
+  let previewAnswer = null;
   const $ = selector => document.querySelector(selector);
   const I = window.A1I18n;
   const t = (source, values) => I.t(source, values);
@@ -24,7 +26,7 @@
   function setBusy(value) { busy = value; $('#stylist-send').disabled = value; form.setAttribute('aria-busy', String(value)); }
   function ratioInputs() { for (const name of ['shoulderHipRatio','legTorsoRatio']) form.elements[name].disabled = !$('#stylist-analysis-consent').checked; }
   function readiness() {
-    tx('#stylist-config', configuration.liveEnabled === true && configuration.mode === 'LIVE'
+    tx('#stylist-config', preview ? preview.source('notice') : configuration.liveEnabled === true && configuration.mode === 'LIVE'
       ? 'GPT 상담이 활성화되어 있습니다. 외부 AI 전송에 동의한 경우에만 호출합니다.'
       : configuration.mode === 'UNAVAILABLE' ? '상담 연결을 준비 중입니다. 기존 무료 사진 분석과 회원 기능은 계속 이용할 수 있습니다.'
       : 'DEMO 모의 상담 · 실제 GPT를 호출하지 않습니다. 실제 상품이 확인되지 않으면 상품·가격을 생성하지 않습니다.');
@@ -37,6 +39,7 @@
     block.append(title, copy); chat.replaceChildren(block);
   }
   function clearConversation({resetProfile = false, clearMetrics = true} = {}) {
+    previewAnswer = null;
     generation++;
     clearTimeout(expiryTimer); expiryTimer = undefined; accessUntil = 0;
     for (const controller of pending) controller.abort();
@@ -54,6 +57,7 @@
     status('구독 확인 기간이 끝나 이전 상담을 지웠습니다. 상담을 다시 요청해 권한을 확인해주세요.', true);
   }
   function protectResponse(result) {
+    if (preview && result.previewLocal === true) return;
     if (result.freeBetaMode === true && result.mode === 'DEMO') {
       clearTimeout(expiryTimer); expiryTimer = undefined; accessUntil = 0;
       return;
@@ -71,6 +75,7 @@
     expiryTimer = setTimeout(check, Math.min(accessUntil - Date.now(), 2147483647));
   }
   function refreshPrivateContext() {
+    if (preview) return;
     if (accessUntil && accessUntil <= Date.now()) { expireConversation(); return; }
     // No internal identity is exposed to the browser. Returning to a paid
     // conversation starts fresh so a different/revoked session cannot inherit it.
@@ -80,6 +85,10 @@
     }
   }
   async function api(method, value) {
+    if (preview) {
+      if (method==='GET') return {mode:'DEMO',liveEnabled:false,previewLocal:true,available:true};
+      return preview.consult(value);
+    }
     const token = generation, controller = new AbortController();
     pending.add(controller);
     const timer = setTimeout(() => controller.abort(), 25000);
@@ -94,6 +103,7 @@
     } finally { clearTimeout(timer); pending.delete(controller); }
   }
   function errorMessage(error) {
+    if (preview) return preview.source('invalid');
     if (error.status === 401) return '회원가입·로그인 후 유효한 구독을 확인해주세요.';
     if (error.status === 403) return form.elements.intent.value === 'style' ? '스타일 상담에는 유효한 일반 또는 프리미엄 구독이 필요합니다.' : '가격 비교와 할인 추천에는 유효한 프리미엄 구독이 필요합니다.';
     if (error.code === 'external_ai_consent_required') return '실제 GPT 상담을 이용하려면 외부 AI 전송에 별도로 동의해주세요.';
@@ -141,7 +151,8 @@
     else bubble.append(node('p',t('현재 조건에 맞는 검증 상품이 없습니다. 상품·가격·할인율을 생성하지 않습니다.')));
     if (Array.isArray(result.searchLinks) && result.searchLinks.length) {
       const links = node('div',undefined,'stylist-search-links'); links.append(node('p',t('판매처 검색 연결 · 개별 상품 연동이 아닙니다.')));
-      for (const item of result.searchLinks.slice(0,12)) { const link=safeLink(item.url,item.label||item.store||t('판매처 검색 열기 →')); if(link) links.append(link); }
+      if (preview) { for(const row of preview.retailers(Object.fromEntries(new FormData(form)),I.language).retailers) links.append(preview.retailerActions(row)); }
+      else for (const item of result.searchLinks.slice(0,12)) { const link=safeLink(item.url,item.label||item.store||t('판매처 검색 열기 →')); if(link) links.append(link); }
       bubble.append(links);
     }
     if (intent === 'compare' || result.comparison) bubble.append(renderComparison(result.comparison));
@@ -174,6 +185,7 @@
       protectResponse(result);
       $('#stylist-welcome')?.remove();
       const question=node('article',undefined,'stylist-message is-user');question.dataset.i18nIgnore='';question.append(node('h3',t('나의 질문')),node('p',message));chat.append(question);
+      if (preview) previewAnswer={request,question:message};
       renderAnswer(result,request.intent); conversations.push({role:'user',content:message},{role:'assistant',content:typeof result.reply==='string'?result.reply.slice(0,1200):''});while(conversations.length>8)conversations.shift();
       $('#stylist-message').value='';status(result.mode==='LIVE'?'검증된 정보로 GPT 상담을 완료했습니다.':'모의 상담을 완료했습니다. 실제 GPT를 호출하지 않았습니다.');
     } catch(error) {
@@ -188,7 +200,16 @@
   window.addEventListener('pagehide',()=>clearConversation({resetProfile:true}));
   window.addEventListener('focus', refreshPrivateContext);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPrivateContext();});
-  document.addEventListener('a1:language-changed',readiness);
+  document.addEventListener('a1:language-changed',()=>{
+    readiness();
+    if (preview && previewAnswer) {
+      const {request,question}=previewAnswer;
+      const result=preview.consult({...request,language:I.language});chat.replaceChildren();
+      const bubble=node('article',undefined,'stylist-message is-user');bubble.dataset.i18nIgnore='';bubble.append(node('h3',t('나의 질문')),node('p',question));chat.append(bubble);
+      renderAnswer(result,request.intent);
+    }
+  });
+  if (preview) preview.hydrateStylist();
   // A user-opened analysis page may transfer just two numbers over an exact-
   // origin, exact-opener, one-use nonce handshake. Consent remains unchecked.
   const nonce = new URLSearchParams(location.hash.slice(1)).get('analysis');
