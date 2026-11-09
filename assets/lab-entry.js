@@ -34,7 +34,7 @@
    }
    if(!metrics||result.hidden)return;
    document.dispatchEvent(new CustomEvent('a1:lab-enter',{detail:{metrics:{...metrics}}}));
-   const section=document.querySelector(target);section.setAttribute('tabindex','-1');section.scrollIntoView({block:'start'});section.focus({preventScroll:true});
+   document.dispatchEvent(new CustomEvent('a1:lab-navigate',{detail:{target}}));
   }catch{I.setText(status,'연구실을 열지 못했습니다. 인터넷 연결을 확인하고 다시 눌러주세요.');}
  }
  for(const [id,label,target]of [['recommend','내 체형에 맞는 의류 추천 보기','#lab-preferences'],['compare','추천 의류 비교하기','#lab-comparison'],['fitting','내 사진으로 가상 피팅하기 · 2D 시험','#lab-fitting']]){
