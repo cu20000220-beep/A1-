@@ -1,7 +1,9 @@
 'use strict';
 (() => {
   const preview = window.A1Preview;
-  let previewAnswer = null;
+  let previewCatalogError=false;
+  let previewAnswer = null, previewCatalog={version:1,generatedAt:null,products:[]};
+  const Catalog=window.A1ProductCatalog,Query=window.A1ShoppingQuery;
   const $ = selector => document.querySelector(selector);
   const I = window.A1I18n;
   const t = (source, values) => I.t(source, values);
@@ -84,10 +86,23 @@
       status('상담을 다시 요청해 현재 계정과 구독 권한을 확인해주세요. 이전 대화는 지웠습니다.');
     }
   }
+  function catalogAnswer(request){
+    const base=preview.consult(request);if(previewCatalogError)base.notices.push(t('등록 상품 자료를 확인하지 못했습니다. 공식 검색 대안을 이용해주세요.'));if(!Catalog||!Query)return base;let parsed;try{parsed=Query.parse(request.message.slice(0,300));}catch{parsed=Query.parse('의류');}
+    const prefs=request.preferences||{},conditions={...parsed,gender:prefs.gender&&prefs.gender!=='all'?prefs.gender:parsed.gender,style:prefs.style&&prefs.style!=='all'?prefs.style:parsed.style,category:prefs.category&&prefs.category!=='all'?prefs.category:parsed.category,currency:prefs.currency||'KRW',budget:parsed.budget!==null&&prefs.currency==='KRW'?Math.min(parsed.budget,prefs.budget):prefs.budget??null};
+    const ranked=Catalog.search(previewCatalog,conditions,{query:request.message,bodyConsent:request.consents?.analysis===true,metrics:request.metrics});
+    base.products=ranked.matches.slice(0,12).map(row=>({...row.product,matchScore:row.score,matchReasons:row.reasons}));base.catalogRows=ranked.matches.slice(0,4);base.catalogSearchRows=Query.links({...conditions,gender:conditions.gender==='unisex'?'all':conditions.gender});
+    if(base.products.length){base.dataStatus='registered';base.notices=[t('판매자 등록 자료 기준이며 실시간 가격·배송·세금·착용감은 보장하지 않습니다.')];}return base;
+  }
+  function catalogProductLink(product,label){const allowed=Catalog?.validateSnapshot(previewCatalog).find(p=>p.id===product.id&&p.productUrl===product.productUrl);if(!allowed)return null;const a=node('a',label);a.href=allowed.productUrl;a.rel='noopener noreferrer';a.referrerPolicy='no-referrer';a.dataset.stylistCatalogBuy=allowed.id;return a;}
+  function catalogComparison(rows){const section=node('section');section.append(node('h4',t('등록 후보 상품 비교 · 동일 상품 최저가 비교가 아닙니다.')));const table=node('table');
+    for(const {product:p,score}of rows){const row=node('tr');for(const value of [p.name,p.retailerName,money(p.price,p.currency),p.sizes.join(', ')||t('사이즈표 미제공'),String(score)])row.append(node('td',value));table.append(row);}section.append(table,node('p',t('판매자 등록 자료 기준이며 실시간 가격·배송·세금·착용감은 보장하지 않습니다.')));return section;
+  }
+  if(preview)I.register({'등록 상품 자료를 확인하지 못했습니다. 공식 검색 대안을 이용해주세요.':'Registered product data could not be verified. Use official search alternatives.','예산 범위':'Within budget','스타일 일치':'Style matches','색상 일치':'Color matches','용도 일치':'Occasion matches','사이즈 표기 일치':'Listed size matches','컬렉션 일치':'Collection matches','사진상 비율 참고 규칙':'Photo-ratio reference rule','등록 후보 상품 비교 · 동일 상품 최저가 비교가 아닙니다.':'Registered candidate comparison · not a lowest-price comparison of identical items.','판매자 등록 자료 기준이며 실시간 가격·배송·세금·착용감은 보장하지 않습니다.':'Based on registered seller data; live prices, shipping, taxes and fit are not guaranteed.','조건 일치 점수':'Condition-match score','사이즈표 미제공':'Size chart not supplied'});
   async function api(method, value) {
     if (preview) {
       if (method==='GET') return {mode:'DEMO',liveEnabled:false,previewLocal:true,available:true};
-      return preview.consult(value);
+      const token=generation,controller=new AbortController();pending.add(controller);const timer=setTimeout(()=>controller.abort(),10000);
+      try{if(Catalog){try{const response=await fetch('/assets/approved-products.json',{credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal});if(!response.ok||!/application\/json/i.test(response.headers.get('content-type')||''))throw Error('catalog');const text=await response.text();if(text.length>1000000)throw Error('catalog');const snapshot=JSON.parse(text);Catalog.validateSnapshot(snapshot);previewCatalog=snapshot;previewCatalogError=false;}catch{previewCatalogError=true;previewCatalog={version:1,generatedAt:null,products:[]};}}if(token!==generation)throw Error('session-changed');return catalogAnswer(value);}finally{clearTimeout(timer);pending.delete(controller);}
     }
     const token = generation, controller = new AbortController();
     pending.add(controller);
@@ -115,12 +130,13 @@
   }
   function productCard(product) {
     if (!product || typeof product.name !== 'string' || !finitePrice(product.price) || !currencies.has(product.currency)) return null;
-    const link = safeLink(product.productUrl, t('확인된 상품 보기 →')); if (!link) return null;
+    const link = preview?catalogProductLink(product,t('확인된 상품 보기 →')):safeLink(product.productUrl, t('확인된 상품 보기 →')); if (!link) return null;
     const card = node('article', undefined, 'stylist-product'); card.dataset.i18nIgnore = '';
     card.append(node('h4', product.name), node('p', [product.brand,product.color,product.size,product.condition].filter(Boolean).join(' / ')), node('p', money(product.price, product.currency), 'stylist-price'));
     card.append(node('p', t('판매처: {name}',{name:product.retailerName||t('미확인')})), node('p', t('가격 확인: {time}',{time:time(product.checkedAt)}),'stylist-source'));
     if (product.source) card.append(node('p',t('가격 출처: {source}',{source:product.source}),'stylist-source'));
     if (product.sku || product.gtin) card.append(node('p', ['SKU '+(product.sku||'—'),'GTIN '+(product.gtin||'—')].join(' · '),'stylist-source'));
+    if(preview&&Catalog){const img=node('img');img.src=product.imageUrl;img.alt=product.name;img.referrerPolicy='no-referrer';img.height=180;card.prepend(img);const reasons=node('ul');for(const reason of product.matchReasons||[]){const label={within_budget:'예산 범위',style_match:'스타일 일치',color_match:'색상 일치',occasion_match:'용도 일치',listed_size_match:'사이즈 표기 일치',collection_match:'컬렉션 일치',photo_ratio_reference:'사진상 비율 참고 규칙'}[reason];if(label)reasons.append(node('li',t(label)));}card.append(reasons);card.append(node('p',t('조건 일치 점수')+': '+product.matchScore+'/100'),node('p',t('판매자 등록 자료 기준이며 실시간 가격·배송·세금·착용감은 보장하지 않습니다.')));}
     card.append(link); return card;
   }
   function renderComparison(value) {
@@ -151,11 +167,11 @@
     else bubble.append(node('p',t('현재 조건에 맞는 검증 상품이 없습니다. 상품·가격·할인율을 생성하지 않습니다.')));
     if (Array.isArray(result.searchLinks) && result.searchLinks.length) {
       const links = node('div',undefined,'stylist-search-links'); links.append(node('p',t('판매처 검색 연결 · 개별 상품 연동이 아닙니다.')));
-      if (preview) { for(const row of preview.retailers(Object.fromEntries(new FormData(form)),I.language).retailers) links.append(preview.retailerActions(row)); }
+      if (preview) { for(const row of (result.catalogSearchRows||preview.retailers(Object.fromEntries(new FormData(form)),I.language).retailers)) links.append(preview.retailerActions(row)); }
       else for (const item of result.searchLinks.slice(0,12)) { const link=safeLink(item.url,item.label||item.store||t('판매처 검색 열기 →')); if(link) links.append(link); }
       bubble.append(links);
     }
-    if (intent === 'compare' || result.comparison) bubble.append(renderComparison(result.comparison));
+    if(preview&&result.catalogRows?.length)bubble.append(catalogComparison(result.catalogRows));else if (intent === 'compare' || result.comparison) bubble.append(renderComparison(result.comparison));
     if (Array.isArray(result.discounts) && result.discounts.length) {
       bubble.append(node('h4',t('확인된 기간 내 할인 정보')));
       for (const discount of result.discounts.slice(0,12)) {
@@ -204,11 +220,12 @@
     readiness();
     if (preview && previewAnswer) {
       const {request,question}=previewAnswer;
-      const result=preview.consult({...request,language:I.language});chat.replaceChildren();
+      const result=catalogAnswer({...request,language:I.language});chat.replaceChildren();
       const bubble=node('article',undefined,'stylist-message is-user');bubble.dataset.i18nIgnore='';bubble.append(node('h3',t('나의 질문')),node('p',question));chat.append(bubble);
       renderAnswer(result,request.intent);
     }
   });
+  if(preview)chat.addEventListener('click',e=>{const a=e.target.closest('[data-stylist-catalog-buy]');if(a&&!Catalog.validateSnapshot(previewCatalog).some(p=>p.id===a.dataset.stylistCatalogBuy&&p.productUrl===a.href&&e.isTrusted))e.preventDefault();});
   if (preview) preview.hydrateStylist();
   // A user-opened analysis page may transfer just two numbers over an exact-
   // origin, exact-opener, one-use nonce handshake. Consent remains unchecked.
