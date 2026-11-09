@@ -1,5 +1,6 @@
 'use strict';
 (() => {
+  if (window.A1Preview) { window.A1Preview.mountBridge(); return; }
   const button = document.querySelector('#stylist-analysis-open');
   const status = document.querySelector('#stylist-analysis-status');
   if (!button || !status) return;

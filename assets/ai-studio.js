@@ -67,7 +67,7 @@
     if (canvas) { canvas.width = 1; canvas.height = 1; }
   }
 
-  function clear() {
+  function clear(reason = 'user') {
     revision++;
     pendingPhoto?.cancel();
     pendingPhoto = null;
@@ -83,7 +83,7 @@
     $('#ai-photo').value = '';
     fileInfo('사진은 외부 서버로 전송하거나 저장하지 않습니다.');
     $('#ai-result').hidden = true;
-    document.dispatchEvent(new Event('a1:analysis-cleared'));
+    document.dispatchEvent(new CustomEvent('a1:analysis-cleared', {detail: {reason: typeof reason === 'string' ? reason : 'user'}}));
     $('#ai-placeholder').hidden = false;
     text($('#ai-summary'), '');
     $('#ai-metrics').replaceChildren();
@@ -284,5 +284,5 @@
     renderAnalysisCopy();
   });
   $('#ai-clear').addEventListener('click', clear);
-  window.addEventListener('pagehide', clear);
+  window.addEventListener('pagehide', () => clear('pagehide'));
 })();
