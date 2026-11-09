@@ -14,7 +14,7 @@ try{for(const [width,height] of [[820,1180],[1180,820],[390,844]])for(const lang
  assert.equal(await page.locator('#lab-entry').isVisible(),false);assert.equal(await page.locator('#lab-root').count(),0);
  await page.locator('#ai-photo').setInputFiles(path.join(root,'assets/photos/man.jpg'));await page.waitForFunction(()=>!document.querySelector('#ai-photo-preview').hidden);await page.locator('#ai-analyze').click();await page.waitForFunction(()=>!document.querySelector('#ai-result').hidden);
  for(const id of ['recommend','compare','fitting']){const button=page.locator('#lab-open-'+id);await button.scrollIntoViewIfNeeded();assert.equal(await button.isVisible(),true);assert.equal(await button.isEnabled(),true);}
- assert.equal(await page.locator('#lab-open-avatar').isDisabled(),true);
+ assert.equal(await page.locator('#lab-open-avatar').isEnabled(),true);
  await page.locator('#lab-entry').screenshot({path:path.join(out,`entry-${lang}-${width}.png`),style:'header{visibility:hidden!important}'});
  const imageBefore=await page.locator('#ai-canvas').evaluate(c=>c.toDataURL());
  await page.locator('#lab-open-recommend').click();await page.waitForSelector('#lab-root:not([hidden])');

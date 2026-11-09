@@ -49,6 +49,7 @@ function initializeProductLab(){
   '먼저 의류 선택 → 사진 사용 동의 → 큰 2D 결과 확인':'Choose a garment → consent to photo use → view the large 2D result',
   '결과 이미지 · 기기 내 2D 도식 배치, AI 착용 합성 아님':'Result image · on-device 2D diagram, not AI try-on',
   '2D 결과만 지우기':'Clear only the 2D result',
+  '3D 아바타에서 시험 의류 보기':'View this fixture on a 3D avatar',
   '디자인 세부 정보 미확인':'Design details unknown',
   '범위 내 예산':'Within budget','선택한 스타일 일치':'Selected style matches','선택한 색상 일치':'Selected color matches','선택한 용도 일치':'Selected occasion matches','상품 목록의 사이즈 표기 일치':'Listed size label matches','선택한 컬렉션 일치':'Selected collection matches','동의한 사진상 비율의 참고 규칙 일치':'Consented photo-ratio reference rule matches',
   '판매처 사이즈표·의류 실측 확인 필요':'Check the retailer size chart and garment measurements','점수는 실제 착용 확률이 아님':'The score is not a fit probability','상품 금액만 비교 · 배송·세금 별도':'Item amount only · shipping and taxes excluded','용도 정보 미확인':'Occasion data unknown','사이즈 정보 미확인':'Size data unknown','사진 비율은 신체 치수가 아님':'Photo ratios are not body measurements'
@@ -98,7 +99,7 @@ function initializeProductLab(){
    const warnings=node('ul');warnings.className='lab-warnings';for(const code of row.warnings)warnings.append(node('li',t(warningLabels[code])));card.append(warnings,node('p',t('시험 자료 시각')+': '+new Date(p.checkedAt).toLocaleString(I.locale)));
    const comparison=node('button',t('비교에 추가'));comparison.type='button';comparison.dataset.labCompare=p.id;comparison.setAttribute('aria-pressed',String(compare.has(p.id)));
    comparison.addEventListener('click',()=>{if(compare.has(p.id))compare.delete(p.id);else if(compare.size<3)compare.add(p.id);render();});
-   const fit=node('button',t('2D 배치 대상으로 선택'));fit.type='button';fit.dataset.labSelect=p.id;fit.addEventListener('click',()=>{selected=p;$('#lab-fit-consent').checked=false;eraseFit();tx('#lab-selected','선택된 시험 의류');$('#lab-selected').append(document.createTextNode(': '+p.name));tx('#lab-fit-status','시험 의류를 선택했습니다. 사진 사용에 동의하면 아래에 큰 2D 결과가 표시됩니다.');reveal('#lab-fit-flow');});card.append(comparison,fit);target.append(card);
+   const fit=node('button',t('2D 배치 대상으로 선택'));fit.type='button';fit.dataset.labSelect=p.id;fit.addEventListener('click',()=>{selected=p;$('#lab-fit-consent').checked=false;eraseFit();tx('#lab-selected','선택된 시험 의류');$('#lab-selected').append(document.createTextNode(': '+p.name));tx('#lab-fit-status','시험 의류를 선택했습니다. 사진 사용에 동의하면 아래에 큰 2D 결과가 표시됩니다.');reveal('#lab-fit-flow');});const avatar=node('a',t('3D 아바타에서 시험 의류 보기'));avatar.href='/avatar-lab.html#'+p.id;card.append(comparison,fit,avatar);target.append(card);
   }
   renderComparison();
  }
