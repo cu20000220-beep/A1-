@@ -9,7 +9,7 @@ const marker = '.a1-static-output';
 const signature = 'A1 FASHION generated static output\n';
 // Recheck private operator approval/content hashes; never publish raw seller files.
 if(fs.statSync(path.join(root,'assets/approved-products.json')).size>1000000)throw Error('Public snapshot exceeds 1 MB');
-require('./lib/product-catalog.cjs').validateSnapshot(
+const catalog=require('./lib/product-catalog.cjs').validateSnapshot(
   JSON.parse(fs.readFileSync(path.join(root,'assets/approved-products.json'),'utf8')),
   JSON.parse(fs.readFileSync(path.join(root,'catalog/source-approvals.json'),'utf8'))
 );
@@ -108,4 +108,7 @@ for (const relative of files) {
   fs.mkdirSync(path.dirname(target), {recursive:true});
   fs.copyFileSync(path.join(root, relative), target);
 }
+// Keep connect-src/script-src/API isolation intact. Only image origins from the
+// privately validated snapshot can extend the stylist image display policy.
+fs.writeFileSync(path.join(output,'_headers'),require('./lib/catalog-public-headers.cjs').catalogPublicHeaders(fs.readFileSync(path.join(root,'_headers'),'utf8'),catalog.products));
 console.log(`Built ${files.length} static files in dist/ (no package installation or external requests).`);

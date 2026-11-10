@@ -15,14 +15,16 @@ PR #4 `feature/product-fitting-lab`에서 기존 검색·사진 분석·무료 �
 
 | 검사 | 결과와 한계 |
 | --- | --- |
-| GitHub workflow의 오프라인 단위/권한/SQLite/개인정보 목록 | 259개 통과. 테스트용 SQLite만 사용하며 운영 DB 접근 없음 |
-| 새 importer/어댑터/오퍼 규칙 | 최종 필드 변경 후 19개 통과. 합성 자료만 사용 |
+| GitHub workflow의 오프라인 단위/권한/SQLite/개인정보 목록 | 261개 통과. 테스트용 SQLite만 사용하며 운영 DB 접근 없음 |
+| 새 importer/어댑터/오퍼 규칙 | 최종 필드 변경 후 21개 통과. 합성 자료만 사용 |
 | `tests/offer-comparison-browser.cjs` | KO/EN × 390/820px 4개 흐름 및 독립 상담의 동일 상품 비교 통과 |
 | `tests/product-catalog-browser.cjs` | KO/EN × 390/820px 상품 필터/이미지/직접 입력 치수/비교/사진 동의/삭제, 독립 상담, 만료 자료 제외 통과 |
 | `tests/shopping-search-browser.cjs` | KO/EN × 820×1180, 1180×820, 390×844. 실제 상품 0개·공식 검색·복사·규칙 조언·사진 동의·삭제 유지 통과 |
 | 정적 빌드/공개 산출물 검사 | 74개 정적 파일, marker 포함 75개. 비공개 승인/서버/DB/자격증명 공개 없음 |
 
 브라우저는 Linux 터치 Chromium입니다. 실제 iPad Safari/ChatGPT 앱의 WKWebView 실기기 검증 완료를 뜻하지 않습니다. 상품 사진 로딩 검사는 로컬 예시 이미지 응답을 가로채는 방식이며 실제 공급원 이미지의 접근/이용권 증거가 아닙니다. 합성 카드·가격·허가는 공개 카탈로그 또는 Preview에 배포하지 않았습니다.
+
+스타일리스트의 실제 CSP 헤더도 검사합니다. 비공개 승인/내용 해시 검증 후 공개 상품의 이미지 HTTPS origin만 `img-src`에 추가하며, 상품 0개이면 헤더를 전혀 변경하지 않습니다. `connect-src`, 스크립트 정책, Preview API 차단은 그대로 유지합니다.
 
 ## 출시 판단과 승인 경계
 

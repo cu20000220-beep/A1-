@@ -3,6 +3,7 @@
 // intercepted in this browser context; never written to the public catalog.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {compileCatalog}=require('../scripts/lib/product-catalog.cjs');
+const {catalogPublicHeaders}=require('../scripts/lib/catalog-public-headers.cjs');
 const root=path.resolve(__dirname,'..'),origin='https://offer-browser.a1fashion.pages.dev',out='/workspace/work/offer-comparison';fs.mkdirSync(out,{recursive:true});
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.jpg':'image/jpeg','.json':'application/json'};
 function fixture(now=Date.now()){
@@ -25,18 +26,20 @@ function fixture(now=Date.now()){
  ];
  return compileCatalog({version:1,products},{version:1,sources:approvals},{now,inspect:true}).snapshot;
 }
-async function routeContext(context,snapshot,requests){await context.route('**/*',async route=>{
+async function routeContext(context,snapshot,requests){
+ const publicHeaders=catalogPublicHeaders(fs.readFileSync(path.join(root,'_headers'),'utf8'),snapshot.products),match=publicHeaders.match(/^\/stylist\*\s*\n\s+Content-Security-Policy:\s*([^\r\n]+)/m);assert.ok(match,'built stylist CSP required');const stylistCsp=match[1];assert.match(stylistCsp,/img-src 'self' https:\/\/images\.retailer\.example/);assert.match(stylistCsp,/connect-src 'self'/);
+ await context.route('**/*',async route=>{
  const r=route.request(),u=new URL(r.url());assert.equal(r.method(),'GET');assert.ok(!u.pathname.startsWith('/api/'));requests.push(u.href);
  if(u.origin!==origin){assert.equal(u.hostname,'images.retailer.example','no seller API, analytics, payment or live external service');assert.equal(u.pathname,'/authorized-test.jpg');assert.equal(u.search,'');await route.fulfill({contentType:'image/jpeg',body:fs.readFileSync(path.join(root,'assets/photos/man.jpg'))});return;}
  for(const[k,v]of u.searchParams){assert.equal(k,'v');assert.match(v,/^[a-z0-9-]+$/);}
  if(u.pathname==='/assets/approved-products.json'){await route.fulfill({contentType:'application/json',body:JSON.stringify(snapshot)});return;}
- const file=path.resolve(root,u.pathname==='/'?'index.html':u.pathname.slice(1));assert.ok(file.startsWith(root+'/'));await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});
+ const file=path.resolve(root,u.pathname==='/'?'index.html':u.pathname.slice(1));assert.ok(file.startsWith(root+'/'));await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream',...(u.pathname==='/stylist.html'?{headers:{'content-security-policy':stylistCsp}}:{})});
  });}
 const unknown=lang=>lang==='ko'?/미확인|불명|비교 불가/:/unknown|unconfirmed|unavailable|incomplete|not comparable/i;
 (async()=>{const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});try{
- for(const width of [390,820])for(const lang of ['ko','en']){
+ for(const width of (process.env.A1_OFFER_STYLE_ONLY?[820]:[390,820]))for(const lang of (process.env.A1_OFFER_STYLE_ONLY?['ko']:['ko','en'])){
   const snapshot=fixture(),context=await browser.newContext({viewport:{width,height:1180},hasTouch:true,isMobile:true,locale:lang==='ko'?'ko-KR':'en-US'}),requests=[],errors=[];await routeContext(context,snapshot,requests);
-  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(origin+'/',{waitUntil:'networkidle'});await page.evaluate(l=>A1I18n.setLanguage(l),lang);
+  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(()=>{window.offerCspViolations=[];document.addEventListener('securitypolicyviolation',e=>window.offerCspViolations.push({directive:e.effectiveDirective,blocked:e.blockedURI}));});await page.goto(origin+'/',{waitUntil:'networkidle'});await page.evaluate(l=>A1I18n.setLanguage(l),lang);
   await page.locator('details:has(#shopping-product-filters)>summary').click();await page.locator('#shopping-size').fill('M');await page.locator('#shopping-destination').selectOption('KR');
   await page.locator('#shopping-query').fill('남성 검정 슬랙스 5만원 이하');await page.locator('#shopping-search-form button[type=submit]').click();
   await page.waitForSelector('#shopping-products [data-catalog-id="TEST-A"]');
@@ -61,11 +64,12 @@ const unknown=lang=>lang==='ko'?/미확인|불명|비교 불가/:/unknown|unconf
   await page.locator('#shopping-destination').selectOption('US');await page.locator('#shopping-search-form button[type=submit]').click();await page.locator('[data-offer-compare="TEST-A"]').click();
   assert.equal(await page.locator('#shopping-offer-comparison [data-offer-lowest="true"]').count(),0);assert.equal(await row('TEST-B-LATEST').getAttribute('data-offer-eligible'),'false');assert.match(await cell('TEST-B-LATEST','total').innerText(),unknown(lang));
   if(width===820&&lang==='ko'){
-   await page.goto(origin+'/stylist.html',{waitUntil:'networkidle'});await page.locator('#stylist-message').fill('남성 검정 슬랙스 5만원 이하');await page.locator('#stylist-send').click();await page.waitForSelector('[data-stylist-exact-comparison]');
+   const stylistResponse=await page.goto(origin+'/stylist.html',{waitUntil:'networkidle'});assert.match(stylistResponse.headers()['content-security-policy'],/img-src 'self' https:\/\/images\.retailer\.example/);await page.locator('#stylist-message').fill('남성 검정 슬랙스 5만원 이하');await page.locator('#stylist-send').click();await page.waitForSelector('[data-stylist-exact-comparison]');
    const exact=page.locator('[data-stylist-exact-comparison]').first();assert.equal(await exact.locator('[data-stylist-offer="TEST-B-LATEST"][data-stylist-lowest]').count(),1);assert.match(await exact.innerText(),/42,000/);
    for(const id of ['TEST-B-OLD','TEST-SPONSORED','TEST-OTHER-GTIN','TEST-WRONG-COLOR','TEST-WRONG-SIZE','TEST-USED'])assert.equal(await exact.locator('[data-stylist-offer="'+id+'"]').count(),0,id+' excluded from stylist exact group');
    assert.match(await exact.locator('[data-stylist-offer="TEST-UNKNOWN-SHIPPING"]').innerText(),/미확인/);assert.equal(await page.locator('[data-stylist-affiliate="TEST-AFFILIATE"]').count()>0,true);assert.equal(await page.locator('.stylist-product:has([data-stylist-catalog-buy="TEST-SPONSORED"])').count(),0);
-   await exact.screenshot({path:path.join(out,'stylist-exact-synthetic-ko-820.png'),style:'header{visibility:hidden!important}'});console.log('SYNTHETIC stylist: shared exact identity/fees, latest duplicate, sponsored exclusion, affiliate disclosure and verified total passed.');
+   const stylistImages=page.locator('.stylist-product img');assert.ok(await stylistImages.count()>0);for(let i=0;i<await stylistImages.count();i++){await stylistImages.nth(i).scrollIntoViewIfNeeded();await page.waitForFunction(img=>img.complete&&img.naturalWidth>0,await stylistImages.nth(i).elementHandle(),{timeout:10000});}assert.deepEqual(await page.evaluate(()=>window.offerCspViolations),[],'generated CSP must permit approved product images without other violations');
+   await exact.screenshot({path:path.join(out,'stylist-exact-synthetic-ko-820.png')});console.log('SYNTHETIC stylist: shared exact identity/fees, latest duplicate, sponsored exclusion, affiliate disclosure, verified total and actual image decode under generated CSP passed.');
   }
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);assert.deepEqual(await page.evaluate(()=>Object.keys(sessionStorage)),[]);assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),['a1-fashion:language']);assert.deepEqual(errors,[]);
   assert.ok(requests.every(u=>!u.includes('shoulderHipRatio')&&!u.includes('legTorsoRatio')&&!u.includes('TEST-AFFILIATE')&&!u.includes('50000')),'private search conditions and offer selection must not enter requests');

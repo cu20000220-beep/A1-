@@ -2,6 +2,7 @@
 // SYNTHETIC AUTHORIZED TEST DATA ONLY. Never written to the public catalog.
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {compileCatalog}=require('../scripts/lib/product-catalog.cjs');
+const {catalogPublicHeaders}=require('../scripts/lib/catalog-public-headers.cjs');
 const root=path.resolve(__dirname,'..'),origin='https://catalog-browser.a1fashion.pages.dev',out='/workspace/work/product-catalog';fs.mkdirSync(out,{recursive:true});
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.jpg':'image/jpeg','.json':'application/json'};
 function fixture(now=Date.now()){
@@ -20,7 +21,7 @@ async function routeContext(context,snapshot,requests){await context.route('**/*
  for(const[k,v]of u.searchParams){assert.equal(k,'v');assert.match(v,/^[a-z0-9-]+$/);}
  if(['/avatar-lab.html','/product-lab.html'].includes(u.pathname)){await route.fulfill({status:308,headers:{Location:u.pathname.slice(0,-5)},body:''});return;}
  if(u.pathname==='/assets/approved-products.json'){await route.fulfill({contentType:'application/json',body:JSON.stringify(snapshot)});return;}
- const rel=['/avatar-lab','/product-lab'].includes(u.pathname)?u.pathname.slice(1)+'.html':u.pathname==='/'?'index.html':u.pathname.slice(1);const file=path.resolve(root,rel);assert.ok(file.startsWith(root+'/'));await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});
+ const rel=['/avatar-lab','/product-lab'].includes(u.pathname)?u.pathname.slice(1)+'.html':u.pathname==='/'?'index.html':u.pathname.slice(1);const file=path.resolve(root,rel);assert.ok(file.startsWith(root+'/'));const policy=u.pathname==='/stylist.html'?catalogPublicHeaders(fs.readFileSync(path.join(root,'_headers'),'utf8'),snapshot.products).split('/stylist*\n')[1].split('\n\n')[0].match(/Content-Security-Policy: (.*)/)[1]:null;await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream',...(policy?{headers:{'Content-Security-Policy':policy}}:{})});
  });}
 (async()=>{const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});try{
  for(const width of (process.env.A1_CATALOG_CHAT_ONLY?[]:[390,820]))for(const lang of ['ko','en']){
