@@ -37,6 +37,7 @@
   const node = (tag,text) => { const el=document.createElement(tag); if(text)el.textContent=text; return el; };
   // These are the existing public directory's official search endpoints.
   const stores = [
+    ['Musinsa','KR','https://www.musinsa.com/search/goods','keyword'], ['29CM','KR','https://shop.29cm.co.kr/search','keyword'],
     ['Coupang','KR','https://www.coupang.com/np/search','q'], ['Naver Shopping','KR','https://search.shopping.naver.com/search/all','query'],
     ['eBay US','US','https://www.ebay.com/sch/i.html','_nkw'], ['Amazon US','US','https://www.amazon.com/s','k'],
     ['Amazon Japan','JP','https://www.amazon.co.jp/s','k'], ['Rakuten Japan','JP','https://search.rakuten.co.jp/search/mall/',null],
