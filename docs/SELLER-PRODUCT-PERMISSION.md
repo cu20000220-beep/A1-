@@ -40,12 +40,12 @@ CSV의 배열 필드는 `|`로 구분하며 JSON은 배열을 사용합니다. U
 | `sizes` | 실제 제공 사이즈 배열/`S|M|L`. 미확인 시 빈 배열/빈 셀 |
 | `sizeChart` | 아래 표 구조. 모르면 JSON `null` 또는 빈 CSV 셀 |
 | `imageUrl` | 이용 허락된 실제 이미지 HTTPS URL, 별도 승인 imageDomains의 정확한 호스트만 허용 |
-| `retailer` | 승인서의 판매자 명칭과 정확히 일치 |
+| `retailer` | 승인서의 판매자 명칭과 정확히 일치. official-api/affiliate-feed 공급원은 별도로 승인된 retailers 목록의 정확한 명칭만 허용 |
 | `purchaseUrl` | 실제 상품별 HTTPS 구매 URL, 승인 판매 호스트만 허용 |
 | `sourceUrl` | 실제 판매자 자료/피드의 공개 가능한 출처 URL, 운영자 승인 sourceUrl과 일치 |
 | `permissionChecked` | 판매자의 자료 제공 권한 확인 `true`. 이것만으로 공개되지 않음 |
 | `lastChecked` | 실제 가격/재고/자료를 확인한 UTC 시각: `YYYY-MM-DDTHH:mm:ssZ` 또는 밀리초 포함. 미래·만료 시각 거부 |
-| `stock` | 현재 `in_stock`만 공개. 미확인/품절 데이터는 가져오기 거부 |
+| `stock` | `in_stock`, `out_of_stock`, `unknown`. 품절·미확인은 표시할 수 있으나 구매 가능/최저가로 추천하지 않음 |
 | `tags` | 실제 확인된 `straight/relaxed/layered/balanced/tight/cropped/low-rise/logos`, 없으면 빈 배열/셀 |
 | `designTagsComplete` | 디자인 항목을 충분히 확인했을 때만 `true`, 그 외 `false`. 디자인 미확인을 숨기지 않음 |
 
@@ -78,6 +78,9 @@ sources[]:
   retentionHours: 1–168 시간 중 승인된 자료 보관/유효 시간
   inputSha256: 운영자가 검토한 CSV/JSON 원본 바이트의 SHA-256
   productsSha256: 정규화한 해당 승인 상품 그룹의 SHA-256
+  kind: 선택적 seller-file/official-api/affiliate-feed/brand-file
+  retailers: official-api/affiliate-feed에서만 선택적 허용 판매자 정확한 명칭 배열
+  commercialApproved: 선택적 광고/제휴 표시 별도 승인 boolean (true만 허용 표시)
 ```
 
 1. 실제 권리와 출처를 먼저 확인하고 승인 메타데이터를 작성합니다. 해시는 아직 확정 전이어도 검사 명령은 가능합니다.
@@ -123,3 +126,33 @@ node scripts/import-product-catalog.cjs --input /승인자료/판매자파일.cs
 실제 코드 Preview 4f89b820에서 빈 공개 스냅샷 0개·헤더만 있는 CSV와 빈 JSON 양식의 HTTP 다운로드, 기존 검색/무료 규칙 상담·실제 MediaPipe 분석 후 별도 동의·한영·삭제를 확인했습니다. UI API 요청·JS 예외·콘솔 error 0건이며 `/api/policy`는 503 `preview_isolated`를 유지합니다. Linux 터치 Chromium 검증으로 실제 iPad Safari 합격을 대체하지 않습니다. 실제 판매자 자료가 없으므로 실제 상품의 HTTP/이미지/가격/사이즈 검증은 여전히 미완료입니다.
 
 별도 `stylist.html` 무료 규칙 상담도 동일한 고정 공개 스냅샷을 읽어 현재 유효 상품을 조건별 검색하고 이미지·가격·추천 사유와 후보 비교를 출력합니다. 등록 후보 비교를 동일 SKU의 최저가 비교라고 표현하지 않습니다. 원본 상담·체형 수치는 서버로 보내지 않으며 동의 철회/삭제 중에는 지연된 응답을 표시하지 않습니다. 격리된 합성 스냅샷으로 이 연결도 검사했고, 공개 스냅샷에는 합성 자료를 쓰지 않았습니다.
+
+## 선택적 판매처별 오퍼·배송·광고 필드
+
+아래 필드는 추가된 선택 사항입니다. JSON에서 전부 생략하거나 CSV에서 새 열을 전부 비우면 기존 상품 출력/승인 그룹 해시는 바뀌지 않습니다. 하나라도 입력하면 누락값은 명시적 `null`·빈 배열로 정규화하며 0원/무료 배송을 만들어 넣지 않습니다. CSV 배열은 `|`, `commercial`은 따옴표 이스케이프한 JSON 셀입니다.
+
+| 필드 | 의미·검증 |
+| --- | --- |
+| `gtin` | 문자열 8/12/13/14자리 GTIN, 체크 숫자 검사. 모든 0 값 금지. 올바른 체크 숫자는 실제 제조사 발급/상품 동일성을 단독 보증하지 않으므로 출처 확인 필요 |
+| `mpn` | 제조사가 발급한 모델/부품 번호. 판매자 내부 SKU·상품 이름을 대신 넣지 않음. 대소문자 보존 |
+| `offerSize` | 이번 오퍼의 단일 실제 변형 사이즈. 반드시 `sizes` 중 하나와 일치. 없으면 정확한 사이즈별 가격 비교가 불가 |
+| `sizeSystem` | 실제 사이즈 체계/제조사 변형 기준(예: KR). 같은 문자 M만으로 국가/브랜드 간 같은 변형으로 확정하지 않음. 모르면 비움 |
+| `condition` | `new` 또는 `used`. 비우면 `null`(미확인). 새 상품/중고를 한 최저가로 섞지 않음 |
+| `shippingCountries` | 판매자가 확인한 배송 가능 국가 코드 배열(대문자 두 글자), 최대 30개. 누락은 배송 가능 미확인이고 판매자 국가에서 추론하지 않음 |
+| `shipping`, `tax`, `duties` | 해당 상품 통화의 확인된 배송비·세금·관세. 0도 근거가 있어야 함. 미확인은 비움/`null`. KRW/JPY 정수, 나머지 소수 둘째 자리 |
+| `costDestination` | 위 비용이 실제 적용되는 단일 배송 국가. 금액 하나라도 있으면 필수이며 `shippingCountries`에 포함돼야 함. 다른 배송국에 같은 요금을 자동 적용하지 않음 |
+| `sourceKind` | `seller-file`, `official-api`, `affiliate-feed`, `brand-file`. 별도 승인 목록의 `kind`와 일치해야 하며 official/affiliate/brand 공급원은 명시 필수. 이 값은 API 호출을 활성화하지 않음 |
+| `externalId` | 승인 공급원이 발급한 원래 레코드 ID. 이 ID만으로 다른 판매처 상품의 동일성을 확정하지 않음 |
+| `purchaseConditions` | 선택적 구매 조건 고지(300자 이하). 멤버십·카드·쿠폰·수량/최소 구매금액 조건 등이 있으면 사실대로 표시. 비어 있으면 조건 미확인이며 무조건 구매 가능을 보장하지 않음 |
+| `commercial` | `{sponsored:boolean,affiliate:boolean,label:string 또는 null}`. 한 플래그라도 true면 빈 값이 아닌 공개 고지와 운영자 `commercialApproved:true` 별도 승인이 모두 필요 |
+
+외부 공급원의 `retailer` 명칭이 승인된 공급자 이름과 다른 경우, 운영자가 official-api/affiliate-feed 승인에 정확한 `retailers` 목록을 검토해 넣어야 합니다. 판매자가 새 판매처/도메인을 파일에 추가하는 것만으로 허용되지 않습니다.
+
+오퍼 데이터도 원본/정규화 그룹 SHA-256에 포함됩니다. 배송·재고·광고·동일 상품 식별자가 바뀌면 새 자료 검토와 승인 해시가 필요합니다. 광고/제휴 고지는 실제 상업 관계에 대한 승인이지 결제 실행이나 검색 점수 우대 승인이 아닙니다. 수수료율을 추천 점수나 최저가 계산에 사용하지 않습니다.
+
+동일 상품 가격 비교는 검증된 GTIN 또는 제조사 브랜드/MPN과 **색상·단일 사이즈·사이즈 체계·상태**를 확인해야 합니다. 식별자가 부족하면 후보/유사 상품 정보 비교만 제공하고, 배송·세금·관세 또는 환율이 미확인인 행을 최저가로 발표하지 않습니다. 표시 권리와 실제 HTTP/재고/가격 검증 한계는 위와 같습니다.
+
+
+배송비·세금·관세 값은 **상품 수량 1개와 명시한 배송 국가에 대한 무조건 적용 금액**만 넣습니다. 회원·카드·쿠폰 할인이나 무료 배송 임계값을 자동 해석해 값을 낮추지 않습니다. 조건부 가격/비용이면 `purchaseConditions`에 실제 조건을 넣고 일반 최저가/확정 총액 대상으로 계산하지 않습니다. 미확인 비용은 여전히 null이며 회원 조건을 생략했다고 무조건 무료가 되는 것이 아닙니다.
+
+`purchaseConditionsVerified`는 추가 구매 조건을 확인했는지 나타내는 boolean입니다. 미제공/false이면 미확인이므로 합계 최저가 계산에서 제외합니다. true와 `purchaseConditions:null` 조합만 자료에서 추가 조건이 없음을 확인한 값입니다. true와 조건 문자열이 있으면 회원/카드/쿠폰 등 조건부 가격으로 별도 표시하고 일반 합계 순위에서 제외합니다. 조건 문자열을 자동 해석해 혜택을 적용하지 않습니다.

@@ -4,3 +4,5 @@
 @media(max-width:360px){.stylist-fields{grid-template-columns:1fr}.stylist-navigation{gap:12px}.stylist-hero h1{font-size:58px}}
 
 .stylist-product img{display:block;width:100%;max-height:220px;object-fit:contain}
+
+.stylist-offer-table-wrap{max-width:100%;overflow-x:auto}.stylist-offer-table-wrap table{border-collapse:collapse}.stylist-offer-table-wrap th,.stylist-offer-table-wrap td{border:1px solid #aebc9e;padding:10px;white-space:nowrap;font-size:12px}

@@ -37,6 +37,7 @@ const publicEntries = [
   'index.html',
   'assets/shopping-query.js',
   'assets/product-catalog.js',
+  'assets/offer-comparison.js',
   'assets/approved-products.json',
   'templates/seller-products.csv',
   'templates/seller-products.json',

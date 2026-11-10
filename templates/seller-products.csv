@@ -1,1 +1,1 @@
-id,approvalId,name,brand,category,type,color,styles,occasions,gender,price,currency,sizes,sizeChart,imageUrl,retailer,purchaseUrl,sourceUrl,permissionChecked,lastChecked,stock,tags,designTagsComplete
+id,approvalId,name,brand,category,type,color,styles,occasions,gender,price,currency,sizes,sizeChart,imageUrl,retailer,purchaseUrl,sourceUrl,permissionChecked,lastChecked,stock,tags,designTagsComplete,gtin,mpn,offerSize,sizeSystem,condition,shipping,tax,duties,costDestination,shippingCountries,sourceKind,externalId,commercial,purchaseConditions,purchaseConditionsVerified
