@@ -78,6 +78,7 @@
     photograph = null;
     analysis = null;
     eraseCanvas($('#ai-canvas'));
+    eraseCanvas($('#ai-clean-canvas'));
     eraseCanvas($('#ai-preview-canvas'));
     $('#ai-photo-preview').hidden = true;
     $('#ai-photo').value = '';
@@ -172,6 +173,20 @@
     output.height = Math.max(1, source.height - crop);
     const ctx = output.getContext('2d');
     ctx.drawImage(source, 0, crop, source.width, source.height - crop, 0, 0, output.width, output.height);
+    // Keep only the same face-cropped analysis image, without annotation lines,
+    // for a later explicitly consented local fitting preview. Never keep a
+    // second full-face original, URL, encoded image, or persistent record.
+    let clean = $('#ai-clean-canvas');
+    if (!clean) {
+      clean = document.createElement('canvas');
+      clean.id = 'ai-clean-canvas';
+      clean.hidden = true;
+      clean.setAttribute('aria-hidden', 'true');
+      output.after(clean);
+    }
+    clean.width = output.width;
+    clean.height = output.height;
+    clean.getContext('2d').drawImage(output, 0, 0);
     ctx.strokeStyle = '#c9ff85';
     ctx.fillStyle = '#c9ff85';
     ctx.lineWidth = Math.max(3, output.width / 180);
@@ -259,6 +274,7 @@
       eraseCanvas(source);
       photograph = null;
     } catch (error) {
+      if (token === revision) eraseCanvas($('#ai-clean-canvas'));
       if (token === revision) status(error.message?.includes('WebGL') || error.message?.includes('사진') || error.message?.includes('AI') ? error.message : '사진을 분석하지 못했습니다. 정면 전신 사진으로 다시 시도하거나 페이지를 새로고침해주세요.', true);
     } finally {
       if (pose) {

@@ -3,6 +3,7 @@
  const root=document.querySelector('#shopping-search');if(!root||!window.A1Preview)return;
  const I=window.A1I18n,Q=window.A1ShoppingQuery,P=window.A1Preview,C=window.A1ProductCatalog,O=window.A1OfferComparison,$=s=>document.querySelector(s);
  I.register({
+ '체형 분석을 참고해 옷 찾기':'Find clothes using my photo references',
  '체형 참고 검색 제안 · 실제 상품 목록 아님':'Body-reference search ideas · not product listings',
  '사진의 어깨·골반 기준점 비율을 참고해 단정한 상의와 여유 있는 하의 조합을 비교해보세요.':'Using the photo landmark proportions as a reference, compare neat tops and more relaxed bottoms.',
  '사진상 비율을 참고해 가벼운 상의 레이어와 일자 하의 조합을 비교해보세요.':'Using the photo proportions as a reference, compare light top layers and straight bottoms.',
@@ -195,7 +196,7 @@
  $('#shopping-search-form').addEventListener('submit',e=>{e.preventDefault();search();});$('#shopping-style-button').addEventListener('click',advice);
  const restoreBodyQuery=()=>{if(bodyOriginalQuery!==null){const original=bodyOriginalQuery;bodyOriginalQuery=null;if(!disposed){$('#shopping-query').value=original;search();}}};
  $('#shopping-query').addEventListener('input',()=>{bodyOriginalQuery=null;});
- document.addEventListener('a1:analysis-ready',e=>{if(P.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#shopping-analysis-consent').disabled=false;$('#shopping-analysis-consent').checked=false;restoreBodyQuery();$('#shopping-style-advice').replaceChildren();renderCatalog();const result=document.querySelector('#ai-result .ai-result-copy');if(!$('#shopping-return')){const link=node('a');link.id='shopping-return';link.href='#shopping-search';I.setText(link,'분석 결과에서 검색 조건으로 돌아가기');result.append(link);}}});
+ document.addEventListener('a1:analysis-ready',e=>{if(P.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#shopping-analysis-consent').disabled=false;$('#shopping-analysis-consent').checked=false;restoreBodyQuery();$('#shopping-style-advice').replaceChildren();renderCatalog();const result=document.querySelector('#ai-result .ai-result-copy');if(!$('#shopping-return')){const link=node('a');link.id='shopping-return';link.href='#shopping-analysis-consent';I.setText(link,'체형 분석을 참고해 옷 찾기');result.append(link);}}});
  const clear=()=>{metrics=null;$('#shopping-analysis-consent').checked=false;$('#shopping-analysis-consent').disabled=true;$('#shopping-style-advice').replaceChildren();comparison.clear();offerSelection=null;$('#shopping-size').value='';for(const k of ['chest','waist','hips','inseam'])$('#shopping-measure-'+k).value='';restoreBodyQuery();if(!disposed)renderCatalog();};
  document.addEventListener('a1:analysis-cleared',clear);$('#shopping-analysis-consent').addEventListener('change',()=>{$('#shopping-style-advice').replaceChildren();if(!$('#shopping-analysis-consent').checked)restoreBodyQuery();renderCatalog();});
  document.addEventListener('a1:language-changed',()=>{render();renderCatalog();if($('#shopping-style-advice').children.length)advice();});

@@ -12,8 +12,8 @@ const mime={'.json':'application/json','.html':'text/html','.js':'text/javascrip
 try{
 for(const [width,height]of (process.env.A1_AVATAR_INTEGRATION_ONLY?[]:[[820,1180],[1180,820],[390,844]]))for(const lang of ['ko','en']){
  const context=await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:true,locale:lang==='ko'?'ko-KR':'en-US'}),requests=[],errors=[];
- await context.route('**/*',async route=>{const r=route.request(),u=new URL(r.url());requests.push(u.pathname);assert.equal(u.origin,origin);assert.equal(r.method(),'GET');assert.equal(u.search,'');assert.ok(!u.pathname.startsWith('/api/'));if(await pagesRedirect(route,u))return;const file=path.resolve(root,pagesPath(u));assert.ok(file.startsWith(root+'/'));await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});});
- const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(origin+'/avatar-lab.html#LAB-A',{waitUntil:'networkidle'});await page.evaluate(l=>A1I18n.setLanguage(l),lang);
+ await context.route('**/*',async route=>{const r=route.request(),u=new URL(r.url());requests.push(u.pathname);assert.equal(u.origin,origin);assert.equal(r.method(),'GET');for(const[k,v]of u.searchParams){assert.equal(k,'v');assert.match(v,/^[a-z0-9-]+$/);}assert.ok(!u.pathname.startsWith('/api/'));if(await pagesRedirect(route,u))return;const file=path.resolve(root,pagesPath(u));assert.ok(file.startsWith(root+'/'));await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});});
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(origin+'/avatar-lab#LAB-A',{waitUntil:'networkidle'});await page.evaluate(l=>A1I18n.setLanguage(l),lang);
  assert.equal(await page.locator('#avatar-root').isVisible(),true);
  const pixels=()=>page.locator('#avatar-after').evaluate(c=>c.toDataURL());
  const original=await pixels();assert.notEqual(original,await page.locator('#avatar-before').evaluate(c=>c.toDataURL()));

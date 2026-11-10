@@ -16,7 +16,7 @@ try{for(const width of [390,820])for(const lang of ['ko','en']){
  });
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{window.Pose=class{setOptions(){}onResults(fn){this.result=fn;}async initialize(){}async reset(){}async close(){}async send(){const points=Array.from({length:33},()=>({x:.5,y:.5,visibility:.99}));for(const[i,[x,y]]of Object.entries({11:[.3,.2],12:[.7,.2],23:[.36,.45],24:[.64,.45],25:[.36,.65],26:[.64,.65],27:[.36,.9],28:[.64,.9]}))points[i]={x,y,visibility:.99};this.result({poseLandmarks:points});}};});
- await page.goto(origin+'/product-lab.html',{waitUntil:'networkidle'});await page.evaluate(l=>A1I18n.setLanguage(l),lang);
+ await page.goto(origin+'/product-lab',{waitUntil:'networkidle'});await page.evaluate(l=>A1I18n.setLanguage(l),lang);
  assert.equal(await page.locator('#lab-root').isVisible(),true);assert.equal(await page.locator('.lab-card').count(),0);
  await page.locator('#lab-fixtures').click();assert.equal(await page.locator('.lab-card').count(),3);await page.locator('[data-lab-select=LAB-A]').click();await page.locator('#lab-fit').click();assert.equal(await page.locator('#lab-fit-canvas').isVisible(),false);
  await page.locator('#ai-photo').setInputFiles(path.join(root,'assets/photos/man.jpg'));await page.waitForFunction(()=>!document.querySelector('#ai-photo-preview').hidden);await page.locator('#ai-analyze').click();await page.waitForFunction(()=>!document.querySelector('#ai-result').hidden);

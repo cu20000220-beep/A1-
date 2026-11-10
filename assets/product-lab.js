@@ -7,6 +7,29 @@ function initializeProductLab(){
  root.hidden=false;const unavailable=document.querySelector('#lab-unavailable');if(unavailable)unavailable.hidden=true;
  const I=window.A1I18n,M=window.A1ProductMatching,$=s=>document.querySelector(s);
  const dictionary={
+  '옷만 나온 투명 배경 PNG를 권장합니다. 사람이나 배경이 함께 찍힌 사진은 그대로 겹쳐 보입니다.':'A transparent PNG showing only the garment works best. Any person or background in the source image is also overlaid.',
+  '내 의류 사진으로 미리보기':'Preview my garment photo',
+  '직접 촬영했거나 이용 권한이 있는 의류 사진을 선택하세요. 상품 정보·가격·구매 가능 여부를 검증한 자료가 아닙니다.':'Choose a garment photo you took or have permission to use. This does not verify product information, prices or availability.',
+  '이 의류 사진을 기기 내 미리보기에 사용할 권한이 있습니다.':'I have permission to use this garment photo for an on-device preview.',
+  '의류 사진 선택 · JPG/PNG/WebP, 12MB 이하':'Choose garment photo · JPG/PNG/WebP, up to 12MB',
+  '얼굴을 제외한 분석 결과 사진과 선택한 의류 사진을 이 기기 안에서 겹쳐 보는 데 동의합니다. 외부로 전송하지 않습니다.':'I agree to overlay the cropped analysis photo and selected garment photo on this device. They are not sent outside this device.',
+  '실제 의류 사진 로컬 2D 미리보기 · AI 착용 합성 아님':'Local 2D preview of a garment photo · not AI try-on',
+  '의류 사진의 질감과 색을 그대로 겹쳐 보는 참고 화면입니다. 자동 착용 합성·가림 처리·옷 주름·사이즈 예측은 제공하지 않습니다.':'This overlays the garment photo texture and colors as a reference. It does not generate a dressed image, handle body occlusion, simulate folds or predict size.',
+  '의류 사진을 겹쳐 보기':'Overlay garment photo','가로 위치':'Horizontal position','세로 위치':'Vertical position','의류 회전':'Garment rotation','의류 투명도':'Garment opacity',
+  '의류 숨기기 · 내 사진과 비교':'Hide garment · compare with my photo',
+  '밝은 단색 배경 간단 제거 · 흰색 의류에는 사용하지 마세요.':'Simple light-background removal · do not use for white garments.',
+  '의류 사진·미리보기 지우기':'Clear garment photo & preview',
+  '기기에서 선택한 의류 사진':'Garment photo selected on this device',
+  '의류 사진을 선택하기 전에 이용 권한을 확인해주세요.':'Confirm permission before selecting a garment photo.',
+  'JPG·PNG·WebP 의류 사진을 12MB 이하로 선택해주세요.':'Choose a JPG, PNG or WebP garment photo up to 12MB.',
+  '의류 사진을 열지 못했습니다. JPG·PNG 또는 사진의 스크린샷으로 다시 선택해주세요.':'The garment photo could not be opened. Try JPG, PNG or a screenshot.',
+  '의류 사진이 너무 큽니다. 사진을 줄이거나 스크린샷을 사용해주세요.':'The garment photo is too large. Resize it or use a screenshot.',
+  '의류 사진을 기기 안에서 준비하고 있습니다.':'Preparing the garment photo on this device.',
+  '의류 사진을 준비했습니다. 내 사진 사용에 별도로 동의한 뒤 겹쳐보기를 누르세요.':'Garment photo ready. Separately consent to use your photo, then choose Overlay.',
+  '먼저 이용 권한이 있는 의류 사진을 선택해주세요.':'First select a garment photo you have permission to use.',
+  '내 사진 사용 동의를 직접 선택해주세요.':'Select the consent to use your photo yourself.',
+  '의류 사진과 미리보기를 기기 메모리에서 지웠습니다.':'The garment photo and preview were cleared from device memory.',
+  '의류 사진의 배경 제거에 실패했습니다. 배경 제거를 끄고 다시 시도해주세요.':'Background removal failed. Turn it off and retry.',
   '원본 사진은 기기 안에서 분석합니다. 분석 후 아래 무료 연구실에서 조건을 입력하세요.':'The original photo is analyzed on your device. Enter your preferences in the free lab below after analysis.',
   '사진상 2D 참고 비율이며 실제 치수·건강·의류 사이즈를 판단하지 않습니다. 원본 사진은 외부로 전송하지 않으며 연구실 기능은 무료입니다.':'These are 2D photo references, not measurements, health assessments or clothing sizes. The original photo stays on your device; lab features are free.',
   '기존 무료 베타로 돌아가기':'Back to the existing free beta','상품 추천과 피팅 연구실':'Product recommendation & fitting lab',
@@ -71,7 +94,7 @@ function initializeProductLab(){
  $('#lab-show-all').addEventListener('click',showAll);
  $('#lab-pick-garment').addEventListener('click',()=>{if(!fixtures){fixtures=true;rows=makeFixtures();update();}reveal(ranked.length?'#lab-products':'#lab-catalog');});
  document.addEventListener('a1:lab-navigate',e=>{const target=e.detail?.target;if(!['#lab-preferences','#lab-comparison','#lab-fitting'].includes(target))return;
-  if(target==='#lab-fitting'&&!selected){tx('#lab-fit-status','먼저 시험 의류를 선택해주세요. 위 의류 목록에서 2D 배치 대상으로 선택을 누르세요.');reveal('#lab-catalog');}else reveal(target);
+  if(target==='#lab-fitting'&&!selected){reveal('#lab-local-photo-fitting');}else reveal(target);
  });
  function eraseFit(){generation++;fitCanvas.width=fitCanvas.height=1;fitCanvas.hidden=true;$('#lab-fit-result').hidden=true;$('#lab-fit-status').textContent='';}
  function makeFixtures(){const now=Date.now();return [
@@ -128,18 +151,94 @@ function initializeProductLab(){
    fitCanvas.hidden=false;$('#lab-fit-result').hidden=false;tx('#lab-fit-status','2D 참고 배치 · 생성형 피팅 아님');if(showResult)reveal('#lab-fit-result');
   }catch{if(token!==generation)return;eraseFit();tx('#lab-fit-status','2D 이미지 처리에 실패했습니다. 사진 분석과 의류 선택을 확인하고 다시 눌러주세요.');$('#lab-reload-image').hidden=false;reveal('#lab-fit-flow');}
  }
+ // User-supplied raster images stay in bounded canvases in this document.
+ // No provider image URL, network upload, model call or browser storage exists.
+ const localPhotoCanvas=$('#lab-local-photo-canvas'),garmentPreview=$('#lab-garment-photo-preview');
+ let localGarment=null,preparedGarment=null,localRevision=0,pendingGarment=null,localDisposed=false;
+ const localMessage=source=>tx('#lab-local-photo-status',source);
+ function eraseLocalResult(){localPhotoCanvas.width=localPhotoCanvas.height=1;$('#lab-local-photo-result').hidden=true;}
+ function clearLocalPhoto({keepRights=false,silent=false}={}){
+  localRevision++;pendingGarment?.cancel();pendingGarment=null;
+  for(const canvas of [localGarment,preparedGarment,garmentPreview])if(canvas)canvas.width=canvas.height=1;
+  localGarment=preparedGarment=null;$('#lab-garment-photo-figure').hidden=true;eraseLocalResult();
+  $('#lab-garment-photo').value='';$('#lab-local-photo-consent').checked=false;if(!keepRights)$('#lab-garment-photo-rights').checked=false;
+  for(const [id,value]of [['lab-local-photo-x','50'],['lab-local-photo-y','38'],['lab-local-photo-scale','55'],['lab-local-photo-rotation','0'],['lab-local-photo-opacity','100']])$('#'+id).value=value;
+  $('#lab-local-photo-before').checked=false;$('#lab-local-photo-remove-bg').checked=false;
+  if(!silent)localMessage('의류 사진과 미리보기를 기기 메모리에서 지웠습니다.');
+ }
+ async function readLocalGarment(file,token){
+  const url=URL.createObjectURL(file),image=new Image();let rejectLoad,released=false,timer;
+  const release=()=>{if(released)return;released=true;clearTimeout(timer);image.onload=image.onerror=null;image.removeAttribute('src');URL.revokeObjectURL(url);};
+  const load={cancel(){release();rejectLoad?.(Error('cancelled'));}};pendingGarment=load;
+  try{
+   await new Promise((resolve,reject)=>{rejectLoad=reject;image.onload=resolve;image.onerror=()=>reject(Error('decode'));timer=setTimeout(()=>reject(Error('decode')),10000);image.src=url;});
+   if(token!==localRevision||localDisposed)throw Error('cancelled');
+   if(!image.naturalWidth||!image.naturalHeight||image.naturalWidth*image.naturalHeight>30000000)throw Error('dimensions');
+   const scale=Math.min(1,1600/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);return canvas;
+  }finally{release();if(pendingGarment===load)pendingGarment=null;}
+ }
+ function prepareGarmentPhoto(){
+  if(!localGarment)return;const canvas=document.createElement('canvas');canvas.width=localGarment.width;canvas.height=localGarment.height;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(localGarment,0,0);
+  if($('#lab-local-photo-remove-bg').checked){
+   // Only edge-connected near-white pixels. This is not AI segmentation and
+   // must not be used to infer folds or erase a white garment's background.
+   const image=ctx.getImageData(0,0,canvas.width,canvas.height),data=image.data,w=canvas.width,h=canvas.height,seen=new Uint8Array(w*h),queue=new Uint32Array(w*h);let start=0,end=0;
+   const enqueue=index=>{if(seen[index])return;seen[index]=1;const n=index*4,r=data[n],g=data[n+1],b=data[n+2];if(data[n+3]===0||Math.min(r,g,b)>=235&&Math.max(r,g,b)-Math.min(r,g,b)<=20)queue[end++]=index;};
+   for(let x=0;x<w;x++){enqueue(x);enqueue((h-1)*w+x);}for(let y=0;y<h;y++){enqueue(y*w);enqueue(y*w+w-1);}
+   while(start<end){const index=queue[start++],x=index%w,y=Math.floor(index/w);data[index*4+3]=0;if(x)enqueue(index-1);if(x+1<w)enqueue(index+1);if(y)enqueue(index-w);if(y+1<h)enqueue(index+w);}ctx.putImageData(image,0,0);
+  }
+  if(preparedGarment)preparedGarment.width=preparedGarment.height=1;preparedGarment=canvas;
+  const scale=Math.min(1,360/Math.max(canvas.width,canvas.height));garmentPreview.width=Math.max(1,Math.round(canvas.width*scale));garmentPreview.height=Math.max(1,Math.round(canvas.height*scale));garmentPreview.getContext('2d').drawImage(canvas,0,0,garmentPreview.width,garmentPreview.height);$('#lab-garment-photo-figure').hidden=false;
+ }
+ function drawLocalPhoto(showResult=false){
+  if(!metrics||$('#ai-result').hidden){localMessage('먼저 사진 분석을 완료해주세요. 사진은 이 기기 안에서만 사용합니다.');if(showResult)reveal('#ai-form');return;}
+  if(!$('#lab-garment-photo-rights').checked||!localGarment){localMessage('먼저 이용 권한이 있는 의류 사진을 선택해주세요.');if(showResult)reveal('#lab-local-photo-fitting');return;}
+  if(!$('#lab-local-photo-consent').checked){eraseLocalResult();localMessage('내 사진 사용 동의를 직접 선택해주세요.');return;}
+  const source=$('#ai-clean-canvas')||$('#ai-canvas');if(!source||source.width<=1||source.height<=1){eraseLocalResult();localMessage('먼저 사진 분석을 완료해주세요. 사진은 이 기기 안에서만 사용합니다.');return;}
+  try{
+   if(!preparedGarment)prepareGarmentPhoto();const scale=Math.min(1,1600/Math.max(source.width,source.height));localPhotoCanvas.width=Math.max(1,Math.round(source.width*scale));localPhotoCanvas.height=Math.max(1,Math.round(source.height*scale));
+   const ctx=localPhotoCanvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(source,0,0,localPhotoCanvas.width,localPhotoCanvas.height);
+   if(!$('#lab-local-photo-before').checked){
+    const width=localPhotoCanvas.width*Number($('#lab-local-photo-scale').value)/100,height=width*preparedGarment.height/preparedGarment.width,x=localPhotoCanvas.width*Number($('#lab-local-photo-x').value)/100,y=localPhotoCanvas.height*Number($('#lab-local-photo-y').value)/100;
+    ctx.save();ctx.translate(x,y);ctx.rotate(Number($('#lab-local-photo-rotation').value)*Math.PI/180);ctx.globalAlpha=Number($('#lab-local-photo-opacity').value)/100;ctx.shadowColor='rgba(0,0,0,.18)';ctx.shadowBlur=3*localPhotoCanvas.width/600;ctx.shadowOffsetY=2*localPhotoCanvas.width/600;ctx.drawImage(preparedGarment,-width/2,-height/2,width,height);ctx.restore();
+   }
+   const footer=Math.max(28,localPhotoCanvas.width/25);ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(0,localPhotoCanvas.height-footer,localPhotoCanvas.width,footer);ctx.fillStyle='#253b25';ctx.font=Math.max(11,localPhotoCanvas.width/45)+'px sans-serif';ctx.fillText('LOCAL PHOTO OVERLAY / NOT AI TRY-ON',8,localPhotoCanvas.height-footer*.3);
+   $('#lab-local-photo-result').hidden=false;localMessage('실제 의류 사진 로컬 2D 미리보기 · AI 착용 합성 아님');if(showResult)reveal('#lab-local-photo-result');
+  }catch{eraseLocalResult();localMessage('의류 사진의 배경 제거에 실패했습니다. 배경 제거를 끄고 다시 시도해주세요.');}
+ }
+ $('#lab-garment-photo').addEventListener('change',async()=>{
+  const file=$('#lab-garment-photo').files?.[0];if(!file)return;
+  if(!$('#lab-garment-photo-rights').checked){$('#lab-garment-photo').value='';localMessage('의류 사진을 선택하기 전에 이용 권한을 확인해주세요.');return;}
+  clearLocalPhoto({keepRights:true,silent:true});
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size<=0||file.size>12*1024*1024){localMessage('JPG·PNG·WebP 의류 사진을 12MB 이하로 선택해주세요.');return;}
+  const token=localRevision;localMessage('의류 사진을 기기 안에서 준비하고 있습니다.');
+  try{
+   const header=new Uint8Array(await file.slice(0,16).arrayBuffer()),starts=bytes=>bytes.every((v,i)=>header[i]===v);
+   const valid=file.type==='image/png'?starts([137,80,78,71,13,10,26,10]):file.type==='image/jpeg'?starts([255,216,255]):starts([82,73,70,70])&&[87,69,66,80].every((v,i)=>header[i+8]===v);
+   if(!valid)throw Error('format');if(token!==localRevision||localDisposed||!$('#lab-garment-photo-rights').checked)return;
+   const canvas=await readLocalGarment(file,token);if(token!==localRevision||localDisposed||!$('#lab-garment-photo-rights').checked){canvas.width=canvas.height=1;return;}localGarment=canvas;prepareGarmentPhoto();localMessage('의류 사진을 준비했습니다. 내 사진 사용에 별도로 동의한 뒤 겹쳐보기를 누르세요.');
+  }
+  catch(error){if(token===localRevision&&!localDisposed)localMessage(error.message==='dimensions'?'의류 사진이 너무 큽니다. 사진을 줄이거나 스크린샷을 사용해주세요.':'의류 사진을 열지 못했습니다. JPG·PNG 또는 사진의 스크린샷으로 다시 선택해주세요.');}
+ });
+ $('#lab-garment-photo-rights').addEventListener('change',()=>{if(!$('#lab-garment-photo-rights').checked)clearLocalPhoto();});
+ $('#lab-local-photo-consent').addEventListener('change',()=>{if(!$('#lab-local-photo-consent').checked)eraseLocalResult();});
+ $('#lab-local-photo-fit').addEventListener('click',()=>drawLocalPhoto(true));$('#lab-local-photo-clear').addEventListener('click',()=>clearLocalPhoto());
+ for(const id of ['lab-local-photo-x','lab-local-photo-y','lab-local-photo-scale','lab-local-photo-rotation','lab-local-photo-opacity','lab-local-photo-before'])$('#'+id).addEventListener('input',()=>{if(!$('#lab-local-photo-result').hidden)drawLocalPhoto();});
+ $('#lab-local-photo-remove-bg').addEventListener('change',()=>{try{prepareGarmentPhoto();if(!$('#lab-local-photo-result').hidden)drawLocalPhoto();}catch{eraseLocalResult();localMessage('의류 사진의 배경 제거에 실패했습니다. 배경 제거를 끄고 다시 시도해주세요.');}});
  form.addEventListener('submit',e=>{e.preventDefault();if(update())reveal(fixtures?'#lab-products':'#lab-catalog');});
  $('#lab-body-consent').addEventListener('change',update);
  $('#lab-fixtures').addEventListener('click',()=>{fixtures=!fixtures;rows=fixtures?makeFixtures():[];selected=null;compare.clear();eraseFit();update();reveal(fixtures&&ranked.length?'#lab-products':'#lab-catalog');});
  $('#lab-fit').addEventListener('click',()=>draw(true));for(const id of ['lab-fit-y','lab-fit-scale'])$('#'+id).addEventListener('input',()=>{if(!fitCanvas.hidden)draw();});
  $('#lab-fit-consent').addEventListener('change',()=>{if(!$('#lab-fit-consent').checked)eraseFit();else if(selected&&metrics)draw(true);});
  $('#lab-fit-clear').addEventListener('click',()=>{$('#lab-fit-consent').checked=false;eraseFit();reveal('#lab-fit-flow');});
- function clear(){generation++;metrics=null;fixtures=false;rows=[];ranked=[];selected=null;compare.clear();form.reset();$('#lab-reload-image').hidden=true;$('#lab-body-consent').checked=false;$('#lab-body-consent').disabled=true;$('#lab-fit-consent').checked=false;eraseFit();$('#lab-selected').textContent='';$('#lab-status').textContent='';$('#lab-searches').replaceChildren();render();}
+ function clear(){generation++;metrics=null;fixtures=false;rows=[];ranked=[];selected=null;compare.clear();form.reset();$('#lab-reload-image').hidden=true;$('#lab-body-consent').checked=false;$('#lab-body-consent').disabled=true;$('#lab-fit-consent').checked=false;eraseFit();clearLocalPhoto({silent:true});$('#lab-selected').textContent='';$('#lab-status').textContent='';$('#lab-searches').replaceChildren();render();}
  document.addEventListener('a1:analysis-cleared',clear);window.addEventListener('pagehide',clear);
  document.addEventListener('a1:lab-enter',e=>{if(!metrics&&M.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#lab-body-consent').disabled=false;}});
- document.addEventListener('a1:analysis-ready',e=>{if(M.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#lab-body-consent').checked=false;$('#lab-body-consent').disabled=false;tx('#ai-notes','사진상 2D 참고 비율이며 실제 치수·건강·의류 사이즈를 판단하지 않습니다. 원본 사진은 외부로 전송하지 않으며 연구실 기능은 무료입니다.');}});
+ document.addEventListener('a1:analysis-ready',e=>{eraseLocalResult();$('#lab-local-photo-consent').checked=false;if(M.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#lab-body-consent').checked=false;$('#lab-body-consent').disabled=false;tx('#ai-notes','사진상 2D 참고 비율이며 실제 치수·건강·의류 사이즈를 판단하지 않습니다. 원본 사진은 외부로 전송하지 않으며 연구실 기능은 무료입니다.');}});
  $('#lab-clear').addEventListener('click',()=>{$('#ai-clear').click();clear();});
  document.addEventListener('a1:language-changed',()=>{render();if(metrics)tx('#ai-notes','사진상 2D 참고 비율이며 실제 치수·건강·의류 사이즈를 판단하지 않습니다. 원본 사진은 외부로 전송하지 않으며 연구실 기능은 무료입니다.');if(!fitCanvas.hidden)tx('#lab-fit-status','2D 참고 배치 · 생성형 피팅 아님');});
+ window.addEventListener('pagehide',()=>{localDisposed=true;clearLocalPhoto({silent:true});});
+ window.addEventListener('pageshow',()=>{localDisposed=false;});
  tx($('.ai-intro'),'원본 사진은 기기 안에서 분석합니다. 분석 후 아래 무료 연구실에서 조건을 입력하세요.');render();I.refresh();root.dataset.loadState='ready';
 }
 initializeProductLab();
