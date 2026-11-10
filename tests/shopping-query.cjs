@@ -10,3 +10,12 @@ test('raw private/free text and body ratios never become merchant search strings
  for(const q of ['a@example.com 셔츠','https://evil.test 셔츠','010-1234-5678 슬랙스','<script>셔츠',''])assert.throws(()=>Q.parse(q));
  assert.throws(()=>Q.term({type:'https://evil.test',gender:'men',color:'black'}));assert.throws(()=>Q.parse('셔츠 999999만원 이하'));
 });
+
+test('fit intent adds bounded fit words to Korean retailer searches without leaking free text',()=>{
+ const p=Q.parse('남성 검정 세미와이드 슬랙스 5만원 이하 출근용');
+ assert.equal(p.fit,'semiwide');
+ assert.equal(Q.term(p),'남성 검정 세미와이드 슬랙스');
+ for(const row of Q.links(p))assert.equal([...new URL(row.searchUrl).searchParams.values()][0],'남성 검정 세미와이드 슬랙스');
+ assert.equal(Q.term(Q.parse('여성 화이트 슬림 셔츠')),'여성 흰색 슬림 셔츠');
+ assert.throws(()=>Q.term({...p,fit:'https://example.com'}));
+});
