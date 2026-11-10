@@ -26,6 +26,8 @@
     safari: ['앱 내부 브라우저에서 접속이 제한되면 공유 메뉴에 Safari에서 열기가 있는지 확인하세요. 없으면 검색 주소를 복사해 Safari 주소창에 붙여넣으세요. 공식 홈 접속과 검색 결과 접속은 다를 수 있으며, 판매처 보안 제한은 우회하지 않습니다.', 'If an in-app browser is restricted, look for Open in Safari in its share menu. If unavailable, copy the search URL and paste it into Safari. Home access and search-result access can differ; retailer security restrictions are not bypassed.'],
     home: ['공식 홈', 'Official home'],
     search: ['공식 검색', 'Official search'],
+    searchWindow: ['공식 검색창', 'Official search window'],
+    manualSearch: ['유니클로는 공식 검색창에서 복사한 검색어를 붙여넣어주세요. 검색어 자동 입력은 제공하지 않습니다.', 'Paste the copied clothing phrase into the official UNIQLO search window. Automatic query entry is not provided.'],
     used: ['동의한 사진상 비율을 기기 안에서만 참고했습니다. 실제 치수·사이즈 판정이 아닙니다.', 'The consented photo ratios were used only on your device. This is not a measurement or size assessment.'],
     noRatios: ['체형 비율을 사용하지 않은 일반 스타일 예시입니다.', 'General style examples, without using body ratios.'],
     storageError: ['이 브라우저에서 임시 수치 전달을 준비하지 못했습니다. 수치 없이 스타일리스트를 열어주세요.', 'Temporary ratio transfer could not be prepared in this browser. Open the stylist without ratios.'],
@@ -37,7 +39,7 @@
   const node = (tag,text) => { const el=document.createElement(tag); if(text)el.textContent=text; return el; };
   // These are the existing public directory's official search endpoints.
   const stores = [
-    ['Musinsa','KR','https://www.musinsa.com/search/goods','keyword'], ['29CM','KR','https://www.29cm.co.kr/store/search','keyword'],
+    ['Musinsa','KR','https://www.musinsa.com/search/goods','keyword'], ['29CM','KR','https://www.29cm.co.kr/store/search','keyword'], ['Uniqlo Korea','KR','https://www.uniqlo.com/kr/ko/search',null],
     ['Coupang','KR','https://www.coupang.com/np/search','q'], ['Naver Shopping','KR','https://search.shopping.naver.com/search/all','query'],
     ['eBay US','US','https://www.ebay.com/sch/i.html','_nkw'], ['Amazon US','US','https://www.amazon.com/s','k'],
     ['Amazon Japan','JP','https://www.amazon.co.jp/s','k'], ['Rakuten Japan','JP','https://search.rakuten.co.jp/search/mall/',null],
@@ -52,6 +54,7 @@
     try {
       const url=new URL(value);
       if(url.protocol!=='https:'||url.username||url.password||url.port||url.hash)return false;
+      if(url.hostname==='www.uniqlo.com')return !url.search&&['/kr/ko/','/kr/ko/search'].includes(url.pathname);
       if(['shopping.naver.com','www.rakuten.co.jp'].includes(url.hostname)&&url.pathname==='/'&&!url.search)return true;
       // Old already-rendered 29CM links remain narrowly allowed; new links use
       // the current official www route and never a redirect parameter.
@@ -71,8 +74,8 @@
     if(!['KR','US','JP','GB','EU'].includes(country)||!Object.hasOwn(categories,category))throw new Error('invalid');
     return {previewLocal:true,retailers:stores.filter(row=>row[1]===country).map(([name,country,base,key])=>{
       const term=country==='KR'?({all:'의류',tops:'셔츠',bottoms:'바지',outerwear:'재킷',dresses:'원피스',accessories:'패션 소품'})[category]:categories[category];
-      const url=new URL(base);if(key)url.searchParams.set(key,term);else url.pathname+=encodeURIComponent(term)+'/';
-      return {name,country,currency:({KR:'KRW',US:'USD',JP:'JPY',GB:'GBP',EU:'EUR'})[country],searchUrl:url.href,homeUrl:({'search.shopping.naver.com':'https://shopping.naver.com/','search.rakuten.co.jp':'https://www.rakuten.co.jp/'})[url.hostname]||url.origin+'/',searchTerm:term};
+      const url=new URL(base);if(key)url.searchParams.set(key,term);else if(name!=='Uniqlo Korea')url.pathname+=encodeURIComponent(term)+'/';
+      return {name,country,currency:({KR:'KRW',US:'USD',JP:'JPY',GB:'GBP',EU:'EUR'})[country],searchUrl:url.href,homeUrl:({'www.uniqlo.com':'https://www.uniqlo.com/kr/ko/','search.shopping.naver.com':'https://shopping.naver.com/','search.rakuten.co.jp':'https://www.rakuten.co.jp/'})[url.hostname]||url.origin+'/',searchTerm:term,...(name==='Uniqlo Korea'?{manualSearch:true}:{})};
     })};
   }
   const advice = {
@@ -117,6 +120,7 @@
       advice:ids.map(id=>({id,text:advice[id][at]})),
       notices:[pairs[use?'used':'noRatios'][at],pairs.pending[at],pairs.privacy[at]],
       clothingConditions,
+      bodySearchSuggestions:use&&clothingConditions?window.A1ShoppingQuery.bodySuggestions(clothingConditions,{metrics:input.metrics,consent:true}):[],
       searchLinks:searchRows.map(row=>({label:row.name,url:row.searchUrl}))};
   }
   async function copyText(value,field,status) {
@@ -130,10 +134,11 @@
   function retailerActions(row) {
     const block=node('div');block.className='preview-retailer-actions';
     if(!safeLink(row.searchUrl)||!safeLink(row.homeUrl))return block;
-    for(const [label,url] of [[row.name+' · '+t('search'),row.searchUrl],[t('home'),row.homeUrl]]){
+    for(const [label,url] of [[row.name+' · '+t(row.manualSearch?'searchWindow':'search'),row.searchUrl],[t('home'),row.homeUrl]]){
       const a=node('a',label);a.href=url;a.target='_self';a.rel='noopener noreferrer';a.referrerPolicy='no-referrer';block.append(a);
     }
     const term=node('p',row.searchTerm);term.className='preview-search-term';block.append(term);
+    if(row.manualSearch){const note=node('p');tx(note,'manualSearch');block.append(note);}
     const field=node('textarea');field.readOnly=true;field.hidden=true;field.setAttribute('aria-label',t('copyUrl'));
     const status=node('p');status.setAttribute('role','status');status.className='preview-copy-status';
     for(const [key,value] of [['copyTerm',row.searchTerm],['copyUrl',row.searchUrl]]){

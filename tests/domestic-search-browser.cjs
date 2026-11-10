@@ -4,10 +4,10 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),origin='https://domestic-browser.a1fashion.pages.dev',out='/workspace/work/domestic-search';fs.mkdirSync(out,{recursive:true});
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.jpg':'image/jpeg','.json':'application/json'};
-const retailerHosts=new Set(['www.musinsa.com','www.29cm.co.kr','search.shopping.naver.com','shopping.naver.com','www.coupang.com']);
+const retailerHosts=new Set(['www.musinsa.com','www.29cm.co.kr','search.shopping.naver.com','shopping.naver.com','www.coupang.com','www.uniqlo.com']);
 const input='남성 검정 와이드 슬랙스 출근용 5만원 이하 secretword 키170cm 몸무게60kg';
 const forbidden=/secretword|170|60kg|shoulderHipRatio|legTorsoRatio|1\.428571|2\.083333|photo|metrics|50000|50,000/i;
-function assertSearch(url){const u=new URL(url);assert.equal(u.protocol,'https:');assert.ok(retailerHosts.has(u.hostname));assert.equal(u.username,'');assert.equal(u.password,'');assert.equal(u.hash,'');
+function assertSearch(url){const u=new URL(url);assert.equal(u.protocol,'https:');assert.ok(retailerHosts.has(u.hostname));assert.equal(u.username,'');assert.equal(u.password,'');assert.equal(u.hash,'');if(u.hostname==='www.uniqlo.com'){assert.equal(u.pathname,'/kr/ko/search');assert.equal(u.search,'');return u;}
  const endpoint={'www.musinsa.com':['/search/goods','keyword'],'www.29cm.co.kr':['/store/search','keyword'],'search.shopping.naver.com':['/search/all','query'],'www.coupang.com':['/np/search','q']}[u.hostname];assert.ok(endpoint);assert.equal(u.pathname,endpoint[0]);assert.deepEqual([...u.searchParams.keys()],[endpoint[1]]);const values=[...u.searchParams.values()].join(' ');assert.match(values,/슬랙스/);assert.match(values,/검정|블랙/);assert.match(values,/와이드/);assert.match(values,/출근/);assert.doesNotMatch(decodeURIComponent(u.href),forbidden);assert.ok([...u.searchParams.keys()].every(k=>['q','query','keyword','searchTerm'].includes(k)),'only reviewed search parameters');return u;}
 async function routeContext(context,calls){
  await context.route('**/*',async route=>{const req=route.request(),u=new URL(req.url());assert.equal(req.method(),'GET');calls.push({url:u.href,navigation:req.isNavigationRequest()});
@@ -19,9 +19,9 @@ async function routeContext(context,calls){
   await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream',...(policy?{headers:{'Content-Security-Policy':policy}}:{})});
  });
 }
-async function assertDomesticRows(page,selector){const groups=page.locator(selector+' .preview-retailer-actions');assert.equal(await groups.count(),4);const hosts=[];
- for(let i=0;i<4;i++){const group=groups.nth(i),anchors=group.locator('a');assert.equal(await anchors.count(),2);const search=assertSearch(await anchors.first().getAttribute('href'));hosts.push(search.hostname);const home=new URL(await anchors.nth(1).getAttribute('href'));assert.equal(home.protocol,'https:');assert.ok(retailerHosts.has(home.hostname));assert.equal(home.pathname,'/');assert.equal(home.search,'');assert.equal(await anchors.first().getAttribute('referrerpolicy'),'no-referrer');assert.equal(await group.locator('[data-preview-copy=copyTerm]').count(),1);assert.equal(await group.locator('[data-preview-copy=copyUrl]').count(),1);}
- assert.equal(new Set(hosts).size,4);assert.ok(hosts.includes('www.musinsa.com'));assert.ok(hosts.some(h=>h.endsWith('29cm.co.kr')));assert.ok(hosts.includes('search.shopping.naver.com'));assert.ok(hosts.includes('www.coupang.com'));return groups;
+async function assertDomesticRows(page,selector){const groups=page.locator(selector+' .preview-retailer-actions');assert.equal(await groups.count(),5);const hosts=[];
+ for(let i=0;i<5;i++){const group=groups.nth(i),anchors=group.locator('a');assert.equal(await anchors.count(),2);const search=assertSearch(await anchors.first().getAttribute('href'));hosts.push(search.hostname);const home=new URL(await anchors.nth(1).getAttribute('href'));assert.equal(home.protocol,'https:');assert.ok(retailerHosts.has(home.hostname));assert.equal(home.pathname,home.hostname==='www.uniqlo.com'?'/kr/ko/':'/');assert.equal(home.search,'');assert.equal(await anchors.first().getAttribute('referrerpolicy'),'no-referrer');assert.equal(await group.locator('[data-preview-copy=copyTerm]').count(),1);assert.equal(await group.locator('[data-preview-copy=copyUrl]').count(),1);}
+ assert.equal(new Set(hosts).size,5);assert.ok(hosts.includes('www.musinsa.com'));assert.ok(hosts.some(h=>h.endsWith('29cm.co.kr')));assert.ok(hosts.includes('search.shopping.naver.com'));assert.ok(hosts.includes('www.coupang.com'));return groups;
 }
 (async()=>{const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});try{
  const cases=process.env.A1_DOMESTIC_ONE?[[390,844,'ko']]:[[390,844,'ko'],[390,844,'en'],[820,1180,'ko'],[820,1180,'en'],[1180,820,'ko']];let caseIndex=0;

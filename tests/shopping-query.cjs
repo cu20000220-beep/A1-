@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),Q=require('../assets/shopping-query.js');
 test('Korean clothing intent parses budget and only canonical clothing words reach official URLs',()=>{
  const p=Q.parse('남성 검정 슬랙스 5만원 이하');assert.equal(p.budget,50000);assert.equal(p.gender,'men');assert.equal(p.type,'slacks');assert.equal(p.color,'black');
- for(const row of Q.links(p)){const u=new URL(row.searchUrl);assert.equal(u.protocol,'https:');assert.equal([...u.searchParams.values()][0],'남성 검정 슬랙스');assert.ok(!row.searchUrl.includes('50000'));}
+ for(const row of Q.links(p)){const u=new URL(row.searchUrl);assert.equal(u.protocol,'https:');assert.equal(row.searchTerm,'남성 검정 슬랙스');if(!row.manualSearch)assert.equal([...u.searchParams.values()][0],'남성 검정 슬랙스');assert.ok(!row.searchUrl.includes('50000'));}
  assert.equal(Q.parse('여성 네이비 니트 35,000원 이하 출근').budget,35000);assert.equal(Q.parse('men black slacks').gender,'men');assert.equal(Q.term(Q.parse('women white shirt'),'en'),'women white shirt');
 });
 test('raw private/free text and body ratios never become merchant search strings',()=>{
@@ -15,7 +15,7 @@ test('fit intent adds bounded fit words to Korean retailer searches without leak
  const p=Q.parse('남성 검정 세미와이드 슬랙스 5만원 이하 출근용');
  assert.equal(p.fit,'semiwide');
  assert.equal(Q.term(p),'남성 검정 세미와이드 슬랙스 출근용');
- for(const row of Q.links(p))assert.equal([...new URL(row.searchUrl).searchParams.values()][0],'남성 검정 세미와이드 슬랙스 출근용');
+ for(const row of Q.links(p)){assert.equal(row.searchTerm,'남성 검정 세미와이드 슬랙스 출근용');if(!row.manualSearch)assert.equal([...new URL(row.searchUrl).searchParams.values()][0],row.searchTerm);}
  assert.equal(Q.term(Q.parse('여성 화이트 슬림 셔츠')),'여성 흰색 슬림 셔츠');
  assert.throws(()=>Q.term({...p,fit:'https://example.com'}));
 });
@@ -30,8 +30,16 @@ test('KRW upper bounds preserve strict less-than, decimals and thousands and rej
  for(const input of ['5만원 이상','5만원 초과','3~5만원','3만원부터 5만원','-5만원','3,5만원','5만원대','3만원 5만원'])assert.throws(()=>Q.parse('셔츠 '+input),/budget/);
  assert.throws(()=>Q.parse('검정 말고 흰 셔츠'),/unsupported_exclusion/);
 });
-test('all four canonical domestic URLs encode the same explicit outfit conditions once and retain safe official home alternatives',()=>{
- const p=Q.parse('남성 검정 와이드 슬랙스 출근용 5만원 이하 SECRET 키170 몸무게60 비율1.428571'),rows=Q.links(p);assert.deepEqual(rows.map(r=>r.name),['무신사','29CM','네이버쇼핑','쿠팡']);
- for(const row of rows){const u=new URL(row.searchUrl);assert.equal([...u.searchParams.values()][0],'남성 검정 와이드 슬랙스 출근용');assert.doesNotMatch(u.href,/%25(?:EC|EB|EA)/i);assert.doesNotMatch(decodeURIComponent(u.href),/SECRET|170|60|1\.428|50000/);assert.equal(new URL(row.homeUrl).protocol,'https:');}
+test('official domestic URLs and the UNIQLO search window encode the same explicit outfit conditions once and retain safe official home alternatives',()=>{
+ const p=Q.parse('남성 검정 와이드 슬랙스 출근용 5만원 이하 SECRET 키170 몸무게60 비율1.428571'),rows=Q.links(p);assert.deepEqual(rows.map(r=>r.name),['무신사','29CM','네이버쇼핑','쿠팡','유니클로']);
+ for(const row of rows){const u=new URL(row.searchUrl);assert.equal(row.searchTerm,'남성 검정 와이드 슬랙스 출근용');if(!row.manualSearch)assert.equal([...u.searchParams.values()][0],row.searchTerm);assert.doesNotMatch(u.href,/%25(?:EC|EB|EA)/i);assert.doesNotMatch(decodeURIComponent(u.href),/SECRET|170|60|1\.428|50000/);assert.equal(new URL(row.homeUrl).protocol,'https:');}
  assert.equal(new URL(rows[1].searchUrl).pathname,'/store/search');
+});
+test('body-reference ideas require explicit consent, change clothing fits, preserve explicit choices and never claim measurements',()=>{
+ const base=Q.parse('남성 검정 출근용 5만원 이하'),wide={shoulderHipRatio:1.5,legTorsoRatio:1.8},narrow={shoulderHipRatio:.8,legTorsoRatio:1.2};
+ assert.deepEqual(Q.bodySuggestions(base,{metrics:wide}),[]);assert.throws(()=>Q.bodySuggestions(base,{metrics:{...wide,waist:80},consent:true}));
+ const a=Q.bodySuggestions(base,{metrics:wide,consent:true}),b=Q.bodySuggestions(base,{metrics:narrow,consent:true});assert.equal(a.length,2);assert.notDeepEqual(a.map(v=>v.conditions.fit),b.map(v=>v.conditions.fit));
+ for(const idea of [...a,...b]){assert.equal(idea.conditions.budget,50000);assert.equal(idea.conditions.gender,'men');assert.equal(idea.conditions.color,'black');for(const row of Q.links(idea.conditions))assert.doesNotMatch(row.searchUrl,/1\.5|\.8|1\.2|metrics|shoulder|hips|waist|size/);assert.equal(Object.hasOwn(idea.conditions,'metrics'),false);}
+ const chosen=Q.parse('여성 네이비 슬림 원피스 하객용');assert.equal(Q.bodySuggestions(chosen,{metrics:wide,consent:true})[0].conditions.fit,'slim');assert.equal(Q.bodySuggestions(chosen,{metrics:wide,consent:true})[0].conditions.type,'dress');
+ const manual=Q.links(base).at(-1);assert.equal(manual.manualSearch,true);assert.equal(new URL(manual.searchUrl).search,'');
 });

@@ -17,7 +17,7 @@ try{for(const [width,height]of (process.env.A1_SHOPPING_ONE?[[390,844]]:[[820,11
  assert.equal(await page.locator('main>section').first().getAttribute('id'),'shopping-search');assert.equal(await page.locator('#shopping-search').isVisible(),true);assert.equal(await page.locator('#avatar-root').count(),0);
  await page.locator('#shopping-query').fill('남성 검정 슬랙스 5만원 이하 secretword');await page.locator('#shopping-search-form button').click();
  assert.match(await page.locator('#shopping-search-results').innerText(),/50,000/);assert.match(await page.locator('#shopping-search').innerText(),lang==='ko'?/실제 상품 0개/:/0 verified real products/);
- const hrefs=await page.locator('#shopping-search-results a').evaluateAll(a=>a.map(n=>n.href));assert.equal(hrefs.length,8);for(const href of hrefs)assert.doesNotMatch(decodeURIComponent(href),/secretword|50000|50,000|metrics|photo/);
+ const hrefs=await page.locator('#shopping-search-results a').evaluateAll(a=>a.map(n=>n.href));assert.equal(hrefs.length,10);for(const href of hrefs)assert.doesNotMatch(decodeURIComponent(href),/secretword|50000|50,000|metrics|photo/);
  assert.equal(new URL(hrefs[0]).searchParams.get('keyword'),'남성 검정 슬랙스');
  await page.locator('#shopping-search-results [data-preview-copy=copyTerm]').first().click();assert.equal(await page.evaluate(()=>window.copiedSearch),'남성 검정 슬랙스');
  await page.locator('#shopping-style-button').click();const generic=await page.locator('#shopping-style-advice').innerText();assert.match(generic,lang==='ko'?/규칙 기반/:/rule-based/);

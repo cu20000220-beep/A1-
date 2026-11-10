@@ -26,11 +26,20 @@
   const at=language==='ko'?2:3;return [(language==='ko'?{men:'남성',women:'여성'}:{men:'men',women:'women'})[p.gender],color?.[at],fit?.[at],type?.[at]||(language==='ko'?'의류':'clothing'),purpose?.[at]].filter(Boolean).join(' ');
  }
  function describe(p,language='ko'){term(p,language);const at=language==='ko'?2:3,unspecified=language==='ko'?'미지정':'Not specified';return {kind:types.find(x=>x[0]===p.type)?.[at]||(language==='ko'?'의류':'Clothing'),color:colors.find(x=>x[0]===p.color)?.[at]||unspecified,fit:fits.find(x=>x[0]===p.fit)?.[at]||unspecified,purpose:purposes.find(x=>x[0]===p.purpose)?.[at]||unspecified,collection:(language==='ko'?{men:'남성',women:'여성',all:'전체'}:{men:'Men',women:'Women',all:'All'})[p.gender]};}
+ function bodySuggestions(p,{metrics,consent=false}={}){
+  if(consent!==true)return [];term(p);
+  if(!metrics||Object.keys(metrics).sort().join(',')!=='legTorsoRatio,shoulderHipRatio'||!Number.isFinite(metrics.shoulderHipRatio)||metrics.shoulderHipRatio<.45||metrics.shoulderHipRatio>2.5||!Number.isFinite(metrics.legTorsoRatio)||metrics.legTorsoRatio<.6||metrics.legTorsoRatio>3.5)throw TypeError('invalid_body_reference');
+  const reference=metrics.shoulderHipRatio>1.15?'shoulder_balance':metrics.shoulderHipRatio<.9?'light_layers':'balanced_lengths';
+  const kinds=p.type==='clothing'?['shirt','trousers']:[p.type];
+  return kinds.map(type=>{const category=types.find(x=>x[0]===type)[4],fit=p.fit&&p.fit!=='any'?p.fit:category==='bottoms'?(reference==='shoulder_balance'?'relaxed':'straight'):reference==='light_layers'?'relaxed':'regular';
+   return {conditions:{...p,type,category,fit},reason:reference,lengthReference:metrics.legTorsoRatio<1.5};});
+ }
  function links(p){const query=term(p,'ko');return [
   {name:'무신사',searchTerm:query,searchUrl:'https://www.musinsa.com/search/goods?'+new URLSearchParams({keyword:query}),homeUrl:'https://www.musinsa.com/'},
   {name:'29CM',searchTerm:query,searchUrl:'https://www.29cm.co.kr/store/search?'+new URLSearchParams({keyword:query}),homeUrl:'https://www.29cm.co.kr/'},
   {name:'네이버쇼핑',searchTerm:query,searchUrl:'https://search.shopping.naver.com/search/all?'+new URLSearchParams({query}),homeUrl:'https://shopping.naver.com/'},
-  {name:'쿠팡',searchTerm:query,searchUrl:'https://www.coupang.com/np/search?'+new URLSearchParams({q:query}),homeUrl:'https://www.coupang.com/'}
+  {name:'쿠팡',searchTerm:query,searchUrl:'https://www.coupang.com/np/search?'+new URLSearchParams({q:query}),homeUrl:'https://www.coupang.com/'},
+  {name:'유니클로',searchTerm:query,searchUrl:'https://www.uniqlo.com/kr/ko/search',homeUrl:'https://www.uniqlo.com/kr/ko/',manualSearch:true}
  ];}
- return Object.freeze({parse,term,links,describe});
+ return Object.freeze({parse,term,links,describe,bodySuggestions});
 });

@@ -3,6 +3,13 @@
  const root=document.querySelector('#shopping-search');if(!root||!window.A1Preview)return;
  const I=window.A1I18n,Q=window.A1ShoppingQuery,P=window.A1Preview,C=window.A1ProductCatalog,O=window.A1OfferComparison,$=s=>document.querySelector(s);
  I.register({
+ '체형 참고 검색 제안 · 실제 상품 목록 아님':'Body-reference search ideas · not product listings',
+ '사진의 어깨·골반 기준점 비율을 참고해 단정한 상의와 여유 있는 하의 조합을 비교해보세요.':'Using the photo landmark proportions as a reference, compare neat tops and more relaxed bottoms.',
+ '사진상 비율을 참고해 가벼운 상의 레이어와 일자 하의 조합을 비교해보세요.':'Using the photo proportions as a reference, compare light top layers and straight bottoms.',
+ '사진상 비율을 참고해 상의 끝선과 바지 길이가 다른 조합을 비교해보세요.':'Using the photo proportions as a reference, compare different top and trouser lengths.',
+ '사진 한 장으로 치수나 맞는 사이즈를 판정하지 않습니다. 실제 상품 실측·소재·반품 조건을 확인하세요.':'One photo cannot establish measurements or the right size. Check actual garment measurements, fabric and returns.',
+ '선택하면 표시된 의류 검색어를 적용합니다. 판매처 이동은 공식 검색 버튼을 직접 누를 때만 실행하며 사진·신체 수치는 보내지 않습니다.':'Selecting applies the displayed clothing phrase. Only your click on an official search opens the retailer; photos and body numbers are not sent.',
+ '이 조건으로 옷 찾기':'Find clothes with these conditions',
  '해석한 검색 조건':'Interpreted search conditions','의류 종류':'Clothing type','색상':'Color','핏':'Fit','용도':'Purpose','컬렉션':'Collection',
  '예산은 ‘5만원 이하’처럼 상한 금액 하나로 입력해주세요.':'Enter one upper budget, such as “50,000원 이하”.',
  '제외 조건은 아직 해석하지 않습니다. 원하는 색상·핏만 입력해주세요.':'Exclusion conditions are not supported yet. Enter the color and fit you want.',
@@ -74,7 +81,7 @@
  '검색어를 준비했습니다. 아래 공식 검색 버튼을 직접 눌러주세요.':'Search phrase ready. Click an official search below.',
  '선택한 예산이 판매처 검색에 자동 적용되지는 않습니다.':'Your budget is not automatically applied at the retailer.'
  });
- root.hidden=false;let conditions=null,metrics=null,catalog={version:1,generatedAt:null,products:[]},catalogState='loading',matches=[],sponsored=[],unavailable=[],comparison=new Set(),offerSelection=null,expiryTimer,disposed=false,controller;
+ root.hidden=false;let conditions=null,metrics=null,bodyOriginalQuery=null,catalog={version:1,generatedAt:null,products:[]},catalogState='loading',matches=[],sponsored=[],unavailable=[],comparison=new Set(),offerSelection=null,expiryTimer,disposed=false,controller;
  let invalidQuery=false;
  const node=(tag,text)=>{const n=document.createElement(tag);if(text)n.textContent=text;return n;},tx=(s,t)=>I.setText($(s),t);
 
@@ -178,13 +185,19 @@
   const message=Q.term(conditions,'ko')+(conditions.budget!==null?' '+conditions.budget+'원 이하':'');
   const answer=P.consult({message,language:I.language,intent:'style',preferences:{destination:destination(),category:conditions.category},consents:{analysis:consent},...(consent?{metrics}:{})});
   const target=$('#shopping-style-advice');target.replaceChildren();const title=node('p');I.setText(title,'규칙 기반 무료 스타일 상담 · 생성형 AI/GPT 호출 없음');target.append(title);for(const a of answer.advice)target.append(node('p',a.text));
+  if(consent){const ideas=Q.bodySuggestions(conditions,{metrics,consent:true}),section=node('section');section.id='shopping-body-suggestions';section.append(node('h3',I.t('체형 참고 검색 제안 · 실제 상품 목록 아님')),node('p',I.t('선택하면 표시된 의류 검색어를 적용합니다. 판매처 이동은 공식 검색 버튼을 직접 누를 때만 실행하며 사진·신체 수치는 보내지 않습니다.')));
+   const reasons={shoulder_balance:'사진의 어깨·골반 기준점 비율을 참고해 단정한 상의와 여유 있는 하의 조합을 비교해보세요.',light_layers:'사진상 비율을 참고해 가벼운 상의 레이어와 일자 하의 조합을 비교해보세요.',balanced_lengths:'사진상 비율을 참고해 상의 끝선과 바지 길이가 다른 조합을 비교해보세요.'};
+   for(const idea of ideas){const item=node('article'),button=node('button',I.t('이 조건으로 옷 찾기'));button.type='button';button.dataset.bodySearch='';item.append(node('h4',Q.term(idea.conditions,I.language)),node('p',I.t(reasons[idea.reason])),node('p',I.t('사진 한 장으로 치수나 맞는 사이즈를 판정하지 않습니다. 실제 상품 실측·소재·반품 조건을 확인하세요.')));button.addEventListener('click',()=>{if(!$('#shopping-analysis-consent').checked||!metrics)return;if(bodyOriginalQuery===null)bodyOriginalQuery=$('#shopping-query').value;$('#shopping-query').value=Q.term(idea.conditions,'ko')+(idea.conditions.budget!==null?' '+idea.conditions.budget+'원 이하':'');search();$('#shopping-interpreted').scrollIntoView({block:'start'});});item.append(button);section.append(item);}target.append(section);
+  }
   const note=node('p');I.setText(note,matches.length?'규칙 상담이 아래 등록 상품의 검색·추천·비교 결과에 연결됐습니다. 생성형 AI는 호출하지 않습니다.':'상품 추천이 아닌 검색 준비와 스타일 조언입니다. 실제 상품 자료가 확보되면 개별 추천 이유·비교를 연결합니다.');if(matches.length){const links=node('ul');for(const row of matches.slice(0,3)){const item=node('li'),a=node('a',row.product.name);a.href='#shopping-products';a.dataset.catalogAdvice=row.product.id;item.append(a);links.append(item);}target.append(links);}target.append(note);
  }
  root.addEventListener('click',e=>{const productLink=e.target.closest('[data-catalog-buy],[data-catalog-source],[data-offer-buy]');if(productLink){const isBuy=Boolean(productLink.dataset.catalogBuy||productLink.dataset.offerBuy),id=productLink.dataset.catalogBuy||productLink.dataset.catalogSource||productLink.dataset.offerBuy,p=catalog.products.find(p=>p.id===id),expected=isBuy?p?.productUrl:p?.sourceUrl;if(!e.isTrusted||!p||!fresh(p)||isBuy&&p.stock!=='in_stock'||!C.safeUrl(expected)||productLink.href!==new URL(expected).href){e.preventDefault();renderCatalog();}return;}const a=e.target.closest('#shopping-search-results a');if(a&&(!e.isTrusted||!P.safeLink(a.href))){e.preventDefault();tx('#shopping-query-status','짧은 의류 조건만 입력해주세요. 연락처·이메일·사진·링크는 입력하지 마세요.');}});
  $('#shopping-search-form').addEventListener('submit',e=>{e.preventDefault();search();});$('#shopping-style-button').addEventListener('click',advice);
- document.addEventListener('a1:analysis-ready',e=>{if(P.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#shopping-analysis-consent').disabled=false;$('#shopping-analysis-consent').checked=false;const result=document.querySelector('#ai-result .ai-result-copy');if(!$('#shopping-return')){const link=node('a');link.id='shopping-return';link.href='#shopping-search';I.setText(link,'분석 결과에서 검색 조건으로 돌아가기');result.append(link);}}});
- const clear=()=>{metrics=null;$('#shopping-analysis-consent').checked=false;$('#shopping-analysis-consent').disabled=true;$('#shopping-style-advice').replaceChildren();comparison.clear();offerSelection=null;$('#shopping-size').value='';for(const k of ['chest','waist','hips','inseam'])$('#shopping-measure-'+k).value='';if(!disposed)renderCatalog();};
- document.addEventListener('a1:analysis-cleared',clear);$('#shopping-analysis-consent').addEventListener('change',()=>{$('#shopping-style-advice').replaceChildren();renderCatalog();});
+ const restoreBodyQuery=()=>{if(bodyOriginalQuery!==null){const original=bodyOriginalQuery;bodyOriginalQuery=null;if(!disposed){$('#shopping-query').value=original;search();}}};
+ $('#shopping-query').addEventListener('input',()=>{bodyOriginalQuery=null;});
+ document.addEventListener('a1:analysis-ready',e=>{if(P.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#shopping-analysis-consent').disabled=false;$('#shopping-analysis-consent').checked=false;restoreBodyQuery();$('#shopping-style-advice').replaceChildren();renderCatalog();const result=document.querySelector('#ai-result .ai-result-copy');if(!$('#shopping-return')){const link=node('a');link.id='shopping-return';link.href='#shopping-search';I.setText(link,'분석 결과에서 검색 조건으로 돌아가기');result.append(link);}}});
+ const clear=()=>{metrics=null;$('#shopping-analysis-consent').checked=false;$('#shopping-analysis-consent').disabled=true;$('#shopping-style-advice').replaceChildren();comparison.clear();offerSelection=null;$('#shopping-size').value='';for(const k of ['chest','waist','hips','inseam'])$('#shopping-measure-'+k).value='';restoreBodyQuery();if(!disposed)renderCatalog();};
+ document.addEventListener('a1:analysis-cleared',clear);$('#shopping-analysis-consent').addEventListener('change',()=>{$('#shopping-style-advice').replaceChildren();if(!$('#shopping-analysis-consent').checked)restoreBodyQuery();renderCatalog();});
  document.addEventListener('a1:language-changed',()=>{render();renderCatalog();if($('#shopping-style-advice').children.length)advice();});
  loadCatalog();
  window.addEventListener('pagehide',()=>{disposed=true;controller?.abort();clearTimeout(expiryTimer);clear();conditions=null;$('#shopping-query').value='';$('#shopping-search-results').replaceChildren();$('#shopping-interpreted').replaceChildren();$('#shopping-interpreted').hidden=true;});
