@@ -22,8 +22,8 @@ test('official search links contain only canonical categories, never free text, 
  }
  for(const url of ['http://www.amazon.com/s?k=clothing','https://www.amazon.com.attacker.test/s?k=clothing','https://www.amazon.com/redirect?k=clothing','https://user:pass@www.amazon.com/s?k=clothing','https://www.amazon.com/s?k=shirt&redirect=https://evil.test'])assert.equal(api.safeLink(url),false);
  const kr=api.retailers({country:'KR',category:'tops'}).retailers;
- for(const row of kr){const url=new URL(row.searchUrl);assert.equal(url.searchParams.get(url.hostname.includes('coupang')?'q':'query'),'셔츠');assert.doesNotMatch(url.href,/%25/);}
- assert.equal(api.retailers({country:'KR'}).retailers[1].homeUrl,'https://shopping.naver.com/');
+ for(const row of kr){const url=new URL(row.searchUrl);const key=({'Musinsa':'keyword','29CM':'keyword','Coupang':'q','Naver Shopping':'query'})[row.name];assert.ok(key,'unexpected Korean retailer');assert.equal(url.searchParams.get(key),'셔츠');assert.doesNotMatch(url.href,/%25/);}
+ assert.equal(kr.find(row=>row.name==='Naver Shopping').homeUrl,'https://shopping.naver.com/');
  assert.equal(api.safeLink('https://shopping.naver.com/redirect'),false);
  assert.throws(()=>api.retailers({country:'attacker'}));
 });
