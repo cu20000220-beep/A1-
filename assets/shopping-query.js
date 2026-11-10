@@ -2,6 +2,7 @@
 'use strict';
 ((root,factory)=>{const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.A1ShoppingQuery=api;})(globalThis,()=>{
  const types=[['slacks',/슬랙스|slacks/i,'슬랙스','slacks','bottoms'],['jeans',/청바지|데님|jeans|denim/i,'청바지','jeans','bottoms'],['trousers',/바지|팬츠|trousers|pants/i,'바지','trousers','bottoms'],['shirt',/셔츠|shirt/i,'셔츠','shirt','tops'],['knit',/니트|스웨터|knit|sweater/i,'니트','knitwear','tops'],['jacket',/자켓|재킷|jacket|blazer/i,'재킷','jacket','outerwear'],['coat',/코트|\bcoat\b/i,'코트','coat','outerwear'],['dress',/원피스|\bdress\b/i,'원피스','dress','dresses']];
+ const fits=[['semiwide',/세미\s*와이드|semi[- ]?wide/i,'세미와이드','semi-wide'],['wide',/와이드|wide/i,'와이드','wide'],['straight',/스트레이트|일자핏|straight/i,'스트레이트','straight'],['slim',/슬림|slim/i,'슬림','slim'],['regular',/레귤러|regular/i,'레귤러','regular']];
  const colors=[['black',/검정|검은|블랙|\bblack\b/i,'검정','black'],['navy',/네이비|남색|\bnavy\b/i,'네이비','navy'],['white',/흰색|화이트|\bwhite\b/i,'흰색','white'],['beige',/베이지|\bbeige\b/i,'베이지','beige'],['grey',/회색|그레이|차콜|\bgr[ae]y\b|charcoal/i,'회색','grey']];
  function parse(text){if(typeof text!=='string'||!text.trim()||text.length>300)throw TypeError('invalid_query');
   const normalized=text.normalize('NFKC');if(/https?:|data:|blob:|@|<|base64|\bsk-[\w-]{12,}|\d{2,3}[- ]\d{3,4}[- ]\d{4}/i.test(normalized))throw TypeError('private_query');
@@ -10,10 +11,12 @@
   const budgetMatch=normalized.match(/(\d+(?:\.\d+)?)\s*만\s*원(?:\s*(?:이하|미만|까지))?/)||normalized.match(/(\d[\d,]*)\s*원\s*(?:이하|미만|까지)/);
   const budget=budgetMatch?Math.round(Number(budgetMatch[1].replaceAll(',',''))*(budgetMatch[0].includes('만')?10000:1)):null;
   if(budget!==null&&(!Number.isSafeInteger(budget)||budget<=0||budget>100000000))throw TypeError('invalid_budget');
-  return {type:type?.[0]||'clothing',category:type?.[4]||'all',color:color?.[0]||'any',gender,budget,currency:'KRW',style:/미니멀|minimal/i.test(normalized)?'minimal':/클래식|classic/i.test(normalized)?'classic':/캐주얼|casual/i.test(normalized)?'casual':'all',occasion:/출근|회사|office|work/i.test(normalized)?'work':'all'};
+  const fit=fits.find(x=>x[1].test(normalized));
+  return {fit:fit?.[0]||'any',type:type?.[0]||'clothing',category:type?.[4]||'all',color:color?.[0]||'any',gender,budget,currency:'KRW',style:/미니멀|minimal/i.test(normalized)?'minimal':/클래식|classic/i.test(normalized)?'classic':/캐주얼|casual/i.test(normalized)?'casual':'all',occasion:/출근|회사|office|work/i.test(normalized)?'work':'all'};
  }
  function term(p,language='ko'){const type=types.find(x=>x[0]===p.type),color=colors.find(x=>x[0]===p.color);if(!['ko','en'].includes(language)||!['all','men','women'].includes(p.gender)||!['any',...colors.map(c=>c[0])].includes(p.color)||p.type!=='clothing'&&!type)throw TypeError('invalid_conditions');
-  const at=language==='ko'?2:3;return [(language==='ko'?{men:'남성',women:'여성'}:{men:'men',women:'women'})[p.gender],color?.[at],type?.[at]||(language==='ko'?'의류':'clothing')].filter(Boolean).join(' ');
+  const fit=fits.find(x=>x[0]===(p.fit||'any'));if(p.fit&&p.fit!=='any'&&!fit)throw TypeError('invalid_conditions');
+  const at=language==='ko'?2:3;return [(language==='ko'?{men:'남성',women:'여성'}:{men:'men',women:'women'})[p.gender],color?.[at],fit?.[at],type?.[at]||(language==='ko'?'의류':'clothing')].filter(Boolean).join(' ');
  }
  function links(p){const query=term(p,'ko');return [
   {name:'무신사',searchTerm:query,searchUrl:'https://www.musinsa.com/search/goods?'+new URLSearchParams({keyword:query}),homeUrl:'https://www.musinsa.com/'},
