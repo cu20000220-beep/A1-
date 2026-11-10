@@ -87,10 +87,10 @@
     }
   }
   function catalogAnswer(request){
-    const base=preview.consult(request);if(previewCatalogError)base.notices.push(t('등록 상품 자료를 확인하지 못했습니다. 공식 검색 대안을 이용해주세요.'));if(!Catalog||!Query)return base;let parsed;try{parsed=Query.parse(request.message.slice(0,300));}catch{parsed=Query.parse('의류');}
+    const base=preview.consult(request);if(previewCatalogError)base.notices.push(t('등록 상품 자료를 확인하지 못했습니다. 공식 검색 대안을 이용해주세요.'));if(!Catalog||!Query)return base;let parsed;try{parsed=Query.parse(request.message.slice(0,300));}catch{parsed=Query.parse('의류');base.notices.push(t('일부 검색 조건을 해석하지 못했습니다. 원하는 의류와 예산 상한을 다시 입력해주세요.'));}
     const prefs=request.preferences||{},conditions={...parsed,gender:prefs.gender&&prefs.gender!=='all'?prefs.gender:parsed.gender,style:prefs.style&&prefs.style!=='all'?prefs.style:parsed.style,category:prefs.category&&prefs.category!=='all'?prefs.category:parsed.category,currency:prefs.currency||'KRW',budget:parsed.budget!==null&&prefs.currency==='KRW'?Math.min(parsed.budget,prefs.budget):prefs.budget??null};
     const ranked=Catalog.search(previewCatalog,conditions,{query:request.message,bodyConsent:request.consents?.analysis===true,metrics:request.metrics});
-    base.products=ranked.matches.slice(0,12).map(row=>({...row.product,matchScore:row.score,matchReasons:row.reasons}));base.catalogRows=ranked.matches.slice(0,4);base.catalogComparisonOptions={destination:prefs.destination||'KR',currency:conditions.currency};base.catalogSearchRows=Query.links({...conditions,gender:conditions.gender==='unisex'?'all':conditions.gender});
+    base.products=ranked.matches.slice(0,12).map(row=>({...row.product,matchScore:row.score,matchReasons:row.reasons}));base.catalogRows=ranked.matches.slice(0,4);base.catalogComparisonOptions={destination:prefs.destination||'KR',currency:conditions.currency};base.clothingConditions={...conditions,gender:conditions.gender==='unisex'?'all':conditions.gender};base.catalogSearchRows=Query.links(base.clothingConditions);
     if(base.products.length){base.dataStatus='registered';base.notices=[t('판매자 등록 자료 기준이며 실시간 가격·배송·세금·착용감은 보장하지 않습니다.')];}return base;
   }
   function catalogProductLink(product,label){const allowed=Catalog?.validateSnapshot(previewCatalog).find(p=>p.id===product.id&&p.productUrl===product.productUrl&&!p.commercial?.sponsored&&p.stock==='in_stock');if(!allowed)return null;const a=node('a',label);a.href=allowed.productUrl;a.rel=(allowed.commercial?.affiliate?'sponsored ':'')+'noopener noreferrer';a.referrerPolicy='no-referrer';a.dataset.stylistCatalogBuy=allowed.id;return a;}
@@ -143,6 +143,8 @@
   }
   if(preview)I.register({'등록 상품 자료를 확인하지 못했습니다. 공식 검색 대안을 이용해주세요.':'Registered product data could not be verified. Use official search alternatives.','예산 범위':'Within budget','스타일 일치':'Style matches','색상 일치':'Color matches','용도 일치':'Occasion matches','사이즈 표기 일치':'Listed size matches','컬렉션 일치':'Collection matches','사진상 비율 참고 규칙':'Photo-ratio reference rule','등록 후보 상품 비교 · 동일 상품 최저가 비교가 아닙니다.':'Registered candidate comparison · not a lowest-price comparison of identical items.','판매자 등록 자료 기준이며 실시간 가격·배송·세금·착용감은 보장하지 않습니다.':'Based on registered seller data; live prices, shipping, taxes and fit are not guaranteed.','조건 일치 점수':'Condition-match score','사이즈표 미제공':'Size chart not supplied'});
   if(preview)I.register({
+    '해석한 검색 조건':'Interpreted search conditions','예산':'Budget','예산 미지정':'No budget specified',
+    '일부 검색 조건을 해석하지 못했습니다. 원하는 의류와 예산 상한을 다시 입력해주세요.':'Some search conditions could not be interpreted. Re-enter the clothing you want and one upper budget.',
     '동일성 기준':'Identity basis','배송 목적지 {destination} · 비교 통화 {currency}':'Delivery destination {destination} · comparison currency {currency}',
     '상품':'Product','판매자':'Seller','상품 가격':'Item price','사이즈':'Size','마지막 확인':'Last checked',
     '배송비':'Shipping','세금':'Tax','관세':'Duties','총액':'Total','재고':'Stock','재고 있음':'In stock','품절':'Out of stock','구매 조건':'Purchase conditions','추가 구매 조건 없음 · 자료 확인':'No additional purchase conditions · reviewed in source','구매 조건 미확인':'Purchase conditions unknown',
@@ -229,6 +231,7 @@
     const bubble = node('article',undefined,'stylist-message'); bubble.dataset.i18nIgnore = '';
     bubble.append(node('h3','A1 AI STYLIST'), node('p',result.mode === 'LIVE' ? t('GPT · 검증된 데이터 기반') : t('DEMO · 실제 GPT 호출 없음'),'stylist-answer-mode'));
     if (typeof result.reply === 'string') bubble.append(node('p',result.reply));
+    if(preview&&result.clothingConditions&&Query){const conditions=node('section',undefined,'stylist-comparison');conditions.dataset.stylistConditions='';conditions.append(node('h4',t('해석한 검색 조건')),node('p',Query.term(result.clothingConditions,I.language)),node('p',t('예산')+': '+(result.clothingConditions.budget==null?t('예산 미지정'):money(result.clothingConditions.budget,result.clothingConditions.currency))));bubble.append(conditions);}
     if (Array.isArray(result.advice)) { const list=node('ul'); for (const item of result.advice.slice(0,8)) if (typeof item?.text === 'string') list.append(node('li',item.text)); bubble.append(list); }
     const products = (Array.isArray(result.products)?result.products:[]).slice(0,12);
     if (products.length) for (const product of products) { const card = productCard(product); if (card) bubble.append(card); }

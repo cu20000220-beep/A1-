@@ -21,7 +21,7 @@ test('fit intent adds bounded fit words to Korean retailer searches without leak
 });
 test('domestic search interprets purpose and T-shirts without passing unsupported enums into existing recommendations',()=>{
  const p=Q.parse('여성 네이비 슬림 원피스 하객용 3만5천원 이하');assert.equal(p.budget,35000);assert.equal(p.purpose,'event');assert.equal(p.occasion,'event');assert.equal(Q.describe(p).purpose,'하객용');
- const sport=Q.parse('운동용 흰색 오버핏 티셔츠 30,000원 이하');assert.equal(sport.type,'tshirt');assert.equal(sport.fit,'oversized');assert.equal(sport.purpose,'sport');assert.equal(sport.occasion,'all');assert.match(Q.term(sport),/티셔츠 운동용/);
+ const sport=Q.parse('운동용 흰 오버핏 티셔츠 30,000원 이하');assert.equal(sport.type,'tshirt');assert.equal(sport.color,'white');assert.equal(sport.fit,'oversized');assert.equal(sport.purpose,'sport');assert.equal(sport.occasion,'all');assert.match(Q.term(sport),/티셔츠 운동용/);
  const daily=Q.parse('공용 회색 루즈핏 니트 일상용');assert.equal(daily.gender,'all');assert.equal(daily.occasion,'casual');assert.equal(Q.describe(daily,'en').fit,'relaxed');
  for(const patch of [{fit:'SECRET 170cm'},{purpose:'https://evil.test'},{type:'photo'}])assert.throws(()=>Q.term({...p,...patch}));
 });

@@ -3,6 +3,9 @@
  const root=document.querySelector('#shopping-search');if(!root||!window.A1Preview)return;
  const I=window.A1I18n,Q=window.A1ShoppingQuery,P=window.A1Preview,C=window.A1ProductCatalog,O=window.A1OfferComparison,$=s=>document.querySelector(s);
  I.register({
+ '해석한 검색 조건':'Interpreted search conditions','의류 종류':'Clothing type','색상':'Color','핏':'Fit','용도':'Purpose','컬렉션':'Collection',
+ '예산은 ‘5만원 이하’처럼 상한 금액 하나로 입력해주세요.':'Enter one upper budget, such as “50,000원 이하”.',
+ '제외 조건은 아직 해석하지 않습니다. 원하는 색상·핏만 입력해주세요.':'Exclusion conditions are not supported yet. Enter the color and fit you want.',
  '비교표를 가로로 밀면 사이즈·확인 시각·구매 조건·출처를 볼 수 있습니다.':'Swipe the comparison table sideways to see sizes, verification times, purchase conditions and sources.',
  'A1 FASHION은 의류 검색·비교·추천 플랫폼입니다. 주문·결제·배송·반품은 해당 판매처에서 진행합니다.':'A1 FASHION helps you search, compare and choose clothing. Orders, payment, delivery and returns are handled by the external seller.',
  '배송지':'Delivery destination','광고 상품':'Sponsored products','배송 국가':'Delivery country','대한민국':'South Korea','미국':'United States','일본':'Japan','영국':'United Kingdom','독일':'Germany','프랑스':'France',
@@ -53,10 +56,10 @@
  '앱 안에서 쇼핑몰이 열리지 않나요?':'Retailer blocked in the in-app browser?',
  '어떤 옷을 찾으세요?':'What would you like to wear?',
  '무료 베타 · 의류 검색부터 시작하세요':'Free beta · start with clothing search',
- '예: 남성 검정 슬랙스 5만원 이하':'e.g. men black slacks',
+ '예: 남성 검정 와이드 슬랙스 출근용 5만원 이하':'e.g. men black slacks',
  '원하는 옷 조건':'Clothing search conditions','옷 찾기':'Find clothes',
  '현재 검증된 실제 상품 0개 · 아래는 상품 목록이 아닌 공식 쇼핑몰 검색 대안입니다.':'0 verified real products currently · the options below are official retailer searches, not product listings.',
- '의류 종류·색상·컬렉션만 검색어로 전달합니다. 예산은 아래에 따로 표시하며 판매처에서 직접 설정하세요. 원문·사진·체형 수치는 전송하지 않습니다.':'Only clothing type, color and collection enter the search phrase. Set the budget at the retailer. Raw text, photos and body ratios are not transmitted.',
+ '의류 종류·색상·핏·용도·컬렉션의 정해진 단어만 검색어로 전달합니다. 예산은 아래에 따로 표시하며 판매처에서 직접 설정하세요. 원문·사진·체형 수치는 전송하지 않습니다.':'Only bounded clothing type, color, fit, purpose and collection terms enter the search phrase. Set the budget at the retailer. Raw text, photos and body ratios are not transmitted.',
  '선택한 검색어':'Selected search phrase','예산':'Budget','예산 미지정':'No budget specified',
  '상품 가격·사이즈·재고·배송비는 판매처에서 확인해야 합니다.':'Check prices, sizes, stock and shipping at the retailer.',
  '사진상 비율을 이번 기기 내 스타일 조언에 사용하는 데 동의합니다.':'I agree to use photo ratios for this on-device style advice.',
@@ -161,17 +164,18 @@
   }catch{if(disposed||controller!==active)return;catalog={version:1,generatedAt:null,products:[]};catalogState='error';clearProductUI();}finally{clearTimeout(timer);if(!disposed&&controller===active)renderCatalog();}
  }
  $('#shopping-catalog-retry').addEventListener('click',loadCatalog);
- $('#shopping-product-filters').addEventListener('input',()=>{$('#shopping-style-advice').replaceChildren();if(conditions){try{const parsed=Q.parse($('#shopping-query').value);if(parsed.budget!==null&&$('#shopping-currency').value!=='KRW')throw Error('currency');conditions={...parsed,currency:$('#shopping-currency').value};invalidQuery=false;}catch{tx('#shopping-query-status','원화 예산은 KRW에서 검색해주세요. 통화를 바꿀 때 임의 환산하지 않습니다.');conditions=null;invalidQuery=true;clearProductUI();$('#shopping-search-results').replaceChildren();$('#shopping-style-advice').replaceChildren();return;}}renderCatalog();});
+ $('#shopping-product-filters').addEventListener('input',()=>{$('#shopping-style-advice').replaceChildren();if(conditions){try{const parsed=Q.parse($('#shopping-query').value);if(parsed.budget!==null&&$('#shopping-currency').value!=='KRW')throw Error('currency');conditions={...parsed,currency:$('#shopping-currency').value};invalidQuery=false;}catch{tx('#shopping-query-status','원화 예산은 KRW에서 검색해주세요. 통화를 바꿀 때 임의 환산하지 않습니다.');conditions=null;invalidQuery=true;clearProductUI();render();$('#shopping-style-advice').replaceChildren();return;}}render();renderCatalog();});
 
- const render=()=>{const target=$('#shopping-search-results');target.replaceChildren();if(!conditions)return;
+ const render=()=>{const target=$('#shopping-search-results'),interpreted=$('#shopping-interpreted');target.replaceChildren();interpreted.replaceChildren();interpreted.hidden=!conditions;if(!conditions)return;
+  interpreted.append(node('h2',I.t('해석한 검색 조건')));const description=Q.describe(conditions,I.language),list=node('dl');for(const [key,label]of [['kind','의류 종류'],['color','색상'],['fit','핏'],['purpose','용도'],['collection','컬렉션']]){const group=node('div');group.append(node('dt',I.t(label)),node('dd',description[key]));list.append(group);}const budgetGroup=node('div');budgetGroup.append(node('dt',I.t('예산')),node('dd',conditions.budget===null?I.t('예산 미지정'):conditions.budget.toLocaleString(I.locale)+' KRW'));list.append(budgetGroup);interpreted.append(list);
   const phrase=node('p',I.t('선택한 검색어')+': '+Q.term(conditions,I.language));target.append(phrase);
   const budget=node('p',I.t('예산')+': '+(conditions.budget===null?I.t('예산 미지정'):conditions.budget.toLocaleString(I.locale)+' KRW'));target.append(budget);
   const warning=node('p');I.setText(warning,'선택한 예산이 판매처 검색에 자동 적용되지는 않습니다.');target.append(warning);
   for(const row of Q.links(conditions)){const actions=P.retailerActions(row);actions.querySelectorAll('.preview-safari-help').forEach(n=>n.remove());target.append(actions);}
  };
- function search(){$('#shopping-style-advice').replaceChildren();try{conditions=Q.parse($('#shopping-query').value);if(conditions.budget!==null&&$('#shopping-currency').value!=='KRW')throw Error('currency');conditions={...conditions,currency:$('#shopping-currency').value};invalidQuery=false;render();renderCatalog();tx('#shopping-query-status','검색어를 준비했습니다. 아래 공식 검색 버튼을 직접 눌러주세요.');return true;}catch{conditions=null;invalidQuery=true;render();renderCatalog();tx('#shopping-query-status','짧은 의류 조건만 입력해주세요. 연락처·이메일·사진·링크는 입력하지 마세요.');return false;}}
+ function search(){$('#shopping-style-advice').replaceChildren();try{conditions=Q.parse($('#shopping-query').value);if(conditions.budget!==null&&$('#shopping-currency').value!=='KRW')throw Error('currency');conditions={...conditions,currency:$('#shopping-currency').value};invalidQuery=false;render();renderCatalog();tx('#shopping-query-status','검색어를 준비했습니다. 아래 공식 검색 버튼을 직접 눌러주세요.');return true;}catch(error){conditions=null;invalidQuery=true;render();renderCatalog();tx('#shopping-query-status',error.message==='unsupported_exclusion'?'제외 조건은 아직 해석하지 않습니다. 원하는 색상·핏만 입력해주세요.':error.message==='currency'?'원화 예산은 KRW에서 검색해주세요. 통화를 바꿀 때 임의 환산하지 않습니다.':/budget/.test(error.message)?'예산은 ‘5만원 이하’처럼 상한 금액 하나로 입력해주세요.':'짧은 의류 조건만 입력해주세요. 연락처·이메일·사진·링크는 입력하지 마세요.');return false;}}
  function advice(){if(!search())return;const consent=$('#shopping-analysis-consent').checked;if(consent&&!metrics){tx('#shopping-query-status','체형을 참고하려면 먼저 사진을 분석해주세요.');return;}
-  const message=conditions.occasion==='work'?'office outfit':conditions.color!=='any'?'color outfit':'comfortable outfit';
+  const message=Q.term(conditions,'ko')+(conditions.budget!==null?' '+conditions.budget+'원 이하':'');
   const answer=P.consult({message,language:I.language,intent:'style',preferences:{destination:destination(),category:conditions.category},consents:{analysis:consent},...(consent?{metrics}:{})});
   const target=$('#shopping-style-advice');target.replaceChildren();const title=node('p');I.setText(title,'규칙 기반 무료 스타일 상담 · 생성형 AI/GPT 호출 없음');target.append(title);for(const a of answer.advice)target.append(node('p',a.text));
   const note=node('p');I.setText(note,matches.length?'규칙 상담이 아래 등록 상품의 검색·추천·비교 결과에 연결됐습니다. 생성형 AI는 호출하지 않습니다.':'상품 추천이 아닌 검색 준비와 스타일 조언입니다. 실제 상품 자료가 확보되면 개별 추천 이유·비교를 연결합니다.');if(matches.length){const links=node('ul');for(const row of matches.slice(0,3)){const item=node('li'),a=node('a',row.product.name);a.href='#shopping-products';a.dataset.catalogAdvice=row.product.id;item.append(a);links.append(item);}target.append(links);}target.append(note);
@@ -183,5 +187,5 @@
  document.addEventListener('a1:analysis-cleared',clear);$('#shopping-analysis-consent').addEventListener('change',()=>{$('#shopping-style-advice').replaceChildren();renderCatalog();});
  document.addEventListener('a1:language-changed',()=>{render();renderCatalog();if($('#shopping-style-advice').children.length)advice();});
  loadCatalog();
- window.addEventListener('pagehide',()=>{disposed=true;controller?.abort();clearTimeout(expiryTimer);clear();conditions=null;$('#shopping-query').value='';$('#shopping-search-results').replaceChildren();});
+ window.addEventListener('pagehide',()=>{disposed=true;controller?.abort();clearTimeout(expiryTimer);clear();conditions=null;$('#shopping-query').value='';$('#shopping-search-results').replaceChildren();$('#shopping-interpreted').replaceChildren();$('#shopping-interpreted').hidden=true;});
 })();
