@@ -3,7 +3,7 @@
 const crypto=require('node:crypto');
 const CURRENCIES=['KRW','JPY','USD','EUR','GBP'];
 const CATEGORIES=['tops','bottoms','outerwear','dresses','accessories'];
-const TYPES=['clothing','slacks','jeans','trousers','shirt','knit','jacket','coat','dress'];
+const TYPES=['clothing','slacks','jeans','trousers','shirt','tshirt','knit','jacket','coat','dress'];
 const STYLES=['minimal','casual','classic','streetwear'];
 const OCCASIONS=['work','casual','event'];
 const TAGS=['straight','relaxed','layered','balanced','tight','cropped','low-rise','logos'];

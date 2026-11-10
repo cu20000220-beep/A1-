@@ -6,7 +6,7 @@
   const I = window.A1I18n;
   const pairs = {
     notice: ['미리보기 체험: 검색·DEMO 상담은 브라우저 안에서만 동작합니다. 회원·DB·서버 API·실제 GPT는 연결하지 않습니다.', 'Preview experience: searches and DEMO advice run only in your browser. Member services, databases, server APIs and live GPT are disconnected.'],
-    privacy: ['검색 링크에는 선택한 의류 카테고리만 사용합니다. 입력 글·브랜드·사이즈·예산·사진·분석 비율은 판매처로 보내지 않습니다.', 'Search links use only the selected clothing category. Typed text, brand, size, budget, photos and analysis ratios are not sent to retailers.'],
+    privacy: ['검색 링크에는 해석한 의류 종류·색상·핏·용도·컬렉션의 고정 검색어만 사용합니다. 입력 원문·브랜드·사이즈·예산·사진·분석 비율은 판매처로 보내지 않습니다.', 'Search links use only fixed clothing type, color, fit, purpose and collection terms. Raw text, brand, size, budget, photos and analysis ratios are not sent to retailers.'],
     pending: ['검증된 상품·가격·할인·재고 정보는 준비 중입니다. 실제 정보를 만들어 표시하지 않습니다.', 'Verified products, prices, discounts and stock are being prepared. No real commercial information is invented.'],
     account: ['이 미리보기에서는 회원·찜 저장·알림에 연결하지 않습니다. 검색과 DEMO 상담만 기기 안에서 체험할 수 있습니다.', 'This preview does not connect accounts, saved favorites or alerts. Explore searches and DEMO advice on your device.'],
     title: ['무료 베타 스타일 예시 · 브라우저 체험', 'Free beta style examples · Browser experience'],
@@ -37,7 +37,7 @@
   const node = (tag,text) => { const el=document.createElement(tag); if(text)el.textContent=text; return el; };
   // These are the existing public directory's official search endpoints.
   const stores = [
-    ['Musinsa','KR','https://www.musinsa.com/search/goods','keyword'], ['29CM','KR','https://shop.29cm.co.kr/search','keyword'],
+    ['Musinsa','KR','https://www.musinsa.com/search/goods','keyword'], ['29CM','KR','https://www.29cm.co.kr/store/search','keyword'],
     ['Coupang','KR','https://www.coupang.com/np/search','q'], ['Naver Shopping','KR','https://search.shopping.naver.com/search/all','query'],
     ['eBay US','US','https://www.ebay.com/sch/i.html','_nkw'], ['Amazon US','US','https://www.amazon.com/s','k'],
     ['Amazon Japan','JP','https://www.amazon.co.jp/s','k'], ['Rakuten Japan','JP','https://search.rakuten.co.jp/search/mall/',null],
@@ -53,6 +53,9 @@
       const url=new URL(value);
       if(url.protocol!=='https:'||url.username||url.password||url.port||url.hash)return false;
       if(['shopping.naver.com','www.rakuten.co.jp'].includes(url.hostname)&&url.pathname==='/'&&!url.search)return true;
+      // Old already-rendered 29CM links remain narrowly allowed; new links use
+      // the current official www route and never a redirect parameter.
+      if(url.hostname==='shop.29cm.co.kr')return url.pathname==='/'&&!url.search||url.pathname==='/search'&&[...url.searchParams.keys()].length===1&&url.searchParams.has('keyword');
       return stores.some(([, ,base,key])=>{
         const endpoint=new URL(base);
         if(url.hostname!==endpoint.hostname)return false;
@@ -76,6 +79,12 @@
     length:['사진상 다리·몸통 비율은 참고만 하고, 상의와 바지의 길이를 바꾸어 편안한 조합을 비교해보세요.','Use photo leg/torso proportions only as a reference and compare comfortable top and trouser lengths.'],
     basic:['편안하게 움직일 수 있는 상의와 하의를 먼저 조합하고, 실제 사이즈표와 반품 조건을 확인하세요.','Start with a comfortable top and bottom, then check the actual size chart and return terms.'],
     work:['출근 코디 예시: 셔츠나 니트에 스트레이트 팬츠를 조합하고 필요하면 가벼운 재킷을 더해보세요.','Office outfit example: pair a shirt or knit with straight trousers and add a light jacket if needed.'],
+    event:['하객용 의류는 행사 안내와 드레스 코드를 먼저 확인하고 색상·비침·착용 길이를 판매처 자료에서 비교해보세요.','For guest outfits, check the event dress code, then compare color, transparency and garment length in the seller information.'],
+    sport:['운동용 의류는 활동에 맞는 움직임 여유·통기성·소재와 세탁 안내를 판매처에서 확인하세요.','For sportswear, check movement allowance, breathability, fabric and care instructions for your activity at the seller.'],
+    fitRoomy:['와이드·여유 있는 핏도 허리와 총장 실측은 따로 확인하세요. 핏 이름만으로 실제 여유나 사이즈를 보장하지 않습니다.','For wide or roomy fits, check waist and garment length measurements separately. A fit name does not guarantee ease or size.'],
+    fitSlim:['슬림한 핏은 상품 실측과 소재의 신축성·반품 조건을 확인하세요. 사진 비율만으로 착용 적합성을 판단하지 않습니다.','For slim fits, check garment measurements, fabric stretch and returns. Photo ratios alone cannot determine fit.'],
+    fitClassic:['스트레이트·레귤러 핏은 브랜드별 표기가 다를 수 있습니다. 실제 사이즈표와 원하는 길이를 함께 확인하세요.','Straight and regular fit labels vary by brand. Check the actual size chart and your preferred garment length.'],
+    budget:['해석한 예산은 검색 조건 안내용입니다. 공식 검색의 가격 필터에 자동 적용되지는 않으므로 판매처에서 직접 설정하세요.','The interpreted budget is search guidance. It is not automatically applied to the official search price filter; set it at the retailer.'],
     color:['아이보리·네이비·차콜처럼 조합하기 쉬운 색에 포인트 색 하나를 더해보세요.','Try easy-to-combine ivory, navy or charcoal with one accent color.'],
     wide:['사진상 어깨 기준점 간격을 참고해 단정한 상의와 여유 있는 하의의 균형을 비교해보세요.','Using the photo’s shoulder landmark spacing as a reference, compare a neat top with more relaxed bottoms.'],
     narrow:['사진상 비율을 참고해 가벼운 상의 레이어와 스트레이트 하의의 조합을 비교해보세요.','Using the photo ratios as a reference, compare a light layered top with straight bottoms.'],
@@ -87,14 +96,28 @@
       ||/(?:https?:\/\/|data\s*:|blob\s*:|<|base64|\bsk-[\w-]{16,})/i.test(input.message))throw new Error('invalid');
     const use=input.consents?.analysis===true;
     if(use&&!validMetrics(input.metrics))throw new Error('consent');
-    const ids=[/출근|회사|office|work/i.test(input.message)?'work':/색|color|colour/i.test(input.message)?'color':'basic'];
+    // Resolve lazily: this file is also loaded before the shared query parser.
+    // Parsed conditions stay on-device; only that parser's bounded terms may
+    // enter domestic search URLs. Invalid/private text keeps category links.
+    let clothingConditions=null;
+    let searchRows=retailers(input.preferences||{},input.language).retailers;
+    if(searchRows[0]?.country==='KR'&&window.A1ShoppingQuery){
+      try{clothingConditions={...window.A1ShoppingQuery.parse(input.message)};searchRows=window.A1ShoppingQuery.links(clothingConditions);}catch{clothingConditions=null;}
+    }
+    const purpose=clothingConditions?.purpose;
+    const ids=[purpose==='event'?'event':purpose==='sport'?'sport':purpose==='work'||/출근|회사|office|work/i.test(input.message)?'work':/색|color|colour/i.test(input.message)?'color':'basic'];
+    if(['semiwide','wide','oversized','relaxed'].includes(clothingConditions?.fit))ids.push('fitRoomy');
+    else if(clothingConditions?.fit==='slim')ids.push('fitSlim');
+    else if(['straight','regular'].includes(clothingConditions?.fit))ids.push('fitClassic');
+    if(clothingConditions?.budget!=null)ids.push('budget');
     if(use) { ids.push(input.metrics.shoulderHipRatio>1.15?'wide':input.metrics.shoulderHipRatio<.9?'narrow':'balanced'); if(input.metrics.legTorsoRatio<1.5)ids.push('length'); }
     const at=input.language==='en'?1:0;
     return {previewLocal:true,mode:'DEMO',products:[],discounts:[],comparison:null,usage:null,dataStatus:'preparing',
       reply:input.language==='en'?'On-device, rule-based outfit examples. No GPT or server request.':'기기 내 규칙 기반 코디 예시입니다. GPT나 서버를 호출하지 않습니다.',
       advice:ids.map(id=>({id,text:advice[id][at]})),
       notices:[pairs[use?'used':'noRatios'][at],pairs.pending[at],pairs.privacy[at]],
-      searchLinks:retailers(input.preferences||{},input.language).retailers.map(row=>({label:row.name,url:row.searchUrl}))};
+      clothingConditions,
+      searchLinks:searchRows.map(row=>({label:row.name,url:row.searchUrl}))};
   }
   async function copyText(value,field,status) {
     try {

@@ -1,7 +1,7 @@
 /* Trusted build snapshot consumer. Never imports seller permissions from a browser file. */
 'use strict';
 ((root,factory)=>{const api=factory(typeof module==='object'&&module.exports?require('./product-matching.js'):root.A1ProductMatching,typeof module==='object'&&module.exports?require('./offer-comparison.js'):root.A1OfferComparison);if(typeof module==='object'&&module.exports)module.exports=api;else root.A1ProductCatalog=api;})(globalThis,(M,O)=>{
- const categories=['tops','bottoms','outerwear','dresses','accessories'],types=['clothing','slacks','jeans','trousers','shirt','knit','jacket','coat','dress'];
+ const categories=['tops','bottoms','outerwear','dresses','accessories'],types=['clothing','slacks','jeans','trousers','shirt','tshirt','knit','jacket','coat','dress'];
  const text=(s,max)=>typeof s==='string'&&s.trim().length>0&&s.length<=max;
  const safeUrl=s=>{try{const u=new URL(s);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&!u.hash&&!['localhost','127.0.0.1','[::1]'].includes(u.hostname);}catch{return false;}};
  function validateSnapshot(snapshot,now=Date.now()){
