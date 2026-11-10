@@ -58,7 +58,7 @@ async function englishCheck(page){
     page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push({url:r.url(),method:r.method()}));
     await page.goto(origin+'/stylist.html',{waitUntil:'networkidle'});
     assert.match(await page.locator('#stylist-config').innerText(),/DEMO/);
-    const expectedNavigation={home:'index.html',studio:'index.html#ai-studio',shopping:'global.html#shopping',stylist:'stylist.html',comparison:'global.html#comparison',membership:'global.html#membership',account:'account.html'};
+    const expectedNavigation={home:'index.html',studio:'index.html#ai-studio',clothes:'index.html#shopping-search',shopping:'global.html#shopping',stylist:'stylist.html',comparison:'global.html#comparison',membership:'global.html#membership',account:'account.html'};
     assert.deepEqual(await page.locator('[data-site-navigation] a').evaluateAll(nodes=>Object.fromEntries(nodes.map(n=>[n.dataset.siteLink,n.getAttribute('href')]))),expectedNavigation,'Every main menu points to the integrated feature');
     assert.equal(await page.locator('input[type=file]').count(),0);
     assert.equal(await page.locator('#stylist-external-consent').isChecked(),false);assert.equal(await page.locator('#stylist-analysis-consent').isChecked(),false);
@@ -91,7 +91,7 @@ async function englishCheck(page){
       await navigation.goto(origin+'/stylist.html',{waitUntil:'networkidle'});
       await navigation.locator(`[data-site-link="${name}"]`).click();
       await navigation.waitForURL(origin+'/'+href);
-      await navigation.waitForFunction(()=>document.documentElement.lang==='en'&&document.querySelectorAll('[data-site-navigation] a').length===7);
+      await navigation.waitForFunction(()=>document.documentElement.lang==='en'&&document.querySelectorAll('[data-site-navigation] a').length===8);
       assert.match(await navigation.locator('[data-site-navigation]').innerText(),/AI STYLIST/);
       assert.equal(await navigation.locator('[data-site-navigation] a[aria-current=page]').getAttribute('data-site-link'),name);
     }
@@ -132,6 +132,6 @@ async function englishCheck(page){
     const storage=await page.evaluate(()=>Object.keys(localStorage).filter(key=>!['a1-fashion:language','a1-fashion:auth-event'].includes(key)));assert.deepEqual(storage,[],'Chat/profile data must not be stored in localStorage');
     await page.reload({waitUntil:'networkidle'});assert.match(await page.locator('#stylist-config').innerText(),/DEMO/);await page.setViewportSize({width:390,height:844});await page.screenshot({path:'/tmp/a1-stylist-mobile.png',fullPage:true});
     assert.ok(requests.every(request=>new URL(request.url).origin===origin),'Browser makes no external AI, image or translation requests');assert.ok(posts.every(body=>!Object.keys(body).some(key=>/photo|image|key|email/i.test(key))));assert.deepEqual(errors,[]);
-    console.log('Stylist UI passed: server-tier UI fixtures, DEMO/no actual GPT, verified fixture products, safe links/text, Premium comparisons, separate external/analysis consent, memory-only history, errors without retries, cross-tab logout cancels late replies, KO/EN at 320/390/820/1440px, shared seven-menu navigation/language persistence, expiry timer/late reply/focus guards. No provider requests.');
+    console.log('Stylist UI passed: server-tier UI fixtures, DEMO/no actual GPT, verified fixture products, safe links/text, Premium comparisons, separate external/analysis consent, memory-only history, errors without retries, cross-tab logout cancels late replies, KO/EN at 320/390/820/1440px, shared eight-menu navigation/language persistence, expiry timer/late reply/focus guards. No provider requests.');
   } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

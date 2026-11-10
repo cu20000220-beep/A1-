@@ -2,7 +2,11 @@
 function initializeAvatarLab(){
  const root=document.querySelector('#avatar-root');if(!root||!window.A1Preview||root.dataset.initialized)return;root.dataset.initialized='true';root.dataset.loadState='initializing';
  const G=window.A1AvatarGeometry,I=window.A1I18n,$=s=>document.querySelector(s);
+ let humanModel=false;
+ try{if(window.A1HumanBase&&!G.hasHumanBase())G.installBase(window.A1HumanBase);humanModel=G.hasHumanBase();}catch{/* Keep the existing geometry available if a local asset is invalid. */}
  I.register({
+ '범용 인체 모델 · 입력 치수와 동의한 사진 비율을 참고합니다. 실제 사람의 얼굴·신체 복원이나 정확한 사이즈 보장이 아닙니다.':'Generic human body model · uses entered measurements and consented photo references. It does not reconstruct a real person or guarantee an exact size.',
+ '인체 모델 자료를 읽지 못해 기본 형상을 표시합니다. 새로고침 후 다시 확인해주세요.':'The human body asset did not load; default geometry is shown. Reload and check again.',
  '사용자 보정값':'User correction','기본 예시값 · 사진 측정 아님':'Example default · not measured from photo',
  '사진상 두 비율 적용 중 · 실제 치수 아님. 허리·가슴둘레·깊이는 추정하지 않습니다. 치수는 기본값 또는 직접 입력값입니다.':'Two photo ratios applied · not measurements. Waist/chest circumference and depth are not estimated. Measurement fields are defaults or your inputs.',
  '사진 비율 미적용 · 기본 형상과 사용자 보정값입니다.':'No photo reference · default geometry and user corrections.',
@@ -31,6 +35,8 @@ function initializeAvatarLab(){
  '3D 그래픽 연결이 중단됐습니다. 페이지를 다시 열어주세요. 치수는 저장되지 않습니다.':'The 3D graphics context was lost. Reopen this page; measurements are not saved.'
  });
  root.hidden=false;const unavailable=$('#avatar-unavailable');if(unavailable)unavailable.hidden=true;
+ root.dataset.humanModel=humanModel?'hm08-cc0':'procedural-fallback';
+ let humanNote=$('#avatar-human-model');if(!humanNote){humanNote=document.createElement('p');humanNote.id='avatar-human-model';root.querySelector('h1').after(humanNote);}I.setText(humanNote,humanModel?'범용 인체 모델 · 입력 치수와 동의한 사진 비율을 참고합니다. 실제 사람의 얼굴·신체 복원이나 정확한 사이즈 보장이 아닙니다.':'인체 모델 자료를 읽지 못해 기본 형상을 표시합니다. 새로고침 후 다시 확인해주세요.');
  const form=$('#avatar-form'),selector=$('#avatar-garment'),canvases=[$('#avatar-before'),$('#avatar-after')];
  let referenceMetrics=null;const manual=new Set();
  let params={...G.defaults},yaw=0,pitch=0,zoom=3.5,scheduled=false,disposed=false,lost=false;

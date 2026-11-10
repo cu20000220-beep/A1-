@@ -207,7 +207,7 @@
   $('#ai-photo').addEventListener('change', async event => {
     const file = event.target.files[0];
     if (!file) return;
-    clear();
+    clear('photo-replacement');
     const token = revision;
     status('사진을 기기 안에서 준비하고 있습니다.');
     try {

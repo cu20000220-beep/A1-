@@ -213,6 +213,12 @@
   }
   document.addEventListener('click',e=>{
     const a=e.target?.closest?.('a');if(!a)return;
+    // Reviewed product links have stricter per-snapshot consumers. Let their
+    // handlers verify the exact item URL/expiry/user click instead of treating
+    // an individual product page as an unapproved generic search endpoint.
+    if(a.matches('[data-catalog-buy],[data-catalog-source],[data-offer-buy]')&&a.closest('#shopping-search')
+      ||a.hasAttribute('data-stylist-catalog-buy')&&a.closest('#stylist-chat')
+      ||a.hasAttribute('data-selected-catalog-buy')&&a.closest('#lab-selected-catalog'))return;
     const controlled=a.hasAttribute('data-public-retailer')||a.closest('#retailer-results,#preview-style-results,.stylist-search-links');
     let merchant=false;try{merchant=stores.some(row=>new URL(row[2]).hostname===new URL(a.href).hostname);}catch{}
     if(!controlled&&!merchant)return;

@@ -12,6 +12,10 @@
   const merchants = new Set(['www.coupang.com','search.shopping.naver.com','www.ebay.com','www.ebay.co.uk','www.ebay.de','www.amazon.com','www.amazon.co.jp','www.amazon.co.uk','www.amazon.de','search.rakuten.co.jp','www.zalando.de']);
   const currencies = new Set(['KRW','USD','EUR','GBP','JPY']);
   const conversations = [], pending = new Set();
+  // Preview needs are bounded parser fields in page memory, never raw history
+  // concatenated into search terms. Only real control edits replace a prior turn.
+  const previewControlEdits = new Set();
+  let previewNeeds = null;
   let generation = 0, busy = false, configuration = { mode: 'DEMO', liveEnabled: false }, accessUntil = 0, expiryTimer;
   const node = (tag, text, className) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element; };
   const finitePrice = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
@@ -41,7 +45,7 @@
     block.append(title, copy); chat.replaceChildren(block);
   }
   function clearConversation({resetProfile = false, clearMetrics = true} = {}) {
-    previewAnswer = null;clearTimeout(previewCatalogTimer);previewCatalogTimer=undefined;
+    previewAnswer = null; previewNeeds = null; previewControlEdits.clear();clearTimeout(previewCatalogTimer);previewCatalogTimer=undefined;
     generation++;
     clearTimeout(expiryTimer); expiryTimer = undefined; accessUntil = 0;
     for (const controller of pending) controller.abort();
@@ -86,11 +90,45 @@
       status('상담을 다시 요청해 현재 계정과 구독 권한을 확인해주세요. 이전 대화는 지웠습니다.');
     }
   }
+  function resolvePreviewNeeds(request) {
+    const parsed=Query.parse(request.message),prefs=request.preferences||{},changed=new Set(request.previewControlEdits||[]);
+    const conditions={...(request.previewPreviousNeeds||Query.parse('의류'))};
+    const initial=!request.previewPreviousNeeds;
+    for(const key of ['gender','style','category','currency','budget'])if(initial||changed.has(key)){
+      const value=prefs[key];if(value!==undefined)conditions[key]=key==='gender'&&value==='unisex'?'all':value;
+    }
+    if(changed.has('category')&&conditions.type!=='clothing'&&Query.parse(Query.term(conditions,'ko')).category!==conditions.category)conditions.type='clothing';
+    // A currency edit uses the amount shown alongside it; no exchange rate is
+    // inferred for a budget inherited from a different currency.
+    if(changed.has('currency'))conditions.budget=prefs.budget??null;
+    if(parsed.type!=='clothing'){conditions.type=parsed.type;conditions.category=parsed.category;}
+    for(const [key,empty]of [['color','any'],['fit','any'],['purpose','any'],['style','all']])if(parsed[key]!==empty)conditions[key]=parsed[key];
+    if(parsed.purpose!=='any')conditions.occasion=parsed.occasion;
+    if(parsed.gender!=='all'||/공용|유니섹스|전체\s*(?:컬렉션|성별)|\bunisex\b|\ball\s+(?:genders|collections)\b/i.test(request.message))conditions.gender=parsed.gender;
+    if(/(?:좀\s*더|조금\s*더|더)?\s*편(?:한|하게|안한)\s*(?:핏|바지|옷)?|\b(?:more\s+)?comfortable\s+(?:fit|trousers|pants|clothes)\b/i.test(request.message))conditions.fit='relaxed';
+    const sizes=[...request.message.normalize('NFKC').matchAll(/(?:\bsize\s+(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|\d{1,3})\b|\b(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|\d{1,3})\s*사이즈|사이즈\s*(XXXS|XXS|XS|S|M|L|XL|XXL|XXXL|\d{1,3})\b)/gi)].map(match=>(match[1]||match[2]||match[3]).toUpperCase());
+    if(new Set(sizes).size>1)throw Error('unsupported_size');if(sizes.length)conditions.size=sizes[0];
+    if(parsed.budget!==null){if(prefs.currency&&prefs.currency!=='KRW')throw Error('currency');conditions.budget=parsed.budget;conditions.currency='KRW';}
+    Query.term(conditions,'ko');return conditions;
+  }
+  function previewClarification(error) {
+    return error.message==='unsupported_exclusion'?'제외 조건은 아직 해석하지 않습니다. 원하는 색상·핏만 입력해주세요.':error.message==='unsupported_size'?'사이즈는 ‘사이즈 M’처럼 하나만 입력해주세요.':error.message==='currency'?'원화 예산은 KRW에서 검색해주세요. 통화를 바꿀 때 임의 환산하지 않습니다.':/budget/.test(error.message)?'예산은 ‘5만원 이하’처럼 상한 금액 하나로 입력해주세요.':'짧은 의류 조건만 입력해주세요. 연락처·이메일·사진·링크는 입력하지 마세요.';
+  }
   function catalogAnswer(request){
-    const base=preview.consult(request);if(previewCatalogError)base.notices.push(t('등록 상품 자료를 확인하지 못했습니다. 공식 검색 대안을 이용해주세요.'));if(!Catalog||!Query)return base;let parsed;try{parsed=Query.parse(request.message.slice(0,300));}catch{parsed=Query.parse('의류');base.notices.push(t('일부 검색 조건을 해석하지 못했습니다. 원하는 의류와 예산 상한을 다시 입력해주세요.'));}
-    const prefs=request.preferences||{},conditions={...parsed,gender:prefs.gender&&prefs.gender!=='all'?prefs.gender:parsed.gender,style:prefs.style&&prefs.style!=='all'?prefs.style:parsed.style,category:prefs.category&&prefs.category!=='all'?prefs.category:parsed.category,currency:prefs.currency||'KRW',budget:parsed.budget!==null&&prefs.currency==='KRW'?Math.min(parsed.budget,prefs.budget):prefs.budget??null};
-    const ranked=Catalog.search(previewCatalog,conditions,{query:request.message,bodyConsent:request.consents?.analysis===true,metrics:request.metrics});
-    base.products=ranked.matches.slice(0,12).map(row=>({...row.product,matchScore:row.score,matchReasons:row.reasons}));base.catalogRows=ranked.matches.slice(0,4);base.catalogComparisonOptions={destination:prefs.destination||'KR',currency:conditions.currency};base.clothingConditions={...conditions,gender:conditions.gender==='unisex'?'all':conditions.gender};base.catalogSearchRows=Query.links(base.clothingConditions);
+    if(!Query)return preview.consult(request);
+    let conditions;try{conditions=resolvePreviewNeeds(request);}catch(error){
+      // Invalid exclusions/ranges must not become a broad clothing search.
+      return {previewLocal:true,mode:'DEMO',needsClarification:true,reply:t(previewClarification(error)),advice:[],products:[],searchLinks:[],bodySearchSuggestions:[],notices:[t('조건을 확인한 뒤 다시 보내주세요. 상품 추천과 판매처 검색은 준비하지 않았습니다.')]};
+    }
+    const boundedMessage=Query.term(conditions,'ko')+(conditions.budget!==null&&conditions.currency==='KRW'?' '+conditions.budget+'원 이하':'');
+    const base=preview.consult({...request,message:boundedMessage});
+    base.clothingConditions=conditions;
+    base.bodySearchSuggestions=request.consents?.analysis===true?Query.bodySuggestions(conditions,{metrics:request.metrics,consent:true}):[];
+    base.catalogSearchRows=Query.links(conditions);base.searchLinks=base.catalogSearchRows.map(row=>({label:row.name,url:row.searchUrl}));
+    if(previewCatalogError)base.notices.push(t('등록 상품 자료를 확인하지 못했습니다. 공식 검색 대안을 이용해주세요.'));
+    if(!Catalog)return base;
+    const prefs=request.preferences||{},ranked=Catalog.search(previewCatalog,conditions,{query:boundedMessage,size:conditions.size||'',bodyConsent:request.consents?.analysis===true,metrics:request.metrics});
+    base.products=ranked.matches.slice(0,12).map(row=>({...row.product,matchScore:row.score,matchReasons:row.reasons}));base.catalogRows=ranked.matches.slice(0,4);base.catalogComparisonOptions={destination:prefs.destination||'KR',currency:conditions.currency};
     if(base.products.length){base.dataStatus='registered';base.notices=[t('판매자 등록 자료 기준이며 실시간 가격·배송·세금·착용감은 보장하지 않습니다.')];}return base;
   }
   function catalogProductLink(product,label){const allowed=Catalog?.validateSnapshot(previewCatalog).find(p=>p.id===product.id&&p.productUrl===product.productUrl&&!p.commercial?.sponsored&&p.stock==='in_stock');if(!allowed)return null;const a=node('a',label);a.href=allowed.productUrl;a.rel=(allowed.commercial?.affiliate?'sponsored ':'')+'noopener noreferrer';a.referrerPolicy='no-referrer';a.dataset.stylistCatalogBuy=allowed.id;return a;}
@@ -133,7 +171,7 @@
       }
       wrap.append(table);group.append(wrap);
       for(const offer of comparison.rows){
-        const detail=node('p',offer.retailerName+' · ');const link=catalogProductLink(offer,t('판매처에서 상품 확인'));if(link){const disclosure=affiliateDisclosure(offer);if(disclosure)group.append(disclosure);detail.append(link);}else detail.append(document.createTextNode(t('현재 이용 가능한 상품 링크가 없습니다.')));
+        const detail=node('p',offer.retailerName+' · ');const link=catalogProductLink(offer,t('판매처에서 이 상품 구매하기'));if(link){const disclosure=affiliateDisclosure(offer);if(disclosure)group.append(disclosure);detail.append(link);}else detail.append(document.createTextNode(t('현재 이용 가능한 상품 링크가 없습니다.')));
         if(offer.eligible!==true)detail.append(document.createTextNode(' · '+t('미확인 비용·배송·재고 또는 오래된 자료로 최저가 선정에서 제외됩니다.')));group.append(detail);
       }
       group.append(node('p',t('미확인 금액을 0으로 계산하거나 임의 환율을 적용하지 않습니다. 전 세계 최저가·최종 결제금액 보장이 아닙니다.')));section.append(group);
@@ -157,6 +195,24 @@
     '현재 이용 가능한 상품 링크가 없습니다.':'No currently available product link.',
     '미확인 금액을 0으로 계산하거나 임의 환율을 적용하지 않습니다. 전 세계 최저가·최종 결제금액 보장이 아닙니다.':'Unknown amounts are not treated as zero and exchange rates are not invented. This is not a worldwide lowest-price or final checkout guarantee.',
     '동일 상품으로 확인된 다른 판매처 자료가 없습니다. 후보 비교만 제공합니다.':'No other seller is confirmed for the same product. Only candidate comparison is available.'
+  });
+  if(preview)I.register({
+    '제외 조건은 아직 해석하지 않습니다. 원하는 색상·핏만 입력해주세요.':'Exclusion conditions are not supported yet. Enter only the color and fit you want.',
+    '예산은 ‘5만원 이하’처럼 상한 금액 하나로 입력해주세요.':'Enter one upper budget, such as “50,000원 이하”.',
+    '사이즈는 ‘사이즈 M’처럼 하나만 입력해주세요.':'Enter one explicit size, such as “size M”.',
+    '원화 예산은 KRW에서 검색해주세요. 통화를 바꿀 때 임의 환산하지 않습니다.':'Use KRW when entering a won budget. Changing currency does not apply an invented exchange rate.',
+    '짧은 의류 조건만 입력해주세요. 연락처·이메일·사진·링크는 입력하지 마세요.':'Enter short clothing conditions only. Do not enter contact details, email, photos or links.',
+    '조건을 확인한 뒤 다시 보내주세요. 상품 추천과 판매처 검색은 준비하지 않았습니다.':'Check the conditions and send again. No product recommendations or retailer searches were prepared.',
+    '체형 참고 검색 제안 · 실제 상품 목록 아님':'Body-reference search ideas · not an actual product list',
+    '선택하면 상담 내용에 의류 조건만 채웁니다. 보내기를 직접 눌러야 적용하며 사진·신체 수치는 검색어에 넣지 않습니다.':'Selecting fills only clothing conditions into your message. Press Send to apply them. Photos and body measurements are never included in search terms.',
+    '사진의 어깨·골반 기준점 비율을 참고해 단정한 상의와 여유 있는 하의 조합을 비교해보세요.':'Using the photo shoulder-to-hip landmark ratio as a reference, compare a neat top with more relaxed bottoms.',
+    '사진상 비율을 참고해 가벼운 상의 레이어와 일자 하의 조합을 비교해보세요.':'Using the photo ratios as a reference, compare light top layers with straight trousers.',
+    '사진상 비율을 참고해 상의 끝선과 바지 길이가 다른 조합을 비교해보세요.':'Using the photo ratios as a reference, compare outfits with different top and trouser lengths.',
+    '사진 한 장으로 치수나 맞는 사이즈를 판정하지 않습니다. 실제 상품 실측·소재·반품 조건을 확인하세요.':'One photo cannot determine measurements or a fitting size. Check actual garment measurements, fabric and return conditions.',
+    '이 조건을 상담 내용에 넣기':'Use these conditions in my message',
+    '선택한 의류 조건을 상담 내용에 넣었습니다. 확인한 뒤 보내기를 눌러주세요.':'The clothing conditions were added to your message. Review them and press Send.',
+    '판매처에서 이 상품 구매하기':'Buy this product at the seller',
+    '선택한 상품으로 사진 미리보기':'Preview this product on my photo'
   });
   function rerenderPreviewAnswer(){
     if(!preview||!previewAnswer)return;const {request,question}=previewAnswer;
@@ -200,14 +256,29 @@
   }
   function productCard(product) {
     if (!product || typeof product.name !== 'string' || !finitePrice(product.price) || !currencies.has(product.currency)) return null;
-    const link = preview?catalogProductLink(product,t('확인된 상품 보기 →')):safeLink(product.productUrl, t('확인된 상품 보기 →')); if (!link) return null;
+    const link = preview?catalogProductLink(product,t('판매처에서 이 상품 구매하기')):safeLink(product.productUrl, t('확인된 상품 보기 →')); if (!link) return null;
     const card = node('article', undefined, 'stylist-product'); card.dataset.i18nIgnore = '';
     card.append(node('h4', product.name), node('p', [product.brand,product.color,product.size,product.condition].filter(Boolean).join(' / ')), node('p', money(product.price, product.currency), 'stylist-price'));
     card.append(node('p', t('판매처: {name}',{name:product.retailerName||t('미확인')})), node('p', t('가격 확인: {time}',{time:time(product.checkedAt)}),'stylist-source'));
     if (product.source) card.append(node('p',t('가격 출처: {source}',{source:product.source}),'stylist-source'));
     if (product.sku || product.gtin) card.append(node('p', ['SKU '+(product.sku||'—'),'GTIN '+(product.gtin||'—')].join(' · '),'stylist-source'));
     if(preview&&Catalog){const img=node('img');img.src=product.imageUrl;img.alt=product.name;img.referrerPolicy='no-referrer';img.height=180;card.prepend(img);const reasons=node('ul');for(const reason of product.matchReasons||[]){const label={within_budget:'예산 범위',style_match:'스타일 일치',color_match:'색상 일치',occasion_match:'용도 일치',listed_size_match:'사이즈 표기 일치',collection_match:'컬렉션 일치',photo_ratio_reference:'사진상 비율 참고 규칙'}[reason];if(label)reasons.append(node('li',t(label)));}card.append(reasons);card.append(node('p',t('조건 일치 점수')+': '+product.matchScore+'/100'),node('p',t('판매자 등록 자료 기준이며 실시간 가격·배송·세금·착용감은 보장하지 않습니다.')));}
-    if(preview){const disclosure=affiliateDisclosure(product);if(disclosure)card.append(disclosure);}card.append(link); return card;
+    if(preview){const disclosure=affiliateDisclosure(product);if(disclosure)card.append(disclosure);
+      if(Catalog?.fittingProduct?.(previewCatalog,product.id)&&window.A1CatalogFitting){const fit=node('button',t('선택한 상품으로 사진 미리보기'));fit.type='button';fit.dataset.stylistCatalogFitting=product.id;fit.addEventListener('click',event=>{if(event.isTrusted&&Catalog.fittingProduct(previewCatalog,product.id))window.A1CatalogFitting.open(product.id);});card.append(fit);}
+    }card.append(link); return card;
+  }
+  function renderBodySuggestions(result) {
+    if(!preview||!Query||!$('#stylist-analysis-consent').checked||!Array.isArray(result.bodySearchSuggestions)||!result.bodySearchSuggestions.length)return null;
+    const section=node('section',undefined,'stylist-comparison');section.dataset.stylistBodySuggestions='';
+    section.append(node('h4',t('체형 참고 검색 제안 · 실제 상품 목록 아님')),node('p',t('선택하면 상담 내용에 의류 조건만 채웁니다. 보내기를 직접 눌러야 적용하며 사진·신체 수치는 검색어에 넣지 않습니다.')));
+    const reasons={shoulder_balance:'사진의 어깨·골반 기준점 비율을 참고해 단정한 상의와 여유 있는 하의 조합을 비교해보세요.',light_layers:'사진상 비율을 참고해 가벼운 상의 레이어와 일자 하의 조합을 비교해보세요.',balanced_lengths:'사진상 비율을 참고해 상의 끝선과 바지 길이가 다른 조합을 비교해보세요.'},token=generation;
+    for(const idea of result.bodySearchSuggestions.slice(0,2)){
+      let safeMessage;try{safeMessage=Query.term(idea.conditions,'ko')+(idea.conditions.budget!==null&&idea.conditions.currency==='KRW'?' '+idea.conditions.budget+'원 이하':'');Query.parse(safeMessage);}catch{continue;}
+      const item=node('article'),button=node('button',t('이 조건을 상담 내용에 넣기'));button.type='button';button.dataset.stylistBodyCondition='';
+      item.append(node('h5',Query.term(idea.conditions,I.language)),node('p',t(reasons[idea.reason]||reasons.balanced_lengths)),node('p',t('사진 한 장으로 치수나 맞는 사이즈를 판정하지 않습니다. 실제 상품 실측·소재·반품 조건을 확인하세요.')));
+      button.addEventListener('click',event=>{if(!event.isTrusted||token!==generation||!$('#stylist-analysis-consent').checked)return;$('#stylist-message').value=safeMessage;$('#stylist-message').focus();status('선택한 의류 조건을 상담 내용에 넣었습니다. 확인한 뒤 보내기를 눌러주세요.');});item.append(button);section.append(item);
+    }
+    return section;
   }
   function renderComparison(value) {
     const block = node('section', undefined, 'stylist-comparison');
@@ -231,11 +302,12 @@
     const bubble = node('article',undefined,'stylist-message'); bubble.dataset.i18nIgnore = '';
     bubble.append(node('h3','A1 AI STYLIST'), node('p',result.mode === 'LIVE' ? t('GPT · 검증된 데이터 기반') : t('DEMO · 실제 GPT 호출 없음'),'stylist-answer-mode'));
     if (typeof result.reply === 'string') bubble.append(node('p',result.reply));
-    if(preview&&result.clothingConditions&&Query){const conditions=node('section',undefined,'stylist-comparison');conditions.dataset.stylistConditions='';conditions.append(node('h4',t('해석한 검색 조건')),node('p',Query.term(result.clothingConditions,I.language)),node('p',t('예산')+': '+(result.clothingConditions.budget==null?t('예산 미지정'):money(result.clothingConditions.budget,result.clothingConditions.currency))));bubble.append(conditions);}
+    if(preview&&result.clothingConditions&&Query){const conditions=node('section',undefined,'stylist-comparison');conditions.dataset.stylistConditions='';conditions.append(node('h4',t('해석한 검색 조건')),node('p',Query.term(result.clothingConditions,I.language)),node('p',t('예산')+': '+(result.clothingConditions.budget==null?t('예산 미지정'):money(result.clothingConditions.budget,result.clothingConditions.currency))));if(result.clothingConditions.type==='clothing'&&result.clothingConditions.category!=='all')conditions.append(node('p',t('카테고리')+': '+t({tops:'상의',bottoms:'하의',outerwear:'아우터',dresses:'원피스',accessories:'액세서리'}[result.clothingConditions.category])));if(result.clothingConditions.size)conditions.append(node('p',t('사이즈')+': '+result.clothingConditions.size));bubble.append(conditions);}
     if (Array.isArray(result.advice)) { const list=node('ul'); for (const item of result.advice.slice(0,8)) if (typeof item?.text === 'string') list.append(node('li',item.text)); bubble.append(list); }
     const products = (Array.isArray(result.products)?result.products:[]).slice(0,12);
     if (products.length) for (const product of products) { const card = productCard(product); if (card) bubble.append(card); }
-    else bubble.append(node('p',t('현재 조건에 맞는 검증 상품이 없습니다. 상품·가격·할인율을 생성하지 않습니다.')));
+    else if(!result.needsClarification)bubble.append(node('p',t('현재 조건에 맞는 검증 상품이 없습니다. 상품·가격·할인율을 생성하지 않습니다.')));
+    const bodySuggestions=renderBodySuggestions(result);if(bodySuggestions)bubble.append(bodySuggestions);
     if (Array.isArray(result.searchLinks) && result.searchLinks.length) {
       const links = node('div',undefined,'stylist-search-links'); links.append(node('p',t('판매처 검색 연결 · 개별 상품 연동이 아닙니다.')));
       if (preview) { for(const row of (result.catalogSearchRows||preview.retailers(Object.fromEntries(new FormData(form)),I.language).retailers)) links.append(preview.retailerActions(row)); }
@@ -261,6 +333,7 @@
     const values = Object.fromEntries(new FormData(form));
     const preferences = Object.fromEntries(['gender','style','category','currency','destination'].map(name=>[name,values[name]])); preferences.budget=Number(values.budget);
     const request = {message,language:I.language,preferences,intent:values.intent,history:conversations.slice(-4).map(item=>({...item,content:item.content.slice(0,1200)})),consents:{externalAI,analysis}};
+    if(preview){request.previewPreviousNeeds=previewNeeds?{...previewNeeds}:null;request.previewControlEdits=[...previewControlEdits];}
     if (analysis) {
       const shoulderHipRatio=Number(values.shoulderHipRatio),legTorsoRatio=Number(values.legTorsoRatio);
       if (!values.shoulderHipRatio || !values.legTorsoRatio || !Number.isFinite(shoulderHipRatio) || !Number.isFinite(legTorsoRatio) || shoulderHipRatio<0.45 || shoulderHipRatio>2.5 || legTorsoRatio<0.6 || legTorsoRatio>3.5) { status('체형 참고 수치를 사용하려면 별도 동의와 두 비율을 확인해주세요.',true);return; }
@@ -272,13 +345,14 @@
       protectResponse(result);
       $('#stylist-welcome')?.remove();
       const question=node('article',undefined,'stylist-message is-user');question.dataset.i18nIgnore='';question.append(node('h3',t('나의 질문')),node('p',message));chat.append(question);
-      if (preview) previewAnswer={request,question:message};
+      if (preview){previewAnswer={request,question:message};if(result.clothingConditions&&!result.needsClarification){previewNeeds={...result.clothingConditions};for(const key of request.previewControlEdits)if(String(form.elements[key].value)===String(request.preferences[key]))previewControlEdits.delete(key);}}
       renderAnswer(result,request.intent); conversations.push({role:'user',content:message},{role:'assistant',content:typeof result.reply==='string'?result.reply.slice(0,1200):''});while(conversations.length>8)conversations.shift();
-      $('#stylist-message').value='';status(result.mode==='LIVE'?'검증된 정보로 GPT 상담을 완료했습니다.':'모의 상담을 완료했습니다. 실제 GPT를 호출하지 않았습니다.');
+      $('#stylist-message').value='';status(result.needsClarification?'조건을 확인한 뒤 다시 보내주세요. 상품 추천과 판매처 검색은 준비하지 않았습니다.':result.mode==='LIVE'?'검증된 정보로 GPT 상담을 완료했습니다.':'모의 상담을 완료했습니다. 실제 GPT를 호출하지 않았습니다.',result.needsClarification===true);
     } catch(error) {
       if(token===generation){const source=errorMessage(error);if(error.status===401||error.status===403)clearConversation({resetProfile:false,clearMetrics:true});status(source,true);}
     } finally {if(token===generation)setBusy(false);}
   });
+  if(preview)for(const name of ['gender','style','category','budget','currency','destination'])for(const type of ['input','change'])form.elements[name].addEventListener(type,()=>previewControlEdits.add(name));
   $('#stylist-clear').addEventListener('click',()=>{clearConversation();status('대화를 지웠습니다. 진행 중인 요청과 체형 참고 수치도 제거했습니다.');});
   $('#stylist-analysis-consent').addEventListener('change',()=>{if(!$('#stylist-analysis-consent').checked){clearConversation();status('체형 수치 사용 동의를 철회했습니다. 대화와 진행 중인 요청을 지웠습니다.');}else ratioInputs();});
   $('#stylist-external-consent').addEventListener('change',()=>{if(!$('#stylist-external-consent').checked){clearConversation();status('외부 AI 전송 동의를 철회하고 대화를 지웠습니다. 이미 전송된 정보의 회수나 처리 취소는 보장할 수 없습니다.');}});
