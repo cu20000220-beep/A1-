@@ -16,6 +16,8 @@
   const at=language==='ko'?2:3;return [(language==='ko'?{men:'남성',women:'여성'}:{men:'men',women:'women'})[p.gender],color?.[at],type?.[at]||(language==='ko'?'의류':'clothing')].filter(Boolean).join(' ');
  }
  function links(p){const query=term(p,'ko');return [
+  {name:'무신사',searchTerm:query,searchUrl:'https://www.musinsa.com/search/goods?'+new URLSearchParams({keyword:query}),homeUrl:'https://www.musinsa.com/'},
+  {name:'29CM',searchTerm:query,searchUrl:'https://shop.29cm.co.kr/search?'+new URLSearchParams({keyword:query}),homeUrl:'https://shop.29cm.co.kr/'},
   {name:'네이버쇼핑',searchTerm:query,searchUrl:'https://search.shopping.naver.com/search/all?'+new URLSearchParams({query}),homeUrl:'https://shopping.naver.com/'},
   {name:'쿠팡',searchTerm:query,searchUrl:'https://www.coupang.com/np/search?'+new URLSearchParams({q:query}),homeUrl:'https://www.coupang.com/'}
  ];}
