@@ -39,8 +39,41 @@ function initializeAvatarLab(){
  function shader(gl,type,source){const result=gl.createShader(type);gl.shaderSource(result,source);gl.compileShader(result);if(!gl.getShaderParameter(result,gl.COMPILE_STATUS))throw Error('shader_compile');return result;}
  function createView(canvas){
   const gl=canvas.getContext('webgl',{alpha:false,antialias:true,preserveDrawingBuffer:true});if(!gl)throw Error('webgl_unavailable');
-  const vertex=shader(gl,gl.VERTEX_SHADER,'attribute vec3 p;attribute vec3 n;attribute vec3 c;uniform mat4 model;uniform mat4 projection;uniform float center;varying vec3 color;void main(){vec3 normal=normalize(mat3(model)*n);float light=.38+.62*max(0.,dot(normal,normalize(vec3(-.5,.8,1.))));color=c*light;gl_Position=projection*model*vec4(p-vec3(0.,center,0.),1.);}');
-  const fragment=shader(gl,gl.FRAGMENT_SHADER,'precision mediump float;varying vec3 color;void main(){gl_FragColor=vec4(color,1.);}');
+  const vertex=shader(gl,gl.VERTEX_SHADER,`
+   attribute vec3 p;attribute vec3 n;attribute vec3 c;
+   uniform mat4 model;uniform mat4 projection;uniform float center;
+   varying vec3 surfaceNormal;varying vec3 surfacePosition;
+   varying vec3 materialPosition;varying vec3 materialColor;
+   void main(){vec4 position=model*vec4(p-vec3(0.,center,0.),1.);
+    surfaceNormal=mat3(model)*n;surfacePosition=position.xyz;
+    materialPosition=p;materialColor=c;gl_Position=projection*position;}
+  `);
+  const fragment=shader(gl,gl.FRAGMENT_SHADER,`
+   precision mediump float;
+   varying vec3 surfaceNormal;varying vec3 surfacePosition;
+   varying vec3 materialPosition;varying vec3 materialColor;
+   void main(){
+    vec3 normal=normalize(surfaceNormal),viewDirection=normalize(-surfacePosition);
+    vec3 key=normalize(vec3(-.45,.75,.9)),fill=normalize(vec3(.75,.2,.45));
+    float diffuse=max(dot(normal,key),0.);
+    float ambient=.38+.08*max(normal.y,0.);
+    float fillLight=.13*max(dot(normal,fill),0.);
+    float rim=.075*pow(1.-max(dot(normal,viewDirection),0.),3.);
+    // Procedural blue cloth has matte micro-variation; skin remains a generic
+    // avatar material. No photo texture, personal face or external asset is used.
+    float fabric=step(materialColor.r*1.3,materialColor.b);
+    float weave=sin(materialPosition.y*390.)*sin(materialPosition.x*310.+materialPosition.z*73.);
+    float texture=mix(1.,1.+.018*weave,fabric);
+    float shine=pow(max(dot(normal,normalize(key+viewDirection)),0.),mix(28.,12.,fabric))*mix(.035,.006,fabric);
+    vec3 linearColor=pow(materialColor,vec3(2.2))*texture*(ambient+.62*diffuse+fillLight)+vec3(shine+rim*.12);
+    // Bounded soft contact shading on the original display plinth, not a cloth
+    // or fit simulation. All surfaces still respond to the shared view controls.
+    float plinth=step(.70,min(materialColor.r,materialColor.g))*step(materialColor.b,.78);
+    vec2 ground=materialPosition.xz/vec2(.23,.17);
+    linearColor*=1.-plinth*.18*exp(-dot(ground,ground));
+    gl_FragColor=vec4(pow(clamp(linearColor,0.,1.),vec3(1./2.2)),1.);
+   }
+  `);
   const program=gl.createProgram();gl.attachShader(program,vertex);gl.attachShader(program,fragment);gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('shader_link');
   gl.deleteShader(vertex);gl.deleteShader(fragment);const buffer=gl.createBuffer();gl.useProgram(program);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
   for(const [name,offset]of [['p',0],['n',12],['c',24]]){const loc=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,3,gl.FLOAT,false,36,offset);}

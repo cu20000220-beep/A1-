@@ -35,3 +35,9 @@ test('boundary manual measurements and photo ratio limits yield finite connected
   for(const reference of [{shoulderHipRatio:.45,legTorsoRatio:.6},{shoulderHipRatio:2.5,legTorsoRatio:3.5}])
    for(const garment of ['none','LAB-A','LAB-C'])assert.ok([...G.scene(input,garment,reference).vertices].every(Number.isFinite));
 });
+test('continuous surface normals remain normalized for per-pixel lighting across body, cuffs and narrow boundary rings',()=>{
+ for(const input of [G.defaults,{...G.defaults,height:120,inseam:72,chest:60,waist:45,shoulders:28},{...G.defaults,height:220,inseam:110,chest:160,hips:180,shoulders:65}]){
+  const vertices=G.scene(input,'LAB-A',{shoulderHipRatio:2.5,legTorsoRatio:3.5}).vertices;
+  for(let i=0;i<vertices.length;i+=9){const length=Math.hypot(vertices[i+3],vertices[i+4],vertices[i+5]);assert.ok(Math.abs(length-1)<.0001,'a finite unit surface normal is needed for stable lighting');assert.ok(Math.abs(vertices[i])<2&&vertices[i+1]>-.1&&vertices[i+1]<2.3&&Math.abs(vertices[i+2])<1);}
+ }
+});
