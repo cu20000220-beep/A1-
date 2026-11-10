@@ -53,3 +53,74 @@ test('human mesh boundary visual morphs retain finite unit normals and bounded d
   const v=G.scene(p,'LAB-A',{shoulderHipRatio:2.5,legTorsoRatio:3.5}).vertices;for(let i=0;i<v.length;i+=9){assert.ok(Number.isFinite(v[i])&&Number.isFinite(v[i+1])&&Number.isFinite(v[i+2]));assert.ok(Math.abs(Math.hypot(v[i+3],v[i+4],v[i+5])-1)<.0001);assert.ok(Math.abs(v[i])<2&&v[i+1]>-.1&&v[i+1]<2.3&&Math.abs(v[i+2])<1);}
  }
 });
+
+// Derive topology from indexed triangles rather than trusting renderer metadata.
+function garmentTopology(mesh){
+ const count=mesh.positions.length/3,edges=new Map(),neighbors=Array.from({length:count},()=>new Set());
+ for(let i=0;i<mesh.indices.length;i+=3){
+  const triangle=Array.from(mesh.indices.slice(i,i+3));assert.equal(new Set(triangle).size,3,'triangle indices must be distinct');
+  for(const id of triangle)assert.ok(Number.isInteger(id)&&id>=0&&id<count,'every index addresses an existing garment vertex');
+  const [a,b,c]=triangle.map(id=>Array.from(mesh.positions.slice(id*3,id*3+3))),u=b.map((v,k)=>v-a[k]),v=c.map((n,k)=>n-a[k]);
+  assert.ok(Math.hypot(u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0])>1e-14,'sewn shell must not have zero-area triangles');
+  for(let j=0;j<3;j++){const a=triangle[j],b=triangle[(j+1)%3],key=a<b?a+':'+b:b+':'+a;edges.set(key,(edges.get(key)||0)+1);neighbors[a].add(b);neighbors[b].add(a);}
+ }
+ assert.ok([...edges.values()].every(n=>n===1||n===2),'no non-manifold edges');
+ const components=adjacency=>{const visited=new Set(),parts=[];for(let id=0;id<adjacency.length;id++){if(!adjacency[id]?.size||visited.has(id))continue;const ids=[],stack=[id];visited.add(id);while(stack.length){const current=stack.pop();ids.push(current);for(const next of adjacency[current])if(!visited.has(next)){visited.add(next);stack.push(next);}}parts.push(ids);}return parts;};
+ assert.equal(components(neighbors).length,1,'neck, shoulders, torso and sleeves form one connected garment');assert.ok(neighbors.every(n=>n.size>0),'no unused isolated garment vertices');
+ const boundary=Array.from({length:count},()=>new Set());for(const [key,n]of edges)if(n===1){const[a,b]=key.split(':').map(Number);boundary[a].add(b);boundary[b].add(a);}
+ assert.ok(boundary.every(n=>n.size===0||n.size===2),'each opening is a closed simple boundary without branching');return components(boundary);
+}
+function bodyTriangles(mesh){
+ const triangles=[];for(let i=0;i<mesh.indices.length;i+=3){const ids=Array.from(mesh.indices.slice(i,i+3)),p=ids.map(id=>Array.from(mesh.positions.slice(id*3,id*3+3))),normals=ids.map(id=>Array.from(mesh.normals.slice(id*3,id*3+3)));triangles.push({p,normals,min:[0,1,2].map(k=>Math.min(...p.map(v=>v[k]))),max:[0,1,2].map(k=>Math.max(...p.map(v=>v[k])))});}return triangles;
+}
+// Closest point on a triangle (Voronoi regions), with interpolated body normal.
+// Uses the full body independently of the garment's matching anchor/tangent.
+function closestTrianglePoint(point,triangle){
+ const[a,b,c]=triangle.p,ab=b.map((v,k)=>v-a[k]),ac=c.map((v,k)=>v-a[k]),ap=point.map((v,k)=>v-a[k]),dot=(x,y)=>x[0]*y[0]+x[1]*y[1]+x[2]*y[2];
+ const d1=dot(ab,ap),d2=dot(ac,ap);let weights;
+ if(d1<=0&&d2<=0)weights=[1,0,0];else{
+  const bp=point.map((v,k)=>v-b[k]),d3=dot(ab,bp),d4=dot(ac,bp);
+  if(d3>=0&&d4<=d3)weights=[0,1,0];else{
+   const vc=d1*d4-d3*d2;if(vc<=0&&d1>=0&&d3<=0){const v=d1/(d1-d3);weights=[1-v,v,0];}else{
+    const cp=point.map((v,k)=>v-c[k]),d5=dot(ab,cp),d6=dot(ac,cp);
+    if(d6>=0&&d5<=d6)weights=[0,0,1];else{
+     const vb=d5*d2-d1*d6;if(vb<=0&&d2>=0&&d6<=0){const w=d2/(d2-d6);weights=[1-w,0,w];}else{
+      const va=d3*d6-d5*d4;if(va<=0&&(d4-d3)>=0&&(d5-d6)>=0){const w=(d4-d3)/((d4-d3)+(d5-d6));weights=[0,1-w,w];}else{const inverse=1/(va+vb+vc),v=vb*inverse,w=vc*inverse;weights=[1-v-w,v,w];}
+     }
+    }
+   }
+  }
+ }
+ const closest=[0,1,2].map(k=>weights.reduce((sum,w,j)=>sum+w*triangle.p[j][k],0)),normal=[0,1,2].map(k=>weights.reduce((sum,w,j)=>sum+w*triangle.normals[j][k],0));return {closest,normal};
+}
+function signedBodyDistance(point,triangles){
+ let best=Infinity,result;for(const triangle of triangles){let bound=0;for(let k=0;k<3;k++){const d=point[k]<triangle.min[k]?triangle.min[k]-point[k]:point[k]>triangle.max[k]?point[k]-triangle.max[k]:0;bound+=d*d;}if(bound>best)continue;
+  const {closest,normal}=closestTrianglePoint(point,triangle),delta=point.map((v,k)=>v-closest[k]),squared=delta.reduce((sum,v)=>sum+v*v,0);if(squared>=best)continue;best=squared;result={distance:Math.sqrt(squared),signed:delta.reduce((sum,v,k)=>sum+v*normal[k],0)/Math.hypot(...normal),point,closest};
+ }return result;
+}
+test('example tops have one sewn manifold shell and four genuine neckline, cuff and hem openings',()=>{
+ G.installBase(require('../assets/human-base.js'));
+ const unchangedBody=G.scene(G.defaults,'none').bodyMesh.positions;
+ for(const style of ['LAB-A','LAB-B','LAB-C']){
+  const scene=G.scene(G.defaults,style);assert.deepEqual(scene.bodyMesh.positions,unchangedBody,'changing garments must not move or shrink the human body to hide intersections');const mesh=scene.garmentMesh;assert.ok(mesh,'the licensed body must produce a structured example garment');assert.equal(mesh.positions.length,mesh.normals.length);const loops=garmentTopology(mesh);assert.equal(loops.length,4,'exactly one neck, two cuffs and one hem; no detached sleeve or crotch holes');
+  const mean=(ids,k)=>ids.reduce((sum,id)=>sum+mesh.sourcePositions[id*3+k],0)/ids.length,sorted=loops.slice().sort((a,b)=>mean(a,1)-mean(b,1)),hem=sorted[0],neck=sorted.at(-1),cuffs=sorted.slice(1,-1);
+  assert.ok(mean(hem,1)<mean(cuffs[0],1)&&mean(neck,1)>mean(cuffs[1],1));assert.ok(mean(cuffs[0],0)*mean(cuffs[1],0)<0,'cuffs belong to opposite arms');assert.ok(Math.abs(mean(neck,0))<.01&&Math.abs(mean(hem,0))<.01,'neck and hem surround the torso');
+  const declared=mesh.boundaries.map(loop=>new Set(loop.indices));assert.equal(declared.length,4);for(const loop of loops)assert.ok(declared.some(ids=>ids.size===loop.length&&loop.every(id=>ids.has(id))),'declared openings match actual unpaired mesh edges');assert.deepEqual(mesh.boundaries.map(b=>b.kind).sort(),['cuff','cuff','hem','neck']);
+  const neckY=neck.map(id=>mesh.sourcePositions[id*3+1]);assert.ok(Math.max(...neckY)-Math.min(...neckY)>.025,'neckline has an actual lower front opening, not a flat collar tube');assert.ok(neck.every(id=>Math.abs(mesh.sourcePositions[id*3])<.11),'neck opening must not consume the shoulder seam');const front=neck.filter(id=>mesh.sourcePositions[id*3+2]>0),back=neck.filter(id=>mesh.sourcePositions[id*3+2]<-.05);assert.ok(front.length&&back.length);assert.ok(mean(front,1)+.015<mean(back,1),'front neckline is lower than the back neckline');
+  for(let i=0;i<mesh.normals.length;i+=3)assert.ok(Math.abs(Math.hypot(mesh.normals[i],mesh.normals[i+1],mesh.normals[i+2])-1)<1e-4,'continuous shell normals are finite unit vectors');
+ }
+});
+test('body and photo edits deform the connected garment while retaining clearance at vertices and sampled triangle interiors',()=>{
+ G.installBase(require('../assets/human-base.js'));
+ const knownTriangle={p:[[0,0,0],[1,0,0],[0,1,0]],normals:[[0,0,1],[0,0,1],[0,0,1]],min:[0,0,0],max:[1,1,0]};assert.ok(signedBodyDistance([.2,.2,.01],[knownTriangle]).signed>.009);assert.ok(signedBodyDistance([.2,.2,-.01],[knownTriangle]).signed<-.009);
+ const profiles=[{name:'default',input:{...G.defaults},reference:null},{name:'broad waist and shoulders',input:{...G.defaults,chest:110,waist:100,shoulders:50},reference:{shoulderHipRatio:1.55,legTorsoRatio:1.8}},{name:'narrow',input:{...G.defaults,height:160,chest:78,waist:62,hips:84,shoulders:34,inseam:72},reference:{shoulderHipRatio:1.05,legTorsoRatio:1.4}}];
+ const base=G.scene(G.defaults,'LAB-A').garmentMesh.positions;
+ for(const {name,input,reference}of profiles)for(const style of ['LAB-A','LAB-B','LAB-C']){
+  const scene=G.scene(input,style,reference),mesh=scene.garmentMesh;assert.equal(garmentTopology(mesh).length,4,name+' '+style+' retains garment topology');if(name!=='default')assert.notDeepEqual(mesh.positions,base,'entered body/reference values change the real shell');
+  assert.ok(scene.bodyMesh?.positions&&scene.bodyMesh.indices,'full body geometry is available for an independent clearance check');
+  for(let i=0;i<mesh.positions.length;i+=3){let gap=0;for(let k=0;k<3;k++)gap+=(mesh.positions[i+k]-mesh.bodyPositions[i+k])*mesh.bodyNormals[i+k];assert.ok(gap>=mesh.minimumClearance-1e-6,name+' '+style+' has positive local garment/body clearance at vertex '+i/3);}
+  const triangles=bodyTriangles(scene.bodyMesh),samples=[];for(let id=0;id<mesh.positions.length/3;id+=Math.max(1,Math.floor(mesh.positions.length/3/72)))samples.push(Array.from(mesh.positions.slice(id*3,id*3+3)));for(const boundary of mesh.boundaries)for(let j=0;j<boundary.indices.length;j+=Math.max(1,Math.floor(boundary.indices.length/4))){const id=boundary.indices[j];samples.push(Array.from(mesh.positions.slice(id*3,id*3+3)));}
+  for(let triangle=0;triangle<mesh.indices.length/3;triangle+=Math.max(1,Math.floor(mesh.indices.length/3/72))){const ids=Array.from(mesh.indices.slice(triangle*3,triangle*3+3));samples.push([0,1,2].map(k=>ids.reduce((sum,id)=>sum+mesh.positions[id*3+k],0)/3));}
+  for(const sample of samples){const nearest=signedBodyDistance(sample,triangles);assert.ok(nearest.signed>=-2e-4,name+' '+style+' sampled garment point penetrates full body: '+JSON.stringify(nearest));}
+ }
+});

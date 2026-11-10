@@ -5,6 +5,8 @@ function initializeAvatarLab(){
  let humanModel=false;
  try{if(window.A1HumanBase&&!G.hasHumanBase())G.installBase(window.A1HumanBase);humanModel=G.hasHumanBase();}catch{/* Keep the existing geometry available if a local asset is invalid. */}
  I.register({
+ '예시 3D 착용 이미지':'Example 3D garment preview',
+ '연구 중인 범용 의류 메시입니다. 실제 상품 3D 모델·원단·의복 물리 검증이 없어 정확한 상품 피팅이나 착용감·사이즈를 보장하지 않습니다.':'An experimental generic garment mesh. Without the actual product model, fabric and cloth-physics validation, it does not guarantee product fit, comfort or size.',
  '범용 인체 모델 · 입력 치수와 동의한 사진 비율을 참고합니다. 실제 사람의 얼굴·신체 복원이나 정확한 사이즈 보장이 아닙니다.':'Generic human body model · uses entered measurements and consented photo references. It does not reconstruct a real person or guarantee an exact size.',
  '인체 모델 자료를 읽지 못해 기본 형상을 표시합니다. 새로고침 후 다시 확인해주세요.':'The human body asset did not load; default geometry is shown. Reload and check again.',
  '사용자 보정값':'User correction','기본 예시값 · 사진 측정 아님':'Example default · not measured from photo',
@@ -37,6 +39,7 @@ function initializeAvatarLab(){
  root.hidden=false;const unavailable=$('#avatar-unavailable');if(unavailable)unavailable.hidden=true;
  root.dataset.humanModel=humanModel?'hm08-cc0':'procedural-fallback';
  let humanNote=$('#avatar-human-model');if(!humanNote){humanNote=document.createElement('p');humanNote.id='avatar-human-model';root.querySelector('h1').after(humanNote);}I.setText(humanNote,humanModel?'범용 인체 모델 · 입력 치수와 동의한 사진 비율을 참고합니다. 실제 사람의 얼굴·신체 복원이나 정확한 사이즈 보장이 아닙니다.':'인체 모델 자료를 읽지 못해 기본 형상을 표시합니다. 새로고침 후 다시 확인해주세요.');
+ I.setText(root.querySelector('h1'),'예시 3D 착용 이미지');let garmentNote=$('#avatar-garment-limit');if(!garmentNote){garmentNote=document.createElement('p');garmentNote.id='avatar-garment-limit';humanNote.after(garmentNote);}I.setText(garmentNote,'연구 중인 범용 의류 메시입니다. 실제 상품 3D 모델·원단·의복 물리 검증이 없어 정확한 상품 피팅이나 착용감·사이즈를 보장하지 않습니다.');
  const form=$('#avatar-form'),selector=$('#avatar-garment'),canvases=[$('#avatar-before'),$('#avatar-after')];
  let referenceMetrics=null;const manual=new Set();
  let params={...G.defaults},yaw=0,pitch=0,zoom=3.5,scheduled=false,disposed=false,lost=false;
