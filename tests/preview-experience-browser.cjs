@@ -1,11 +1,17 @@
 'use strict';
+// Cloudflare Pages canonicalizes .html documents with a real HTTP redirect.
+async function pagesRedirect(route,url){
+ if(!['/avatar-lab.html','/product-lab.html'].includes(url.pathname))return false;
+ await route.fulfill({status:308,headers:{Location:url.pathname.slice(0,-5)+url.search},body:''});return true;
+}
+function pagesPath(url){return ['/avatar-lab','/product-lab'].includes(url.pathname)?url.pathname.slice(1)+'.html':url.pathname==='/'?'index.html':url.pathname.slice(1);}
 // Browser requests are fulfilled from this checkout, at a standard Preview
 // origin. No real accounts, DBs, providers, merchants or paid services exist.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..'),out=process.env.A1_PREVIEW_SCREENSHOTS||'/workspace/work/preview-experience';fs.mkdirSync(out,{recursive:true});
 const origin='https://browser-test.a1fashion.pages.dev';
-const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg':'image/jpeg','.svg':'image/svg+xml'};
+const mime={'.json':'application/json','.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg':'image/jpeg','.svg':'image/svg+xml'};
 (async()=>{
  const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  try{
@@ -16,7 +22,7 @@ const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg'
     const req=route.request(),url=new URL(req.url());
     if(url.origin!==origin){external.push({url:req.url(),headers:req.headers(),method:req.method()});await route.fulfill({body:'<!doctype html><title>Official retailer navigation fixture</title>'});return;}
     if(url.pathname.startsWith('/api/')){calls.push(url.pathname);await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'preview_isolated'})});return;}
-    const file=path.resolve(root,url.pathname==='/'?'index.html':url.pathname.slice(1));assert.ok(file.startsWith(root+'/'));
+    if(await pagesRedirect(route,url))return;const file=path.resolve(root,pagesPath(url));assert.ok(file.startsWith(root+'/'));
     await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});
    });
    const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
@@ -96,7 +102,7 @@ const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg'
   // Same files at Production must not install the local experience or intercept
   // authenticated server calls, regardless of client-side paid/beta flags.
   const context=await browser.newContext();const productionCalls=[];
-  await context.route('**/*',async route=>{const url=new URL(route.request().url());if(url.pathname.startsWith('/api/')){productionCalls.push(url.pathname);return route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({allowed:false,error:'subscription_required'})});}const file=path.resolve(root,url.pathname==='/'?'index.html':url.pathname.slice(1));return route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});});
+  await context.route('**/*',async route=>{const url=new URL(route.request().url());if(url.pathname.startsWith('/api/')){productionCalls.push(url.pathname);return route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({allowed:false,error:'subscription_required'})});}if(await pagesRedirect(route,url))return;const file=path.resolve(root,pagesPath(url));return route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream'});});
   const page=await context.newPage();await page.goto('https://a1fashion.pages.dev/',{waitUntil:'networkidle'});
   assert.equal(await page.evaluate(()=>window.A1Preview),undefined);await page.locator('#premium-check').click();await page.waitForFunction(()=>!document.querySelector('#premium-check').disabled);
   assert.ok(productionCalls.includes('/api/membership'));assert.equal(await page.locator('#premium-controls').isVisible(),false);

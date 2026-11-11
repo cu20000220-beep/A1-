@@ -214,7 +214,7 @@ async function noCredentialStorage(page) {
         outgoing.writeHead(404); outgoing.end(); return;
       }
       const data = await readFile(full);
-      const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg' };
+      const mime = {'.json':'application/json', '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg' };
       outgoing.writeHead(200, { 'Content-Type': mime[extname(file)] || 'application/octet-stream', ...staticHeaders(url.pathname) });
       outgoing.end(data);
     } catch (error) {

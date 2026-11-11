@@ -7,6 +7,12 @@ const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist');
 const marker = '.a1-static-output';
 const signature = 'A1 FASHION generated static output\n';
+// Recheck private operator approval/content hashes; never publish raw seller files.
+if(fs.statSync(path.join(root,'assets/approved-products.json')).size>1000000)throw Error('Public snapshot exceeds 1 MB');
+const catalog=require('./lib/product-catalog.cjs').validateSnapshot(
+  JSON.parse(fs.readFileSync(path.join(root,'assets/approved-products.json'),'utf8')),
+  JSON.parse(fs.readFileSync(path.join(root,'catalog/source-approvals.json'),'utf8'))
+);
 const files = [];
 
 function collect(relative) {
@@ -29,11 +35,37 @@ function collect(relative) {
 const publicEntries = [
   '_headers',
   'index.html',
+  'assets/shopping-query.js',
+  'assets/product-catalog.js',
+  'assets/catalog-fitting.js',
+  'assets/offer-comparison.js',
+  'assets/approved-products.json',
+  'templates/seller-products.csv',
+  'templates/seller-products.json',
+  'assets/shopping-search.js',
+  'assets/shopping-search.css',
   'credits.html',
   'account.html',
   'privacy.html',
   'global.html',
   'stylist.html',
+  'product-lab.html',
+  'avatar-lab.html',
+  'assets/avatar-geometry.js',
+  'assets/human-base.js',
+  'assets/human-head.js',
+  'assets/human-head-color.jpg',
+  'assets/human-head-normal.jpg',
+  'assets/HUMAN-HEAD-LICENSE.txt',
+  'assets/avatar-lab.js',
+  'assets/avatar-photo-bridge.js',
+  'assets/avatar-lab.css',
+  'assets/product-lab.js',
+  'assets/lab-entry.js',
+  'assets/lab-loader.js',
+  'assets/product-lab.css',
+  'assets/product-matching.js',
+  'assets/lab-garment.svg',
   'assets/stylist.css',
   'assets/stylist.js',
   'assets/i18n-stylist.js',
@@ -82,4 +114,7 @@ for (const relative of files) {
   fs.mkdirSync(path.dirname(target), {recursive:true});
   fs.copyFileSync(path.join(root, relative), target);
 }
+// Keep connect-src/script-src/API isolation intact. Only image origins from the
+// privately validated snapshot can extend the stylist image display policy.
+fs.writeFileSync(path.join(output,'_headers'),require('./lib/catalog-public-headers.cjs').catalogPublicHeaders(fs.readFileSync(path.join(root,'_headers'),'utf8'),catalog.products));
 console.log(`Built ${files.length} static files in dist/ (no package installation or external requests).`);

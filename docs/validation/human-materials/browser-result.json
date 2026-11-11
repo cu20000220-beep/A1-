@@ -1,0 +1,253 @@
+{
+  "stage": "after",
+  "quick": false,
+  "sourceHashes": {
+    "avatar-lab.html": "466fcb211b65fd2852ee11676529efb882d52d50bd831726526e369e65a61789",
+    "assets/style.css": "56215f55de2ba31bddd43bfa4b47bc4e4287ef538d0e3d1676617b735331bdb5",
+    "assets/avatar-lab.css": "9cb5d057ab409abd6cc0d4554dd0df8904448c0680ca1313c351836a8fb1f700",
+    "assets/i18n.js": "a53f0c0f8937fc9ea5c90ae823b63eb16925c7bd8828dcb26521277fd69aa5fd",
+    "assets/preview-experience.js": "ed8384acbc1b7912cd820fbef41131667e825c3e518321b95eb2d70a4db109e6",
+    "assets/human-base.js": "13dff048664eb387e6ad95ed5b91070ca5658f2688d4d28248118f46ad93c88a",
+    "assets/avatar-geometry.js": "b9b66910adb717bd4ba667dcf08dcf5180c916af98a23605079da38298386957",
+    "assets/avatar-lab.js": "c324dbfef879165a1d5ae8a5ded4ce3d7b3762db7bc3a0846ff855bd3b726e97",
+    "assets/placeholder.svg": "ba019c7bfbc7176422ee963d0da565da9e82e79f2e253e90078993c4629b5b74",
+    "assets/human-head.js": "ce8a702b23b4aeb2aca21ee8decc726c9d79d43736636e4efd80ca47a96d71fe",
+    "assets/human-head-color.jpg": "e976d73b31407f8d0967412bf468019ed26a5d5a32cf5811aabff7e816458a65",
+    "assets/human-head-normal.jpg": "36925e51ad9b324b94e8faf4692da1b4132809f2762bb8d5bd549ffd215d4ca6"
+  },
+  "reports": [
+    {
+      "profile": {
+        "lang": "ko",
+        "width": 1440,
+        "height": 1080,
+        "touch": false
+      },
+      "calls": [
+        "/avatar-lab",
+        "/assets/style.css",
+        "/assets/avatar-lab.css",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/human-base.js",
+        "/assets/human-head.js",
+        "/assets/avatar-geometry.js",
+        "/assets/avatar-lab.js",
+        "/assets/human-head-color.jpg",
+        "/assets/human-head-normal.jpg",
+        "/assets/placeholder.svg"
+      ],
+      "texturePixelChange": true,
+      "studioPixelChange": true,
+      "scanHeadPixelChange": true,
+      "perf": {
+        "rotations": 24,
+        "uniqueFrames": 24,
+        "automationClickP95Ms": 66.72700199999963,
+        "instrumentedDrawFinishP50Ms": 0,
+        "instrumentedDrawFinishP95Ms": 0.20000000018626451,
+        "draws": 64
+      },
+      "pairedTiming": {
+        "basic": {
+          "samples": 12,
+          "handlerWithFinishP50Ms": 276.0999999998603,
+          "handlerWithFinishP95Ms": 828.1999999999534
+        },
+        "studio": {
+          "samples": 12,
+          "handlerWithFinishP50Ms": 259.39999999990687,
+          "handlerWithFinishP95Ms": 376.5
+        }
+      },
+      "comparison": {
+        "baselineDrawP95Ms": 0.20000000001164153,
+        "drawP95DeltaMs": 1.7462298274040222e-10,
+        "baselineAutomationClickP95Ms": 58.786738000000696,
+        "automationClickP95DeltaMs": 7.940263999998933
+      },
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "lang": "ko",
+        "width": 820,
+        "height": 1180,
+        "touch": true
+      },
+      "calls": [
+        "/avatar-lab",
+        "/assets/style.css",
+        "/assets/avatar-lab.css",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/human-base.js",
+        "/assets/human-head.js",
+        "/assets/avatar-geometry.js",
+        "/assets/avatar-lab.js",
+        "/assets/human-head-color.jpg",
+        "/assets/human-head-normal.jpg",
+        "/assets/placeholder.svg"
+      ],
+      "texturePixelChange": true,
+      "studioPixelChange": true,
+      "scanHeadPixelChange": true,
+      "perf": {
+        "rotations": 24,
+        "uniqueFrames": 24,
+        "automationClickP95Ms": 84.20549900000333,
+        "instrumentedDrawFinishP50Ms": 0,
+        "instrumentedDrawFinishP95Ms": 0.10000000009313226,
+        "draws": 50
+      },
+      "pairedTiming": {
+        "basic": {
+          "samples": 12,
+          "handlerWithFinishP50Ms": 188.80000000004657,
+          "handlerWithFinishP95Ms": 615.4000000001397
+        },
+        "studio": {
+          "samples": 12,
+          "handlerWithFinishP50Ms": 191.9000000001397,
+          "handlerWithFinishP95Ms": 424.39999999990687
+        }
+      },
+      "comparison": {
+        "baselineDrawP95Ms": 0.10000000000582077,
+        "drawP95DeltaMs": 8.731149137020111e-11,
+        "baselineAutomationClickP95Ms": 70.72135999999591,
+        "automationClickP95DeltaMs": 13.484139000007417
+      },
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "lang": "en",
+        "width": 390,
+        "height": 844,
+        "touch": true
+      },
+      "calls": [
+        "/avatar-lab",
+        "/assets/style.css",
+        "/assets/avatar-lab.css",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/human-base.js",
+        "/assets/human-head.js",
+        "/assets/avatar-geometry.js",
+        "/assets/avatar-lab.js",
+        "/assets/human-head-color.jpg",
+        "/assets/human-head-normal.jpg",
+        "/assets/placeholder.svg"
+      ],
+      "texturePixelChange": true,
+      "studioPixelChange": true,
+      "scanHeadPixelChange": true,
+      "perf": {
+        "rotations": 24,
+        "uniqueFrames": 24,
+        "automationClickP95Ms": 268.4346460000088,
+        "instrumentedDrawFinishP50Ms": 0,
+        "instrumentedDrawFinishP95Ms": 0.10000000009313226,
+        "draws": 50
+      },
+      "pairedTiming": {
+        "basic": {
+          "samples": 12,
+          "handlerWithFinishP50Ms": 202.69999999995343,
+          "handlerWithFinishP95Ms": 378.5
+        },
+        "studio": {
+          "samples": 12,
+          "handlerWithFinishP50Ms": 206.89999999990687,
+          "handlerWithFinishP95Ms": 567.1000000000931
+        }
+      },
+      "comparison": {
+        "baselineDrawP95Ms": 0.10000000000582077,
+        "drawP95DeltaMs": 8.731149137020111e-11,
+        "baselineAutomationClickP95Ms": 76.929409999997,
+        "automationClickP95DeltaMs": 191.5052360000118
+      },
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "blockedTexture": true,
+      "language": "ko",
+      "calls": [
+        "/avatar-lab",
+        "/assets/style.css",
+        "/assets/avatar-lab.css",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/human-base.js",
+        "/assets/human-head.js",
+        "/assets/avatar-geometry.js",
+        "/assets/avatar-lab.js",
+        "/assets/human-head-color.jpg",
+        "/assets/human-head-normal.jpg",
+        "/assets/placeholder.svg"
+      ],
+      "errors": [],
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_FAILED",
+        "Failed to load resource: net::ERR_FAILED"
+      ]
+    },
+    {
+      "blockedTexture": true,
+      "language": "en",
+      "calls": [
+        "/avatar-lab",
+        "/assets/style.css",
+        "/assets/avatar-lab.css",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/human-base.js",
+        "/assets/human-head.js",
+        "/assets/avatar-geometry.js",
+        "/assets/avatar-lab.js",
+        "/assets/human-head-color.jpg",
+        "/assets/human-head-normal.jpg",
+        "/assets/placeholder.svg"
+      ],
+      "errors": [],
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_FAILED",
+        "Failed to load resource: net::ERR_FAILED"
+      ]
+    },
+    {
+      "shaderFallback": true,
+      "forcedFailures": 2,
+      "calls": [
+        "/avatar-lab",
+        "/assets/style.css",
+        "/assets/avatar-lab.css",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/human-base.js",
+        "/assets/human-head.js",
+        "/assets/avatar-geometry.js",
+        "/assets/avatar-lab.js",
+        "/assets/human-head-color.jpg",
+        "/assets/human-head-normal.jpg",
+        "/assets/placeholder.svg"
+      ],
+      "errors": [],
+      "consoleErrors": []
+    }
+  ],
+  "webkit": {
+    "installed": false,
+    "nativeSafari": false
+  },
+  "limits": "Linux software Chromium with gl.finish instrumentation; timing is comparative evidence, not hardware iPad FPS. Paired timing is same-page JS handler+finish, excluding Playwright/protocol/image-readback overhead. Older baseline field inputToReadbackP95Ms actually denotes automation-click roundtrip and excludes PNG readback; current name is automationClickP95Ms. Fixed generic model only; not personal reconstruction or retail fitting."
+}

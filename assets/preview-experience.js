@@ -6,7 +6,7 @@
   const I = window.A1I18n;
   const pairs = {
     notice: ['미리보기 체험: 검색·DEMO 상담은 브라우저 안에서만 동작합니다. 회원·DB·서버 API·실제 GPT는 연결하지 않습니다.', 'Preview experience: searches and DEMO advice run only in your browser. Member services, databases, server APIs and live GPT are disconnected.'],
-    privacy: ['검색 링크에는 선택한 의류 카테고리만 사용합니다. 입력 글·브랜드·사이즈·예산·사진·분석 비율은 판매처로 보내지 않습니다.', 'Search links use only the selected clothing category. Typed text, brand, size, budget, photos and analysis ratios are not sent to retailers.'],
+    privacy: ['검색 링크에는 해석한 의류 종류·색상·핏·용도·컬렉션의 고정 검색어만 사용합니다. 입력 원문·브랜드·사이즈·예산·사진·분석 비율은 판매처로 보내지 않습니다.', 'Search links use only fixed clothing type, color, fit, purpose and collection terms. Raw text, brand, size, budget, photos and analysis ratios are not sent to retailers.'],
     pending: ['검증된 상품·가격·할인·재고 정보는 준비 중입니다. 실제 정보를 만들어 표시하지 않습니다.', 'Verified products, prices, discounts and stock are being prepared. No real commercial information is invented.'],
     account: ['이 미리보기에서는 회원·찜 저장·알림에 연결하지 않습니다. 검색과 DEMO 상담만 기기 안에서 체험할 수 있습니다.', 'This preview does not connect accounts, saved favorites or alerts. Explore searches and DEMO advice on your device.'],
     title: ['무료 베타 스타일 예시 · 브라우저 체험', 'Free beta style examples · Browser experience'],
@@ -26,6 +26,8 @@
     safari: ['앱 내부 브라우저에서 접속이 제한되면 공유 메뉴에 Safari에서 열기가 있는지 확인하세요. 없으면 검색 주소를 복사해 Safari 주소창에 붙여넣으세요. 공식 홈 접속과 검색 결과 접속은 다를 수 있으며, 판매처 보안 제한은 우회하지 않습니다.', 'If an in-app browser is restricted, look for Open in Safari in its share menu. If unavailable, copy the search URL and paste it into Safari. Home access and search-result access can differ; retailer security restrictions are not bypassed.'],
     home: ['공식 홈', 'Official home'],
     search: ['공식 검색', 'Official search'],
+    searchWindow: ['공식 검색창', 'Official search window'],
+    manualSearch: ['유니클로는 공식 검색창에서 복사한 검색어를 붙여넣어주세요. 검색어 자동 입력은 제공하지 않습니다.', 'Paste the copied clothing phrase into the official UNIQLO search window. Automatic query entry is not provided.'],
     used: ['동의한 사진상 비율을 기기 안에서만 참고했습니다. 실제 치수·사이즈 판정이 아닙니다.', 'The consented photo ratios were used only on your device. This is not a measurement or size assessment.'],
     noRatios: ['체형 비율을 사용하지 않은 일반 스타일 예시입니다.', 'General style examples, without using body ratios.'],
     storageError: ['이 브라우저에서 임시 수치 전달을 준비하지 못했습니다. 수치 없이 스타일리스트를 열어주세요.', 'Temporary ratio transfer could not be prepared in this browser. Open the stylist without ratios.'],
@@ -37,6 +39,7 @@
   const node = (tag,text) => { const el=document.createElement(tag); if(text)el.textContent=text; return el; };
   // These are the existing public directory's official search endpoints.
   const stores = [
+    ['Musinsa','KR','https://www.musinsa.com/search/goods','keyword'], ['29CM','KR','https://www.29cm.co.kr/store/search','keyword'], ['Uniqlo Korea','KR','https://www.uniqlo.com/kr/ko/search',null],
     ['Coupang','KR','https://www.coupang.com/np/search','q'], ['Naver Shopping','KR','https://search.shopping.naver.com/search/all','query'],
     ['eBay US','US','https://www.ebay.com/sch/i.html','_nkw'], ['Amazon US','US','https://www.amazon.com/s','k'],
     ['Amazon Japan','JP','https://www.amazon.co.jp/s','k'], ['Rakuten Japan','JP','https://search.rakuten.co.jp/search/mall/',null],
@@ -51,7 +54,11 @@
     try {
       const url=new URL(value);
       if(url.protocol!=='https:'||url.username||url.password||url.port||url.hash)return false;
+      if(url.hostname==='www.uniqlo.com')return !url.search&&['/kr/ko/','/kr/ko/search'].includes(url.pathname);
       if(['shopping.naver.com','www.rakuten.co.jp'].includes(url.hostname)&&url.pathname==='/'&&!url.search)return true;
+      // Old already-rendered 29CM links remain narrowly allowed; new links use
+      // the current official www route and never a redirect parameter.
+      if(url.hostname==='shop.29cm.co.kr')return url.pathname==='/'&&!url.search||url.pathname==='/search'&&[...url.searchParams.keys()].length===1&&url.searchParams.has('keyword');
       return stores.some(([, ,base,key])=>{
         const endpoint=new URL(base);
         if(url.hostname!==endpoint.hostname)return false;
@@ -67,14 +74,20 @@
     if(!['KR','US','JP','GB','EU'].includes(country)||!Object.hasOwn(categories,category))throw new Error('invalid');
     return {previewLocal:true,retailers:stores.filter(row=>row[1]===country).map(([name,country,base,key])=>{
       const term=country==='KR'?({all:'의류',tops:'셔츠',bottoms:'바지',outerwear:'재킷',dresses:'원피스',accessories:'패션 소품'})[category]:categories[category];
-      const url=new URL(base);if(key)url.searchParams.set(key,term);else url.pathname+=encodeURIComponent(term)+'/';
-      return {name,country,currency:({KR:'KRW',US:'USD',JP:'JPY',GB:'GBP',EU:'EUR'})[country],searchUrl:url.href,homeUrl:({'search.shopping.naver.com':'https://shopping.naver.com/','search.rakuten.co.jp':'https://www.rakuten.co.jp/'})[url.hostname]||url.origin+'/',searchTerm:term};
+      const url=new URL(base);if(key)url.searchParams.set(key,term);else if(name!=='Uniqlo Korea')url.pathname+=encodeURIComponent(term)+'/';
+      return {name,country,currency:({KR:'KRW',US:'USD',JP:'JPY',GB:'GBP',EU:'EUR'})[country],searchUrl:url.href,homeUrl:({'www.uniqlo.com':'https://www.uniqlo.com/kr/ko/','search.shopping.naver.com':'https://shopping.naver.com/','search.rakuten.co.jp':'https://www.rakuten.co.jp/'})[url.hostname]||url.origin+'/',searchTerm:term,...(name==='Uniqlo Korea'?{manualSearch:true}:{})};
     })};
   }
   const advice = {
     length:['사진상 다리·몸통 비율은 참고만 하고, 상의와 바지의 길이를 바꾸어 편안한 조합을 비교해보세요.','Use photo leg/torso proportions only as a reference and compare comfortable top and trouser lengths.'],
     basic:['편안하게 움직일 수 있는 상의와 하의를 먼저 조합하고, 실제 사이즈표와 반품 조건을 확인하세요.','Start with a comfortable top and bottom, then check the actual size chart and return terms.'],
     work:['출근 코디 예시: 셔츠나 니트에 스트레이트 팬츠를 조합하고 필요하면 가벼운 재킷을 더해보세요.','Office outfit example: pair a shirt or knit with straight trousers and add a light jacket if needed.'],
+    event:['하객용 의류는 행사 안내와 드레스 코드를 먼저 확인하고 색상·비침·착용 길이를 판매처 자료에서 비교해보세요.','For guest outfits, check the event dress code, then compare color, transparency and garment length in the seller information.'],
+    sport:['운동용 의류는 활동에 맞는 움직임 여유·통기성·소재와 세탁 안내를 판매처에서 확인하세요.','For sportswear, check movement allowance, breathability, fabric and care instructions for your activity at the seller.'],
+    fitRoomy:['와이드·여유 있는 핏도 허리와 총장 실측은 따로 확인하세요. 핏 이름만으로 실제 여유나 사이즈를 보장하지 않습니다.','For wide or roomy fits, check waist and garment length measurements separately. A fit name does not guarantee ease or size.'],
+    fitSlim:['슬림한 핏은 상품 실측과 소재의 신축성·반품 조건을 확인하세요. 사진 비율만으로 착용 적합성을 판단하지 않습니다.','For slim fits, check garment measurements, fabric stretch and returns. Photo ratios alone cannot determine fit.'],
+    fitClassic:['스트레이트·레귤러 핏은 브랜드별 표기가 다를 수 있습니다. 실제 사이즈표와 원하는 길이를 함께 확인하세요.','Straight and regular fit labels vary by brand. Check the actual size chart and your preferred garment length.'],
+    budget:['해석한 예산은 검색 조건 안내용입니다. 공식 검색의 가격 필터에 자동 적용되지는 않으므로 판매처에서 직접 설정하세요.','The interpreted budget is search guidance. It is not automatically applied to the official search price filter; set it at the retailer.'],
     color:['아이보리·네이비·차콜처럼 조합하기 쉬운 색에 포인트 색 하나를 더해보세요.','Try easy-to-combine ivory, navy or charcoal with one accent color.'],
     wide:['사진상 어깨 기준점 간격을 참고해 단정한 상의와 여유 있는 하의의 균형을 비교해보세요.','Using the photo’s shoulder landmark spacing as a reference, compare a neat top with more relaxed bottoms.'],
     narrow:['사진상 비율을 참고해 가벼운 상의 레이어와 스트레이트 하의의 조합을 비교해보세요.','Using the photo ratios as a reference, compare a light layered top with straight bottoms.'],
@@ -86,14 +99,29 @@
       ||/(?:https?:\/\/|data\s*:|blob\s*:|<|base64|\bsk-[\w-]{16,})/i.test(input.message))throw new Error('invalid');
     const use=input.consents?.analysis===true;
     if(use&&!validMetrics(input.metrics))throw new Error('consent');
-    const ids=[/출근|회사|office|work/i.test(input.message)?'work':/색|color|colour/i.test(input.message)?'color':'basic'];
+    // Resolve lazily: this file is also loaded before the shared query parser.
+    // Parsed conditions stay on-device; only that parser's bounded terms may
+    // enter domestic search URLs. Invalid/private text keeps category links.
+    let clothingConditions=null;
+    let searchRows=retailers(input.preferences||{},input.language).retailers;
+    if(searchRows[0]?.country==='KR'&&window.A1ShoppingQuery){
+      try{clothingConditions={...window.A1ShoppingQuery.parse(input.message)};searchRows=window.A1ShoppingQuery.links(clothingConditions);}catch{clothingConditions=null;}
+    }
+    const purpose=clothingConditions?.purpose;
+    const ids=[purpose==='event'?'event':purpose==='sport'?'sport':purpose==='work'||/출근|회사|office|work/i.test(input.message)?'work':/색|color|colour/i.test(input.message)?'color':'basic'];
+    if(['semiwide','wide','oversized','relaxed'].includes(clothingConditions?.fit))ids.push('fitRoomy');
+    else if(clothingConditions?.fit==='slim')ids.push('fitSlim');
+    else if(['straight','regular'].includes(clothingConditions?.fit))ids.push('fitClassic');
+    if(clothingConditions?.budget!=null)ids.push('budget');
     if(use) { ids.push(input.metrics.shoulderHipRatio>1.15?'wide':input.metrics.shoulderHipRatio<.9?'narrow':'balanced'); if(input.metrics.legTorsoRatio<1.5)ids.push('length'); }
     const at=input.language==='en'?1:0;
     return {previewLocal:true,mode:'DEMO',products:[],discounts:[],comparison:null,usage:null,dataStatus:'preparing',
       reply:input.language==='en'?'On-device, rule-based outfit examples. No GPT or server request.':'기기 내 규칙 기반 코디 예시입니다. GPT나 서버를 호출하지 않습니다.',
       advice:ids.map(id=>({id,text:advice[id][at]})),
       notices:[pairs[use?'used':'noRatios'][at],pairs.pending[at],pairs.privacy[at]],
-      searchLinks:retailers(input.preferences||{},input.language).retailers.map(row=>({label:row.name,url:row.searchUrl}))};
+      clothingConditions,
+      bodySearchSuggestions:use&&clothingConditions?window.A1ShoppingQuery.bodySuggestions(clothingConditions,{metrics:input.metrics,consent:true}):[],
+      searchLinks:searchRows.map(row=>({label:row.name,url:row.searchUrl}))};
   }
   async function copyText(value,field,status) {
     try {
@@ -106,10 +134,11 @@
   function retailerActions(row) {
     const block=node('div');block.className='preview-retailer-actions';
     if(!safeLink(row.searchUrl)||!safeLink(row.homeUrl))return block;
-    for(const [label,url] of [[row.name+' · '+t('search'),row.searchUrl],[t('home'),row.homeUrl]]){
+    for(const [label,url] of [[row.name+' · '+t(row.manualSearch?'searchWindow':'search'),row.searchUrl],[t('home'),row.homeUrl]]){
       const a=node('a',label);a.href=url;a.target='_self';a.rel='noopener noreferrer';a.referrerPolicy='no-referrer';block.append(a);
     }
     const term=node('p',row.searchTerm);term.className='preview-search-term';block.append(term);
+    if(row.manualSearch){const note=node('p');tx(note,'manualSearch');block.append(note);}
     const field=node('textarea');field.readOnly=true;field.hidden=true;field.setAttribute('aria-label',t('copyUrl'));
     const status=node('p');status.setAttribute('role','status');status.className='preview-copy-status';
     for(const [key,value] of [['copyTerm',row.searchTerm],['copyUrl',row.searchUrl]]){
@@ -184,6 +213,12 @@
   }
   document.addEventListener('click',e=>{
     const a=e.target?.closest?.('a');if(!a)return;
+    // Reviewed product links have stricter per-snapshot consumers. Let their
+    // handlers verify the exact item URL/expiry/user click instead of treating
+    // an individual product page as an unapproved generic search endpoint.
+    if(a.matches('[data-catalog-buy],[data-catalog-source],[data-offer-buy]')&&a.closest('#shopping-search')
+      ||a.hasAttribute('data-stylist-catalog-buy')&&a.closest('#stylist-chat')
+      ||a.hasAttribute('data-selected-catalog-buy')&&a.closest('#lab-selected-catalog'))return;
     const controlled=a.hasAttribute('data-public-retailer')||a.closest('#retailer-results,#preview-style-results,.stylist-search-links');
     let merchant=false;try{merchant=stores.some(row=>new URL(row[2]).hostname===new URL(a.href).hostname);}catch{}
     if(!controlled&&!merchant)return;
