@@ -53,6 +53,15 @@ test('human mesh boundary visual morphs retain finite unit normals and bounded d
   const v=G.scene(p,'LAB-A',{shoulderHipRatio:2.5,legTorsoRatio:3.5}).vertices;for(let i=0;i<v.length;i+=9){assert.ok(Number.isFinite(v[i])&&Number.isFinite(v[i+1])&&Number.isFinite(v[i+2]));assert.ok(Math.abs(Math.hypot(v[i+3],v[i+4],v[i+5])-1)<.0001);assert.ok(Math.abs(v[i])<2&&v[i+1]>-.1&&v[i+1]<2.3&&Math.abs(v[i+2])<1);}
  }
 });
+test('skin material masks follow existing human triangles without painting the garment or changing its body mesh',()=>{
+ G.installBase(require('../assets/human-base.js'));
+ const plain=G.scene(G.defaults,'none'),dressed=G.scene(G.defaults,'LAB-A');assert.deepEqual(plain.bodyMesh.positions,dressed.bodyMesh.positions,'material metadata must not move the human');
+ for(const scene of [plain,dressed]){const values=scene.surfaceMaterials;assert.ok(values instanceof Float32Array);assert.equal(values.length,scene.vertices.length/3);let skin=0,head=0,hands=0,feet=0;
+  for(let i=0;i<values.length;i+=3){assert.equal(values[i],0);assert.equal(values[i+1],0);assert.ok(values[i+2]===0||values[i+2]===1,'bounded generic material classification');if(values[i+2]){skin++;const v=i*3,x=scene.vertices[v],y=scene.vertices[v+1];if(y>1.43)head++;if(Math.abs(x)>.20&&y<1.2)hands++;if(y<.1)feet++;}}
+  assert.ok(skin>1000&&head>100&&hands>100&&feet>100,'face, exposed arms/hands and feet receive a skin material');
+ }
+ const garmentFloats=dressed.garmentMesh.indices.length*9,start=dressed.vertices.length-garmentFloats;for(let v=start;v<dressed.vertices.length;v+=9)assert.equal(dressed.surfaceMaterials[v/3+2],0,'skin shading never labels the top as exposed skin');
+});
 
 // Derive topology from indexed triangles rather than trusting renderer metadata.
 function garmentTopology(mesh){

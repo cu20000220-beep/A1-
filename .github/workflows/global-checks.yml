@@ -38,7 +38,7 @@ jobs:
           tests/unified-migrations.cjs tests/unified-access.cjs
           tests/preview-isolation.cjs
           tests/member-write-entitlements.cjs
-          tests/free-beta.cjs tests/free-beta-policy.cjs tests/preview-experience.cjs tests/product-matching.cjs tests/avatar-geometry.cjs tests/lab-loader.cjs tests/shopping-query.cjs tests/product-catalog-import.cjs tests/source-adapters.cjs tests/offer-comparison.cjs tests/catalog-public-headers.cjs
+          tests/free-beta.cjs tests/free-beta-policy.cjs tests/preview-experience.cjs tests/product-matching.cjs tests/avatar-geometry.cjs tests/human-head.cjs tests/lab-loader.cjs tests/shopping-query.cjs tests/product-catalog-import.cjs tests/source-adapters.cjs tests/offer-comparison.cjs tests/catalog-public-headers.cjs
       - name: Package public assets only
         run: node scripts/build-site.cjs
       - name: Check public artifact exposure

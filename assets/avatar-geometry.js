@@ -4,13 +4,20 @@
 ((root,factory)=>{const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.A1AvatarGeometry=api;})(globalThis,()=>{
  const defaults={height:170,chest:92,waist:76,hips:96,shoulders:42,inseam:78,shape:'neutral'};
  const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
- let humanBase=null;
+ let humanBase=null,humanHead=null;
  function installBase(data){
   if(!data||data.version!==1||data.license!=='CC0-1.0'||data.height!==1.7||!Array.isArray(data.positions)||data.positions.length<3000||data.positions.length>120000||data.positions.length%3||!Array.isArray(data.indices)||data.indices.length<3000||data.indices.length>180000||data.indices.length%3||!Array.isArray(data.arms)||data.arms.length!==data.positions.length/3)throw TypeError('invalid_human_base');
   const count=data.positions.length/3;if(data.positions.some((v,i)=>!Number.isFinite(v)||Math.abs(v)>2||i%3===1&&(v<0||v>1.701))||data.indices.some(v=>!Number.isSafeInteger(v)||v<0||v>=count)||data.arms.some(v=>!Number.isFinite(v)||v<0||v>1))throw TypeError('invalid_human_base');
   humanBase={positions:new Float32Array(data.positions),indices:new Uint16Array(data.indices),arms:new Float32Array(data.arms)};return true;
  }
  const hasHumanBase=()=>humanBase!==null;
+ function installHead(data){
+  if(!data||data.version!==1||data.license!=='CC-BY-3.0'||data.sha256!=='402b8a8ac9f03232e6d64b5962929703a069daf99d3c49ac8eb0e48bedc9c576'||data.referenceHeight!==.245||typeof data.attribution!=='string'||!data.attribution.includes('Lee Perry-Smith')||!Array.isArray(data.positions)||data.positions.length!==8507*3||!Array.isArray(data.normals)||data.normals.length!==data.positions.length||!Array.isArray(data.uvs)||data.uvs.length!==8507*2||!Array.isArray(data.indices)||data.indices.length!==16213*3)throw TypeError('invalid_human_head');
+  if(data.positions.some((v,i)=>!Number.isFinite(v)||Math.abs(v)>1.5||i%3===1&&(v<0||v>1))||data.normals.some(v=>!Number.isFinite(v)||Math.abs(v)>1.00001)||data.uvs.some(v=>!Number.isFinite(v)||v<0||v>1)||data.indices.some(v=>!Number.isSafeInteger(v)||v<0||v>=8507))throw TypeError('invalid_human_head');
+  for(let i=0;i<data.normals.length;i+=3)if(Math.abs(Math.hypot(data.normals[i],data.normals[i+1],data.normals[i+2])-1)>.00001)throw TypeError('invalid_human_head');
+  humanHead={positions:new Float32Array(data.positions),normals:new Float32Array(data.normals),uvs:new Float32Array(data.uvs),indices:new Uint16Array(data.indices),referenceHeight:data.referenceHeight};return true;
+ }
+ const hasHumanHead=()=>humanHead!==null;
  function garmentShell(body,normals,style,height){
   // One shared shoulder/torso/upper-arm topology, cut to a garment pattern.
   // These are generic example tops, never a retail pattern or cloth solver.
@@ -81,10 +88,13 @@
   return Object.freeze({shoulderHipRatio:metrics.shoulderHipRatio,legTorsoRatio:metrics.legTorsoRatio,
    shoulderScale:clamp(metrics.shoulderHipRatio/1.35,.78,1.25),legScale:clamp(Math.pow(metrics.legTorsoRatio/1.7,.35),.88,1.12)});
  }
- function scene(input,garment='none',metrics=null){
+ function scene(input,garment='none',metrics=null,options={head:false}){
   const p=validate(input),reference=metrics==null?null:photoReference(metrics);if(!['none','LAB-A','LAB-B','LAB-C'].includes(garment))throw TypeError('invalid_garment');
-  let humanBodyPoints=null,humanBodyNormals=null,garmentMesh=null;
-  const vertices=[],skin=[.73,.55,.42],base=[.32,.36,.39],cloth=garment==='LAB-B'?[.18,.32,.50]:garment==='LAB-C'?[.09,.20,.33]:[.12,.26,.43];
+  const headModel=Boolean(options?.head===true&&humanBase&&humanHead);
+  let humanBodyPoints=null,humanBodyNormals=null,garmentMesh=null,headMesh=null,bodyMaterialStart=0,bodyMaterialData=null,headMaterialStart=0,headMaterialData=null;
+  // Scan-mode body colour is the reviewed map's neck median (197/154/139),
+  // never a skin-tone estimate from a user's photograph.
+  const vertices=[],skin=headModel?[197/255,154/255,139/255]:[.73,.55,.42],base=[.32,.36,.39],cloth=garment==='LAB-B'?[.18,.32,.50]:garment==='LAB-C'?[.09,.20,.33]:[.12,.26,.43];
   function ellipsoid(center,radius,color,angle=0){const rows=12,cols=20,c=Math.cos(angle),s=Math.sin(angle);
    function point(i,j){const lat=Math.PI*i/rows,lon=2*Math.PI*j/cols,u=[Math.sin(lat)*Math.cos(lon),Math.cos(lat),Math.sin(lat)*Math.sin(lon)],v=u.map((x,k)=>x*radius[k]),n=u.map((x,k)=>x/radius[k]),len=Math.hypot(...n);const normal=n.map(x=>x/len);
     return [center[0]+c*v[0]-s*v[1],center[1]+s*v[0]+c*v[1],center[2]+v[2],c*normal[0]-s*normal[1],s*normal[0]+c*normal[1],normal[2],...color];}
@@ -121,19 +131,34 @@
    const width=[p.hips/96,p.hips/96,p.waist/76*shape,p.chest/92*(reference?.shoulderScale||1),p.shoulders/42*(reference?.shoulderScale||1),1,1];
    const depth=[p.hips/96,p.hips/96,p.waist/76*shape,p.chest/92,1,1,1];
    const interpolate=(y,values)=>{let i=0;while(i<sourceY.length-2&&y>sourceY[i+1])i++;const t=clamp((y-sourceY[i])/(sourceY[i+1]-sourceY[i]),0,1);return values[i]+(values[i+1]-values[i])*t;};
-   const points=new Float32Array(humanBase.positions.length),normals=new Float32Array(points.length),colors=new Float32Array(points.length),heightScale=h/1.7,shoulderDelta=shoulder-.21*heightScale;
+   const points=new Float32Array(humanBase.positions.length),normals=new Float32Array(points.length),colors=new Float32Array(points.length),skinWeights=new Float32Array(points.length/3),heightScale=h/1.7,shoulderDelta=shoulder-.21*heightScale;
    for(let i=0;i<points.length;i+=3){const index=i/3,x=humanBase.positions[i],y=humanBase.positions[i+1],z=humanBase.positions[i+2],arm=humanBase.arms[index],bodyX=x*interpolate(y,width)*heightScale,armX=x*heightScale+Math.sign(x)*shoulderDelta,bodyY=interpolate(y,targetY),armY=y*heightScale+(shoulderY-1.41*heightScale);
     points[i]=bodyX*(1-arm)+armX*arm;points[i+1]=bodyY*(1-arm)+armY*arm;points[i+2]=z*interpolate(y,depth)*heightScale;
     // The generic body wears a neutral fitted suit. No bare anatomy or
     // user-specific skin/face is generated; hands and head have a generic tone.
-    const skinRegion=y>1.445||arm>.75&&y<1.02,hair=y>1.64||y>1.59&&z<.025,color=hair?[.12,.095,.08]:skinRegion?skin:base;for(let k=0;k<3;k++)colors[i+k]=color[k];
+    const skinRegion=y>1.414||y>1.37&&Math.abs(x)<.11||arm>.6&&y<1.38||y<.10,hair=y>1.64||y>1.59&&z<.025,color=hair?[.12,.095,.08]:skinRegion?skin:base;skinWeights[index]=skinRegion&&!hair?1:0;for(let k=0;k<3;k++)colors[i+k]=color[k];
    }
    for(let j=0;j<humanBase.indices.length;j+=3){const a=humanBase.indices[j]*3,b=humanBase.indices[j+1]*3,c=humanBase.indices[j+2]*3,ux=points[b]-points[a],uy=points[b+1]-points[a+1],uz=points[b+2]-points[a+2],vx=points[c]-points[a],vy=points[c+1]-points[a+1],vz=points[c+2]-points[a+2],n=[uy*vz-uz*vy,uz*vx-ux*vz,ux*vy-uy*vx];for(const index of [a,b,c])for(let k=0;k<3;k++)normals[index+k]+=n[k];}
    for(let i=0;i<normals.length;i+=3){const length=Math.hypot(normals[i],normals[i+1],normals[i+2]);if(length>1e-12)for(let k=0;k<3;k++)normals[i+k]/=length;else normals[i+1]=1;}
-   for(const index of humanBase.indices){const i=index*3;vertices.push(points[i],points[i+1],points[i+2],normals[i],normals[i+1],normals[i+2],colors[i],colors[i+1],colors[i+2]);}
+   bodyMaterialStart=vertices.length/9;bodyMaterialData=[];
+   function appendBody(vertex){vertices.push(...vertex.slice(0,9));bodyMaterialData.push(0,0,vertex[9]);}
+   for(let corner=0;corner<humanBase.indices.length;corner+=3){
+    if(!headModel){for(let j=0;j<3;j++){const index=humanBase.indices[corner+j],i=index*3;vertices.push(points[i],points[i+1],points[i+2],normals[i],normals[i+1],normals[i+2],colors[i],colors[i+1],colors[i+2]);bodyMaterialData.push(0,0,skinWeights[index]);}continue;}
+    const polygon=[],triangle=[];for(let j=0;j<3;j++){const index=humanBase.indices[corner+j],i=index*3;triangle.push({values:[points[i],points[i+1],points[i+2],normals[i],normals[i+1],normals[i+2],colors[i],colors[i+1],colors[i+2],skinWeights[index]],y:humanBase.positions[i+1]});}
+    // Clip the original *source* head only. A world-height cutoff also cuts
+    // shoulder/garment triangles after body edits and creates visible holes.
+    for(let j=0;j<3;j++){const a=triangle[j],b=triangle[(j+1)%3],inside=a.y<=1.445,next=b.y<=1.445;if(inside)polygon.push(a.values);if(inside!==next){const t=(1.445-a.y)/(b.y-a.y),vertex=a.values.map((v,k)=>v+(b.values[k]-v)*t),length=Math.hypot(vertex[3],vertex[4],vertex[5]);for(let k=3;k<6;k++)vertex[k]/=length;polygon.push(vertex);}}
+    for(let j=1;j<polygon.length-1;j++)for(const vertex of [polygon[0],polygon[j],polygon[j+1]])appendBody(vertex);
+   }
    humanBodyPoints=points;humanBodyNormals=normals;
-   const eyeY=interpolate(1.584,targetY),eyeX=.035*heightScale,eyeZ=.093*heightScale;
-   for(const sign of [-1,1]){ellipsoid([sign*eyeX,eyeY,eyeZ],[.012*heightScale,.007*heightScale,.009*heightScale],[.85,.85,.80]);ellipsoid([sign*eyeX,eyeY,eyeZ+.008*heightScale],[.0045*heightScale,.0045*heightScale,.0025*heightScale],[.08,.10,.12]);}
+   if(headModel){
+    const headHeight=humanHead.referenceHeight,headPoints=new Float32Array(humanHead.positions.length),headNormals=new Float32Array(humanHead.normals.length);for(let i=0;i<headPoints.length;i+=3){const t=clamp(humanHead.positions[i+1]/.2,0,1),join=1-3*t*t+2*t*t*t,joinDerivative=t>0&&t<1?(-6*t+6*t*t)/.2:0,scale=1+(heightScale-1)*join,derivative=(heightScale-1)*joinDerivative;headPoints[i]=humanHead.positions[i]*headHeight*scale;headPoints[i+1]=h-headHeight+humanHead.positions[i+1]*headHeight;headPoints[i+2]=humanHead.positions[i+2]*headHeight*scale;const nx=humanHead.normals[i]/scale,nz=humanHead.normals[i+2]/scale,n=[nx,humanHead.normals[i+1]-derivative*(nx*humanHead.positions[i]+nz*humanHead.positions[i+2]),nz],length=Math.hypot(...n);for(let k=0;k<3;k++)headNormals[i+k]=n[k]/length;}
+    headMesh={positions:headPoints,normals:headNormals,uvs:humanHead.uvs,indices:humanHead.indices};headMaterialStart=vertices.length/9;headMaterialData=new Float32Array(humanHead.indices.length*3);
+    for(let corner=0;corner<humanHead.indices.length;corner++){const index=humanHead.indices[corner],i=index*3;vertices.push(headPoints[i],headPoints[i+1],headPoints[i+2],headNormals[i],headNormals[i+1],headNormals[i+2],1,1,1);headMaterialData[corner*3]=humanHead.uvs[index*2];headMaterialData[corner*3+1]=humanHead.uvs[index*2+1];headMaterialData[corner*3+2]=2;}
+   }else{
+    const eyeY=interpolate(1.584,targetY),eyeX=.035*heightScale,eyeZ=.093*heightScale;
+    for(const sign of [-1,1]){ellipsoid([sign*eyeX,eyeY,eyeZ],[.012*heightScale,.007*heightScale,.009*heightScale],[.85,.85,.80]);ellipsoid([sign*eyeX,eyeY,eyeZ+.008*heightScale],[.0045*heightScale,.0045*heightScale,.0025*heightScale],[.08,.10,.12]);}
+   }
   }else{
   torso([[hipY-.11,hipWidth*.7,hips*.69],[hipY-.035,hipWidth,hips*.85],[hipY+.025,hipWidth*.97,hips*.83]],base);torso(bodySections,skin);
   torso([[h-.26,.055,.059],[h-.218,.055,.066],[h-.185,.079,.080],[h-.128,.092,.087],[h-.075,.087,.081],[h-.028,.055,.057],[h-.014,.006,.009]],skin);
@@ -171,7 +196,8 @@
    }
    }
   }
-  return {height:h,vertices:new Float32Array(vertices),garment,reference,humanBase:Boolean(humanBase),garmentMesh,bodyMesh:humanBodyPoints?{positions:humanBodyPoints,normals:humanBodyNormals,indices:humanBase.indices}:null};
+  const surfaceMaterials=new Float32Array(vertices.length/3);if(bodyMaterialData)surfaceMaterials.set(bodyMaterialData,bodyMaterialStart*3);if(headMaterialData)surfaceMaterials.set(headMaterialData,headMaterialStart*3);
+  return {height:h,vertices:new Float32Array(vertices),surfaceMaterials,garment,reference,humanBase:Boolean(humanBase),headModel,headMesh,garmentMesh,bodyMesh:humanBodyPoints?{positions:humanBodyPoints,normals:humanBodyNormals,indices:humanBase.indices}:null};
  }
- return Object.freeze({defaults:Object.freeze(defaults),validate,photoReference,scene,installBase,hasHumanBase});
+ return Object.freeze({defaults:Object.freeze(defaults),validate,photoReference,scene,installBase,hasHumanBase,installHead,hasHumanHead});
 });

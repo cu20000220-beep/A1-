@@ -48,7 +48,7 @@ the avatar page's `connect-src 'none'` can stay unchanged.
 
 ## Rendering and fitting limits
 
-The model has a generic fitted neutral suit, generic skin material, simple
+The original model has a generic fitted neutral suit, generic skin material, simple
 short-hair colouring and eyes. No skin tone, face or identity is inferred from
 a user's photo. The existing entered-measurement controls and two separately
 consented photo ratios deform the actual body triangles. These are bounded
@@ -66,3 +66,10 @@ Unit checks cover malformed data, invalid replacement preservation, finite
 unit normals at boundary controls, body/manual/photo-ratio changes and clothing
 changes. Browser checks must confirm `data-human-model="hm08-cc0"` and real pixel
 changes; displaying a button or this notice alone is not a completion test.
+
+An optional **Lee Perry-Smith CC BY 3.0 scan head** and its reviewed colour/normal
+maps now supplement this preserved CC0 body. It has separate attribution and
+licensing, is a generic static asset, and does not reconstruct a user's face.
+See [DIGITAL-HUMAN-MATERIALS.md](DIGITAL-HUMAN-MATERIALS.md) for exact original
+sources, hashes, changes and limits. The original head remains selectable and
+is used when the new asset cannot be prepared.

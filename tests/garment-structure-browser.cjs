@@ -4,9 +4,9 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const root=path.resolve(__dirname,'..'),origin='https://garment-structure.a1fashion.pages.dev';
 const stage=process.env.A1_GARMENT_STAGE==='before'?'before':'after',out=path.join('/workspace/work/garment-structure',stage);fs.mkdirSync(out,{recursive:true});
-const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'};
+const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.jpg':'image/jpeg'};
 const policy=fs.readFileSync(path.join(root,'_headers'),'utf8').match(/^\/avatar-lab\*\n\s+Content-Security-Policy:\s*([^\r\n]+)/m)[1];
-const assets=new Map(['avatar-lab.html','assets/style.css','assets/avatar-lab.css','assets/i18n.js','assets/preview-experience.js','assets/human-base.js','assets/avatar-geometry.js','assets/avatar-lab.js','assets/placeholder.svg'].map(file=>[file,fs.readFileSync(path.join(root,file))]));
+const assets=new Map(['avatar-lab.html','assets/style.css','assets/avatar-lab.css','assets/i18n.js','assets/preview-experience.js','assets/human-base.js','assets/human-head.js','assets/human-head-color.jpg','assets/human-head-normal.jpg','assets/avatar-geometry.js','assets/avatar-lab.js','assets/placeholder.svg'].map(file=>[file,fs.readFileSync(path.join(root,file))]));
 const pixels=page=>page.locator('#avatar-after').evaluate(c=>c.toDataURL());
 async function rendered(page){return page.locator('#avatar-after').evaluate(c=>{const gl=c.getContext('webgl'),rgba=new Uint8Array(c.width*c.height*4);gl.readPixels(0,0,c.width,c.height,gl.RGBA,gl.UNSIGNED_BYTE,rgba);let blue=0;const colors=new Set();for(let i=0;i<rgba.length;i+=4){if(rgba[i+2]>rgba[i]*1.35&&rgba[i+2]>rgba[i+1]*1.15)blue++;if(i%16===0)colors.add(rgba.slice(i,i+3).join(','));}return {blue,colors:colors.size,width:c.width,height:c.height};});}
 async function capture(page,name){await page.locator('.avatar-views').screenshot({path:path.join(out,name+'.png')});}
