@@ -32,6 +32,8 @@ PR #1 `bf40968`, PR #3 `ae4497b`, PR #4 시작점 `513669c` 및 CI를 확인했�
 
 ## 검사와 실제 한계
 
+실제 브라우저 캡처: [이전 얼굴](validation/human-materials/before-ko-1440-front-head.png), [개선 얼굴](validation/human-materials/after-ko-1440-front-head.png), [개선 측면](validation/human-materials/after-ko-1440-side-head.png), [개선 전신](validation/human-materials/after-ko-1440-front.png). 생성 이미지로 보정하지 않았습니다. 이미지 안의 좌/우는 의류 미착용/착용 비교이고, 파일의 before/after는 이번 코드 변경 전/후입니다. [소스 해시·기능/오류 검사 결과](validation/human-materials/browser-result.json), [강제 GPU 동기화 없는 회전 명령 제출 검사](validation/human-materials/rotation-submission-timing.json)도 기록했습니다.
+
 `tests/avatar-geometry.cjs` 11개와 `tests/human-head.cjs` 4개는 기존 의류/체형 불변성, 정상 법선·UV·깊이, 허가되지 않은 교체 거부, 정확한 원본 이미지/라이선스 해시, 키를 바꿔도 얼굴 비율 보존을 검사합니다. 전체 GitHub CI와 Preview 결과는 PR #4에 기록합니다.
 
 `tests/human-material-browser.cjs`는 데스크톱 1440px·터치 820/390px에서 실제 스캔/원본 머리·스튜디오/기본 재질 픽셀 변화, 24회 실제 회전으로 360도 이상, 전/측/후면·마우스/터치·의류 3종·체형·삭제·출처 표시를 검사합니다. 이미지 차단 시 한국어/영어 복구 안내, 새 셰이더 강제 실패 시 기본 렌더링도 확인합니다. 실제 Preview에서도 배포 자산과 렌더링을 확인하며 주소는 PR #4에 남깁니다.
