@@ -44,6 +44,8 @@ node --test tests/gltf-proof.cjs tests/gltf-proof-export.cjs
 node tests/gltf-proof-browser.cjs
 node scripts/build-site.cjs
 node scripts/check-public-artifacts.cjs
+# 실제 배포 파일·응답 헤더로 원격 검증 (명시한 Preview만 읽기)
+node tests/gltf-proof-preview.cjs https://161f21fc.a1fashion.pages.dev
 ```
 
 새 단위/권리/구조 검사 **9/9**, 기존 workflow와 같은 전체 오프라인 검사 **316/316**, 정적 빌드·공개 파일 노출 검사를 통과했다. 기존 국내 검색·조건 기반 무료 스타일리스트 브라우저 검사의 성공 근거도 확인했으며 해당 런타임 파일은 변경하지 않았다.
@@ -51,6 +53,14 @@ node scripts/check-public-artifacts.cjs
 최종 브라우저 검사는 Linux Chromium/SwiftShader의 데스크톱 1280×900, 터치 태블릿 세로 820×1180, 가로 1180×820에서 실행했다. 실제 픽셀 변화로 전·측·후면, 360도, 세 의류/착용 전, skeleton/PBR 변화, 드래그·핀치·키보드, 삭제 시 GPU 메모리 정리·재시도를 확인했다. 모델 읽기 실패, WebGL 2 부재, 실제 context loss, Production 실행 차단, 외부/API 요청 부재도 검사했다. [기계 판독 결과와 소스 해시](validation/gltf-proof/browser-result.json)를 함께 보존한다.
 
 시간 기록은 CPU의 render 명령 제출 시간이다. GPU 표시 프레임·FPS나 실제 iPad 성능으로 환산하지 않는다. **실제 iPad Safari 접근·성능·앱 내부 브라우저 검증은 미실시**다.
+
+## 실제 Preview 원격 확인
+
+구현 커밋 `dd981b487030619e9fe77a795959e5e25a137a38`의 GitHub [CI](https://github.com/cu20000220-beep/A1-/actions/runs/43796774526)와 Pages 배포가 성공했다. 별도 기존 Worker `a1` 체크는 실패이며 삭제·우회하지 않았다. main은 `67d229a`로 유지된다.
+
+검증 주소: <https://161f21fc.a1fashion.pages.dev/gltf-proof>. 실제 HTML은 HTTP200과 위 CSP를 반환했다. GLB와 실행 모듈 등 실제 배포 파일 14개를 허용된 프록시로 받아 원본 응답 헤더와 함께 Chromium에서 표시했으며, 로컬 파일로 대체하지 않았다. 저장소 소스와 원격 파일 바이트 일치를 확인하고 전·측·후면과 세 의류 변경을 검증했다. 페이지 JS/콘솔 오류는 없었다. 별도 읽기 검사의 `/api/health`는 **503, `preview_isolated`**였다.
+
+[원격 결과](validation/gltf-proof/preview-result.json), [원격 태블릿 화면](validation/gltf-proof/live-overview.png), [원격 정면](validation/gltf-proof/live-front.png) · [측면](validation/gltf-proof/live-side.png) · [후면](validation/gltf-proof/live-back.png)을 보존한다. 이는 Linux Chromium의 원격 에셋 렌더링 증거이며 실제 iPad Safari 실행 증거가 아니다. 이 절과 증거를 기록하는 후속 커밋은 앱·배포 파일을 변경하지 않는다.
 
 ## 남은 한계와 판단
 
