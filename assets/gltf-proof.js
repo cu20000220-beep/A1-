@@ -23,6 +23,7 @@ const pairs = {
   'SF 휴머노이드 피팅룸': 'Sci-fi humanoid fitting room',
   '붉은 합성 피부와 청록·금색 금속 패널을 가진 자체 디자인 아바타입니다. 전신을 회전하고 예시 티셔츠를 갈아입혀 보세요. 기존 인체 모델과도 비교할 수 있습니다.': 'An original avatar with red synthetic skin and teal-and-gold metallic panels. Rotate the body, try example T-shirts, and compare it with the original body.',
   '아바타 모습': 'Avatar appearance', 'SF 휴머노이드': 'Sci-fi humanoid', '기존 인체와 비교': 'Compare original body', '기본 아바타 · 티셔츠 없음': 'Base avatar · No T-shirt',
+  '실사 스타일 이미지 스튜디오': 'Photoreal style image studio',
   '전신·의류 렌더링 검증': 'Full-body and garment rendering proof',
   '기존 CC0 전신과 예시 티셔츠를 새 glTF 렌더러로 표시합니다. 새 실사형 디지털 휴먼이나 실제 상품 피팅이 완성된 화면은 아닙니다.': 'The new glTF renderer displays the existing CC0 body and example T-shirts. This is not a completed photoreal digital human or retail product fitting.',
   '사진·체형 분석값을 읽거나 전송하지 않습니다. 티셔츠는 실제 판매 상품이 아닌 예시 3D 착용 이미지입니다. 정확한 사이즈·착용감·의복 물리 시뮬레이션을 보장하지 않습니다.': 'No photos or body analysis values are read or transmitted. These are example 3D garments, not retail products. Exact sizing, comfort and cloth physics are not guaranteed.',
@@ -237,6 +238,10 @@ function startProof() {
   $('#gltf-zoom-in').addEventListener('click', () => zoom(0.9)); $('#gltf-zoom-out').addEventListener('click', () => zoom(1.1));
   $('#gltf-delete').addEventListener('click', () => { generation++; clean(); setState('disposed'); status('임시 3D 화면을 지웠습니다. 다시 불러오기로 재시작할 수 있습니다.'); });
   $('#gltf-retry').addEventListener('click', initialize);
+  // The same renderer can be opened lazily inside the style studio. Hiding
+  // its panel also cancels in-flight loads and releases GPU resources.
+  window.addEventListener('a1:gltf-suspend', () => { generation++; clean(); setState('disposed'); });
+  window.addEventListener('a1:gltf-resume', () => { if (state === 'disposed') initialize(); });
   window.addEventListener('pagehide', () => { generation++; clean(); setState('disposed'); });
   Object.defineProperty(window, 'A1GltfProof', { value: Object.freeze({ snapshot() {
     let meshes = 0, skinnedMeshes = 0, bones = new Set();

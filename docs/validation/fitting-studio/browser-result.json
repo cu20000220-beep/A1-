@@ -1,0 +1,1047 @@
+{
+  "sourceHashes": {
+    "fitting-studio.html": "a6c3f8491a257025d654938d2d82dca87947245a8d27a659d5de8abcf063084d",
+    "assets/fitting-studio.js": "0c4a5852acb0ad859b280b4e03495a7ec24af084da23bea917923987dc87491f",
+    "assets/fitting-studio.css": "aa0e8432f45f686d07561ffb846b54976f4dfbe29bec2727c1eca3b818ecea9f",
+    "assets/fitting-studio-3d.js": "dba718806c80d0a08239e288b7939bb23dcbcb9a98eb49990f52ae5e1a0bac0e",
+    "assets/fitting-studio-3d.css": "2503197d547375cc02db8d5060b89eb2d05d3bb65a71115eec7512dffff687de",
+    "assets/gltf-proof.js": "4a94921fc2a932b91181733005d21f2953e58b56c1e05a5439f10bcaca439d46",
+    "assets/studio/hero.png": "128fb7c3173617f9e214974ec05ca33e7c76f666885f81a966183758dfe59436",
+    "assets/studio/male-sheet.png": "ef1672b946e4ab2b3349dbb3bb1324a6ffd5c9ad03d178188dcede4b40ffa899",
+    "assets/studio/female-sheet.png": "4be49430850f7ebf8aca6c626c7a7697fc28c4d3ccb47df399bdf2318e17e026"
+  },
+  "reports": [
+    {
+      "profile": {
+        "width": 1440,
+        "height": 1000,
+        "touch": false,
+        "lang": "ko"
+      },
+      "avatars": [
+        {
+          "avatar": "male",
+          "directions": [
+            {
+              "name": "ko-1440-male-front",
+              "sha256": "f2e412036c3a2fd40108134d1f7ba3f1eca8cef6c7fddfac0eb999dded5917ce",
+              "width": 441,
+              "height": 661,
+              "colors": 3430,
+              "chromatic": 1409
+            },
+            {
+              "name": "ko-1440-male-quarter",
+              "sha256": "4357e1259f8f3b5fea9d1b800f052921d23643c2a7ff0c6936ed7b9cb6e0a301",
+              "width": 441,
+              "height": 661,
+              "colors": 3280,
+              "chromatic": 1187
+            },
+            {
+              "name": "ko-1440-male-side",
+              "sha256": "344f01eb5b5061e094aa36063709a7baeff5989c78fa053583dce5dc2f50cc1a",
+              "width": 441,
+              "height": 661,
+              "colors": 2853,
+              "chromatic": 912
+            },
+            {
+              "name": "ko-1440-male-back",
+              "sha256": "310a792b4f9d4182bb606b6b7087a1617aa6c17dcc37039f01f646273717bb72",
+              "width": 441,
+              "height": 661,
+              "colors": 2999,
+              "chromatic": 977
+            }
+          ],
+          "styles": [
+            {
+              "name": "ko-1440-male-style-0",
+              "sha256": "203179047ee6c3eaf8250f2f3d77a4552b1cae6c4a687e16b91e0fedfbb76c78",
+              "width": 441,
+              "height": 661,
+              "colors": 3694,
+              "chromatic": 461
+            },
+            {
+              "name": "ko-1440-male-style-1",
+              "sha256": "00a5320a6caa4ff663c59ded54b1d4eec4afa6c51c2fb889b0827fe60d0dced0",
+              "width": 441,
+              "height": 661,
+              "colors": 4482,
+              "chromatic": 490
+            },
+            {
+              "name": "ko-1440-male-style-2",
+              "sha256": "4a4ed04b806a7def67ecdf2a2afa79c7fe72e486342a12b0ea065a4a323f0da5",
+              "width": 441,
+              "height": 661,
+              "colors": 3545,
+              "chromatic": 694
+            },
+            {
+              "name": "ko-1440-male-style-3",
+              "sha256": "f482129bb57362883f16c2568a8a9730cb8d5fd1d55b55defe8bf2f572d5cf72",
+              "width": 441,
+              "height": 661,
+              "colors": 4673,
+              "chromatic": 7165
+            },
+            {
+              "name": "ko-1440-male-style-4",
+              "sha256": "38fed87a36d589624d1f5e757fb890595b73bc48eca44ed15df05f29f807693e",
+              "width": 441,
+              "height": 661,
+              "colors": 6104,
+              "chromatic": 3333
+            }
+          ]
+        },
+        {
+          "avatar": "female",
+          "directions": [
+            {
+              "name": "ko-1440-female-front",
+              "sha256": "3423f941bd9d380a2874149bcbea1de9e40b6d0e2e3342bfcb6fa409a1694d2f",
+              "width": 441,
+              "height": 661,
+              "colors": 3930,
+              "chromatic": 2511
+            },
+            {
+              "name": "ko-1440-female-quarter",
+              "sha256": "ffaf40cd4ac4a47f569f6e5b08936a2edd6fefe5a3b15c104694a57b37e2128d",
+              "width": 441,
+              "height": 661,
+              "colors": 3415,
+              "chromatic": 1960
+            },
+            {
+              "name": "ko-1440-female-side",
+              "sha256": "4c71a956a680463817f26278c051531239523ddf290000501cdf0e39a183a44a",
+              "width": 441,
+              "height": 661,
+              "colors": 2964,
+              "chromatic": 1620
+            },
+            {
+              "name": "ko-1440-female-back",
+              "sha256": "7c7bfe37a3527b18520f00ddc43de3f333e6a75f9a4941d30cbb78f34aaf3d78",
+              "width": 441,
+              "height": 661,
+              "colors": 3916,
+              "chromatic": 2462
+            }
+          ],
+          "styles": [
+            {
+              "name": "ko-1440-female-style-0",
+              "sha256": "dd95b36ecfeae72285cf89197013fe896228712bb0eaac086f1c6854f246733c",
+              "width": 441,
+              "height": 661,
+              "colors": 3446,
+              "chromatic": 1213
+            },
+            {
+              "name": "ko-1440-female-style-1",
+              "sha256": "8b1821cad345481e863fd12678fc6cde94e7c13cad947d3ba7b20394b5bb66c6",
+              "width": 441,
+              "height": 661,
+              "colors": 4785,
+              "chromatic": 5145
+            },
+            {
+              "name": "ko-1440-female-style-2",
+              "sha256": "8556e91129e3b14c06df05f0ffb8913217fcf219a7780370731d108975789f2d",
+              "width": 441,
+              "height": 661,
+              "colors": 6124,
+              "chromatic": 3747
+            },
+            {
+              "name": "ko-1440-female-style-3",
+              "sha256": "315a06de6a7664aecf31a24f5f3dec4aa16c01fc8e887a337fc603b2961d681b",
+              "width": 441,
+              "height": 661,
+              "colors": 4204,
+              "chromatic": 2271
+            },
+            {
+              "name": "ko-1440-female-style-4",
+              "sha256": "b4cb803da54aa1baa9ad82b7ae95328cb2d0ea3c4b8ae4ddc842815151523940",
+              "width": 441,
+              "height": 661,
+              "colors": 6011,
+              "chromatic": 7401
+            }
+          ]
+        }
+      ],
+      "requests": [
+        "/fitting-studio",
+        "/assets/fitting-studio.css",
+        "/assets/fitting-studio-3d.css",
+        "/assets/fitting-studio-3d.js",
+        "/assets/studio/hero.png",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/fitting-studio.js",
+        "/assets/studio/male-sheet.png",
+        "/assets/placeholder.svg",
+        "/assets/studio/female-sheet.png"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 820,
+        "height": 1180,
+        "touch": true,
+        "lang": "ko"
+      },
+      "avatars": [
+        {
+          "avatar": "male",
+          "directions": [
+            {
+              "name": "ko-820-male-front",
+              "sha256": "315afa0fa7c6b1c327799eba53d3d1d4e1f5afa43112661fa607c68ea674cc29",
+              "width": 360,
+              "height": 541,
+              "colors": 2619,
+              "chromatic": 949
+            },
+            {
+              "name": "ko-820-male-quarter",
+              "sha256": "566a651119e3159376531d2dcd6c9f6166b99687f63e53456241d5feb581de48",
+              "width": 360,
+              "height": 541,
+              "colors": 2482,
+              "chromatic": 790
+            },
+            {
+              "name": "ko-820-male-side",
+              "sha256": "f27521ba1fc36992d96dee1ec198814376fb938729a6b07da9b8337509de71cc",
+              "width": 360,
+              "height": 541,
+              "colors": 2179,
+              "chromatic": 613
+            },
+            {
+              "name": "ko-820-male-back",
+              "sha256": "1798877f867bebd31bdc97dfa069906e297b4e3cfb63fa55ea7bc3079537519b",
+              "width": 360,
+              "height": 541,
+              "colors": 2263,
+              "chromatic": 637
+            }
+          ],
+          "styles": [
+            {
+              "name": "ko-820-male-style-0",
+              "sha256": "c44cd52ec8c13679949df79a5d23ccf9a40d995c3dde6df0ae50b9f60f00a31f",
+              "width": 360,
+              "height": 541,
+              "colors": 2817,
+              "chromatic": 301
+            },
+            {
+              "name": "ko-820-male-style-1",
+              "sha256": "9eb17b44790584e863c0eb76cbe2db74536bf5b01109e6662f5cdc5bac1a8902",
+              "width": 360,
+              "height": 541,
+              "colors": 3578,
+              "chromatic": 338
+            },
+            {
+              "name": "ko-820-male-style-2",
+              "sha256": "74af361612e99ec0419bce972512cc62c8027f2077e4e7262c57a6469b3aab5f",
+              "width": 360,
+              "height": 541,
+              "colors": 2701,
+              "chromatic": 482
+            },
+            {
+              "name": "ko-820-male-style-3",
+              "sha256": "99412b4ca252e6502d4b6358613a62fe6afa25de3c65bcdeb672b0faac41ee77",
+              "width": 360,
+              "height": 541,
+              "colors": 3645,
+              "chromatic": 4797
+            },
+            {
+              "name": "ko-820-male-style-4",
+              "sha256": "9314c531354d47a01a7f714777ed789df11bd3480165721d6963c1dad0196bfe",
+              "width": 360,
+              "height": 541,
+              "colors": 4562,
+              "chromatic": 2253
+            }
+          ]
+        },
+        {
+          "avatar": "female",
+          "directions": [
+            {
+              "name": "ko-820-female-front",
+              "sha256": "0983bcc75badca6316e768b6e731d66ab785045a5ddad0ac8c6fd5f0af9e847c",
+              "width": 360,
+              "height": 541,
+              "colors": 2957,
+              "chromatic": 1687
+            },
+            {
+              "name": "ko-820-female-quarter",
+              "sha256": "262f2a249cb61507431df29d20f79c0b605b4cef7d582bf0ccc10671e1c8af52",
+              "width": 360,
+              "height": 541,
+              "colors": 2584,
+              "chromatic": 1314
+            },
+            {
+              "name": "ko-820-female-side",
+              "sha256": "b24498849b62b0c2c1a1d4ec5d9bf142071d2cce89378235d75bc7e7dcf0a78a",
+              "width": 360,
+              "height": 541,
+              "colors": 2218,
+              "chromatic": 1094
+            },
+            {
+              "name": "ko-820-female-back",
+              "sha256": "43a857974b918b57e8c7fb4da5d2da482e8aa2afe6b768bbfbe4614f78d10600",
+              "width": 360,
+              "height": 541,
+              "colors": 2941,
+              "chromatic": 1664
+            }
+          ],
+          "styles": [
+            {
+              "name": "ko-820-female-style-0",
+              "sha256": "d33925d1a81f3175d2c6b6b9577d49ae69ded3e72a7f546a00a78fdda8ddf7a9",
+              "width": 360,
+              "height": 541,
+              "colors": 2576,
+              "chromatic": 809
+            },
+            {
+              "name": "ko-820-female-style-1",
+              "sha256": "1eb7aa96c15a06d276a0268348c26a95ce520931226b82525006d578ccb3e1fd",
+              "width": 360,
+              "height": 541,
+              "colors": 3560,
+              "chromatic": 3430
+            },
+            {
+              "name": "ko-820-female-style-2",
+              "sha256": "2404eea5e5639c6a2f8791367c09251228eeee2e0cc2984b7113fc7cfe8fbcfe",
+              "width": 360,
+              "height": 541,
+              "colors": 4540,
+              "chromatic": 2523
+            },
+            {
+              "name": "ko-820-female-style-3",
+              "sha256": "39da4c9c0f33be2dc3b75bafe53a7a2f3792c4082cd05c0cf5f898c52833c8fc",
+              "width": 360,
+              "height": 541,
+              "colors": 3116,
+              "chromatic": 1525
+            },
+            {
+              "name": "ko-820-female-style-4",
+              "sha256": "28880d6346901b84e79697ef3ab8865c0e6aff5ede87a01e8523ff54fe7a5540",
+              "width": 360,
+              "height": 541,
+              "colors": 4435,
+              "chromatic": 4954
+            }
+          ]
+        }
+      ],
+      "requests": [
+        "/fitting-studio",
+        "/assets/fitting-studio.css",
+        "/assets/fitting-studio-3d.css",
+        "/assets/fitting-studio-3d.js",
+        "/assets/studio/hero.png",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/fitting-studio.js",
+        "/assets/studio/male-sheet.png",
+        "/assets/placeholder.svg",
+        "/assets/studio/female-sheet.png"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 1180,
+        "height": 820,
+        "touch": true,
+        "lang": "en"
+      },
+      "avatars": [
+        {
+          "avatar": "male",
+          "directions": [
+            {
+              "name": "en-1180-male-front",
+              "sha256": "f2e412036c3a2fd40108134d1f7ba3f1eca8cef6c7fddfac0eb999dded5917ce",
+              "width": 441,
+              "height": 661,
+              "colors": 3430,
+              "chromatic": 1409
+            },
+            {
+              "name": "en-1180-male-quarter",
+              "sha256": "4357e1259f8f3b5fea9d1b800f052921d23643c2a7ff0c6936ed7b9cb6e0a301",
+              "width": 441,
+              "height": 661,
+              "colors": 3280,
+              "chromatic": 1187
+            },
+            {
+              "name": "en-1180-male-side",
+              "sha256": "344f01eb5b5061e094aa36063709a7baeff5989c78fa053583dce5dc2f50cc1a",
+              "width": 441,
+              "height": 661,
+              "colors": 2853,
+              "chromatic": 912
+            },
+            {
+              "name": "en-1180-male-back",
+              "sha256": "310a792b4f9d4182bb606b6b7087a1617aa6c17dcc37039f01f646273717bb72",
+              "width": 441,
+              "height": 661,
+              "colors": 2999,
+              "chromatic": 977
+            }
+          ],
+          "styles": [
+            {
+              "name": "en-1180-male-style-0",
+              "sha256": "203179047ee6c3eaf8250f2f3d77a4552b1cae6c4a687e16b91e0fedfbb76c78",
+              "width": 441,
+              "height": 661,
+              "colors": 3694,
+              "chromatic": 461
+            },
+            {
+              "name": "en-1180-male-style-1",
+              "sha256": "00a5320a6caa4ff663c59ded54b1d4eec4afa6c51c2fb889b0827fe60d0dced0",
+              "width": 441,
+              "height": 661,
+              "colors": 4482,
+              "chromatic": 490
+            },
+            {
+              "name": "en-1180-male-style-2",
+              "sha256": "4a4ed04b806a7def67ecdf2a2afa79c7fe72e486342a12b0ea065a4a323f0da5",
+              "width": 441,
+              "height": 661,
+              "colors": 3545,
+              "chromatic": 694
+            },
+            {
+              "name": "en-1180-male-style-3",
+              "sha256": "f482129bb57362883f16c2568a8a9730cb8d5fd1d55b55defe8bf2f572d5cf72",
+              "width": 441,
+              "height": 661,
+              "colors": 4673,
+              "chromatic": 7165
+            },
+            {
+              "name": "en-1180-male-style-4",
+              "sha256": "38fed87a36d589624d1f5e757fb890595b73bc48eca44ed15df05f29f807693e",
+              "width": 441,
+              "height": 661,
+              "colors": 6104,
+              "chromatic": 3333
+            }
+          ]
+        },
+        {
+          "avatar": "female",
+          "directions": [
+            {
+              "name": "en-1180-female-front",
+              "sha256": "34e578a7ce261af6bedfe8eb7d2ab25b03993aa8b19fc8962b607d5c6a2ddf26",
+              "width": 441,
+              "height": 661,
+              "colors": 3930,
+              "chromatic": 2511
+            },
+            {
+              "name": "en-1180-female-quarter",
+              "sha256": "ffaf40cd4ac4a47f569f6e5b08936a2edd6fefe5a3b15c104694a57b37e2128d",
+              "width": 441,
+              "height": 661,
+              "colors": 3415,
+              "chromatic": 1960
+            },
+            {
+              "name": "en-1180-female-side",
+              "sha256": "4c71a956a680463817f26278c051531239523ddf290000501cdf0e39a183a44a",
+              "width": 441,
+              "height": 661,
+              "colors": 2964,
+              "chromatic": 1620
+            },
+            {
+              "name": "en-1180-female-back",
+              "sha256": "7c7bfe37a3527b18520f00ddc43de3f333e6a75f9a4941d30cbb78f34aaf3d78",
+              "width": 441,
+              "height": 661,
+              "colors": 3916,
+              "chromatic": 2462
+            }
+          ],
+          "styles": [
+            {
+              "name": "en-1180-female-style-0",
+              "sha256": "dd95b36ecfeae72285cf89197013fe896228712bb0eaac086f1c6854f246733c",
+              "width": 441,
+              "height": 661,
+              "colors": 3446,
+              "chromatic": 1213
+            },
+            {
+              "name": "en-1180-female-style-1",
+              "sha256": "8b1821cad345481e863fd12678fc6cde94e7c13cad947d3ba7b20394b5bb66c6",
+              "width": 441,
+              "height": 661,
+              "colors": 4785,
+              "chromatic": 5145
+            },
+            {
+              "name": "en-1180-female-style-2",
+              "sha256": "8556e91129e3b14c06df05f0ffb8913217fcf219a7780370731d108975789f2d",
+              "width": 441,
+              "height": 661,
+              "colors": 6124,
+              "chromatic": 3747
+            },
+            {
+              "name": "en-1180-female-style-3",
+              "sha256": "315a06de6a7664aecf31a24f5f3dec4aa16c01fc8e887a337fc603b2961d681b",
+              "width": 441,
+              "height": 661,
+              "colors": 4204,
+              "chromatic": 2271
+            },
+            {
+              "name": "en-1180-female-style-4",
+              "sha256": "b4cb803da54aa1baa9ad82b7ae95328cb2d0ea3c4b8ae4ddc842815151523940",
+              "width": 441,
+              "height": 661,
+              "colors": 6011,
+              "chromatic": 7401
+            }
+          ]
+        }
+      ],
+      "requests": [
+        "/fitting-studio",
+        "/assets/fitting-studio.css",
+        "/assets/fitting-studio-3d.css",
+        "/assets/fitting-studio-3d.js",
+        "/assets/studio/hero.png",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/fitting-studio.js",
+        "/assets/studio/male-sheet.png",
+        "/assets/placeholder.svg",
+        "/assets/studio/female-sheet.png"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 390,
+        "height": 844,
+        "touch": true,
+        "lang": "ko"
+      },
+      "avatars": [
+        {
+          "avatar": "male",
+          "directions": [
+            {
+              "name": "ko-390-male-front",
+              "sha256": "54088be89fadb705a882ad48301327e92cef08c88338a91f53b136e3c255dd39",
+              "width": 334,
+              "height": 501,
+              "colors": 2356,
+              "chromatic": 822
+            },
+            {
+              "name": "ko-390-male-quarter",
+              "sha256": "7498c375073b252f3e89aac73fd9a78cbaf42a89ec8219affd7923127d281e15",
+              "width": 334,
+              "height": 501,
+              "colors": 2214,
+              "chromatic": 679
+            },
+            {
+              "name": "ko-390-male-side",
+              "sha256": "ecc74183ed6e6794bdf605b34d395e077069a0be45e888e5200478efacb9a615",
+              "width": 334,
+              "height": 501,
+              "colors": 1991,
+              "chromatic": 521
+            },
+            {
+              "name": "ko-390-male-back",
+              "sha256": "1da4e07149df7cadac59927257c927a63c0c2276c5d75eaa02489a6517223788",
+              "width": 334,
+              "height": 501,
+              "colors": 2059,
+              "chromatic": 558
+            }
+          ],
+          "styles": [
+            {
+              "name": "ko-390-male-style-0",
+              "sha256": "cc1e453ac4907b110e55ba44f9f127cbbaf49f72ad4dc351cc2871dde362d54b",
+              "width": 334,
+              "height": 501,
+              "colors": 2617,
+              "chromatic": 259
+            },
+            {
+              "name": "ko-390-male-style-1",
+              "sha256": "9a51cc34247218a71eadde6320663d50de846b03aee9e6e150ec20e3e24315dd",
+              "width": 334,
+              "height": 501,
+              "colors": 3221,
+              "chromatic": 281
+            },
+            {
+              "name": "ko-390-male-style-2",
+              "sha256": "b9828b097a029021c2094863459d2124cd18334fc8e9941050f6c14bf9ec7531",
+              "width": 334,
+              "height": 501,
+              "colors": 2466,
+              "chromatic": 410
+            },
+            {
+              "name": "ko-390-male-style-3",
+              "sha256": "a4510363916dd9431cbca5c4e2e66ac0da22d5fed2d03bc162210ed33753c2c1",
+              "width": 334,
+              "height": 501,
+              "colors": 3306,
+              "chromatic": 4132
+            },
+            {
+              "name": "ko-390-male-style-4",
+              "sha256": "08bb57d5b6728035490f292a2a880275f3eb589e78e39f8b495d1571360bf49a",
+              "width": 334,
+              "height": 501,
+              "colors": 4083,
+              "chromatic": 1938
+            }
+          ]
+        },
+        {
+          "avatar": "female",
+          "directions": [
+            {
+              "name": "ko-390-female-front",
+              "sha256": "244e1a8ce85153c4fe3d772d61c0ea94124c40a0f34d302080e6ae960f9c9060",
+              "width": 334,
+              "height": 501,
+              "colors": 2654,
+              "chromatic": 1462
+            },
+            {
+              "name": "ko-390-female-quarter",
+              "sha256": "2d0ecc58a243e0f083c8e21fa3e80a7cd6f112ce8ac33971e586408da959eae4",
+              "width": 334,
+              "height": 501,
+              "colors": 2303,
+              "chromatic": 1151
+            },
+            {
+              "name": "ko-390-female-side",
+              "sha256": "a340b1d4dab9e233e40a0f13c7e56b40a155b0aa6edf18b4c31c33824548f392",
+              "width": 334,
+              "height": 501,
+              "colors": 2013,
+              "chromatic": 943
+            },
+            {
+              "name": "ko-390-female-back",
+              "sha256": "dcc7b2064944fd7d0e7f08933a1a7dd8ca1b565628bbedfe77dbb147856e1f91",
+              "width": 334,
+              "height": 501,
+              "colors": 2645,
+              "chromatic": 1408
+            }
+          ],
+          "styles": [
+            {
+              "name": "ko-390-female-style-0",
+              "sha256": "4f1d35fbd8721f3292581d08a6d871e3d24c363dc17804a24a496b933c09eae3",
+              "width": 334,
+              "height": 501,
+              "colors": 2364,
+              "chromatic": 695
+            },
+            {
+              "name": "ko-390-female-style-1",
+              "sha256": "91a6b25494b3818be3a1526d243cd02ddbe2ab19a443367b2a681e3d70b338bd",
+              "width": 334,
+              "height": 501,
+              "colors": 3217,
+              "chromatic": 2971
+            },
+            {
+              "name": "ko-390-female-style-2",
+              "sha256": "11c5094a2d04ba1c259796a3db5e8b679e49a1bf2680b5c0d637b51fd1a59084",
+              "width": 334,
+              "height": 501,
+              "colors": 4047,
+              "chromatic": 2160
+            },
+            {
+              "name": "ko-390-female-style-3",
+              "sha256": "47b6e94cc6c2a3bab8f0b845cb913c370f23c50dd5e3b0a459d89af0ff91871a",
+              "width": 334,
+              "height": 501,
+              "colors": 2779,
+              "chromatic": 1307
+            },
+            {
+              "name": "ko-390-female-style-4",
+              "sha256": "612b857cb5bcb2b0b621f6183e6c33e8a306aea54c4e6379a38d1a4e1e4533ba",
+              "width": 334,
+              "height": 501,
+              "colors": 3987,
+              "chromatic": 4275
+            }
+          ]
+        }
+      ],
+      "requests": [
+        "/fitting-studio",
+        "/assets/fitting-studio.css",
+        "/assets/fitting-studio-3d.css",
+        "/assets/fitting-studio-3d.js",
+        "/assets/studio/hero.png",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/fitting-studio.js",
+        "/assets/studio/male-sheet.png",
+        "/assets/placeholder.svg",
+        "/assets/studio/female-sheet.png"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 390,
+        "height": 844,
+        "touch": true,
+        "lang": "en"
+      },
+      "avatars": [
+        {
+          "avatar": "male",
+          "directions": [
+            {
+              "name": "en-390-male-front",
+              "sha256": "1833d2c4e8a41191cca10a9b486193ca26bda3c8fd439421348a68cdc5140423",
+              "width": 334,
+              "height": 501,
+              "colors": 2372,
+              "chromatic": 816
+            },
+            {
+              "name": "en-390-male-quarter",
+              "sha256": "04d92c8827f9ee302ac0cc992be3b7755038442f45897bdd25f6bddee16fad5a",
+              "width": 334,
+              "height": 501,
+              "colors": 2231,
+              "chromatic": 679
+            },
+            {
+              "name": "en-390-male-side",
+              "sha256": "39b6dd481e496e97dfa8282a79ef83af80562ddb25c18141b27193b614eef4db",
+              "width": 334,
+              "height": 501,
+              "colors": 1973,
+              "chromatic": 522
+            },
+            {
+              "name": "en-390-male-back",
+              "sha256": "23f69651fb8f7e8355e6719b374187d0c104d563b5a7bc3ac1d22af796225395",
+              "width": 334,
+              "height": 501,
+              "colors": 2060,
+              "chromatic": 560
+            }
+          ],
+          "styles": [
+            {
+              "name": "en-390-male-style-0",
+              "sha256": "c7747de5c1452299375af15f31d9a8f7905d5ae695702a4dc24e6c67ebcb2679",
+              "width": 334,
+              "height": 501,
+              "colors": 2580,
+              "chromatic": 256
+            },
+            {
+              "name": "en-390-male-style-1",
+              "sha256": "4fa46d500d3ad1d206f64f18440b321dd5d6b8c2cb4f0f5ee0b798e121dbf937",
+              "width": 334,
+              "height": 501,
+              "colors": 3241,
+              "chromatic": 284
+            },
+            {
+              "name": "en-390-male-style-2",
+              "sha256": "5bd3f22a925952bd069a1e153b5a98028574fcba3b1351f8d9094488fc380974",
+              "width": 334,
+              "height": 501,
+              "colors": 2483,
+              "chromatic": 405
+            },
+            {
+              "name": "en-390-male-style-3",
+              "sha256": "a82cb1ff601165d4c71954090c764b22ffe186e648f1a95a51bcd3230143be53",
+              "width": 334,
+              "height": 501,
+              "colors": 3289,
+              "chromatic": 4131
+            },
+            {
+              "name": "en-390-male-style-4",
+              "sha256": "c40dc9bda8edc69016e0c215fcfededf26540731649e55342dd92ee50801ca7a",
+              "width": 334,
+              "height": 501,
+              "colors": 4104,
+              "chromatic": 1932
+            }
+          ]
+        },
+        {
+          "avatar": "female",
+          "directions": [
+            {
+              "name": "en-390-female-front",
+              "sha256": "3c7fc16eb0dcda9ae4aff9737484ef39eaeb0621a70ed54dd43ec8b9ffb0153c",
+              "width": 334,
+              "height": 501,
+              "colors": 2656,
+              "chromatic": 1455
+            },
+            {
+              "name": "en-390-female-quarter",
+              "sha256": "318aeafc1917c991c7499ae0032aed73bd7aade5db2c9a6e1406d7258b5a5d93",
+              "width": 334,
+              "height": 501,
+              "colors": 2329,
+              "chromatic": 1139
+            },
+            {
+              "name": "en-390-female-side",
+              "sha256": "c29868f186466c00b4ca8d26658d374347e783c7725a129706f72ba97112b64b",
+              "width": 334,
+              "height": 501,
+              "colors": 1987,
+              "chromatic": 935
+            },
+            {
+              "name": "en-390-female-back",
+              "sha256": "75bcfdc453b5ffa027787f3b449cd0a2dddaf00a54adc4f30e2878b9d620d31d",
+              "width": 334,
+              "height": 501,
+              "colors": 2653,
+              "chromatic": 1411
+            }
+          ],
+          "styles": [
+            {
+              "name": "en-390-female-style-0",
+              "sha256": "6e6cf6b31856e136b3077b85f245109376eafb0e7d4ae22b5a6306cc3b720890",
+              "width": 334,
+              "height": 501,
+              "colors": 2370,
+              "chromatic": 698
+            },
+            {
+              "name": "en-390-female-style-1",
+              "sha256": "efb29e447ae3c1235c6077a7a74c27d80509692e7111f1b661c9533787af145f",
+              "width": 334,
+              "height": 501,
+              "colors": 3175,
+              "chromatic": 2961
+            },
+            {
+              "name": "en-390-female-style-2",
+              "sha256": "bb039a33081116fc27c53bc36702462c5638dbb9f998a4e4e283680eb9cec522",
+              "width": 334,
+              "height": 501,
+              "colors": 4027,
+              "chromatic": 2157
+            },
+            {
+              "name": "en-390-female-style-3",
+              "sha256": "3e2d846af51fdb407201242a054011426cfd532dce8b447b166d96908d0f9987",
+              "width": 334,
+              "height": 501,
+              "colors": 2762,
+              "chromatic": 1309
+            },
+            {
+              "name": "en-390-female-style-4",
+              "sha256": "ba6818db84b14a30eaf5f7261a74be0d58d69e0221c97d7f0055de7f625438a1",
+              "width": 334,
+              "height": 501,
+              "colors": 3947,
+              "chromatic": 4260
+            }
+          ]
+        }
+      ],
+      "requests": [
+        "/fitting-studio",
+        "/assets/fitting-studio.css",
+        "/assets/fitting-studio-3d.css",
+        "/assets/fitting-studio-3d.js",
+        "/assets/studio/hero.png",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/fitting-studio.js",
+        "/assets/studio/male-sheet.png",
+        "/assets/placeholder.svg",
+        "/assets/studio/female-sheet.png"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "actualInline3D": true,
+      "bones": 73,
+      "triangles": 49897,
+      "viewFrames": [
+        "3b9702f10a39e8aea806f2d1f350bd5c60d188ef278a448ba789e4ea701321e6",
+        "efd5eb11f225703963fcb595fc13194c953e244d427134cf39dd974c7b0c036f",
+        "2b280bacb44e15d406ebe7126ab21072e40b364c40918397f0afe972aea80b7c"
+      ],
+      "cleanup": {
+        "state": "disposed",
+        "disposed": true,
+        "meshes": 0,
+        "skinnedMeshes": 0,
+        "bones": 0,
+        "drawCalls": 0,
+        "triangles": 0,
+        "renderCount": 11,
+        "garment": "source",
+        "materialMode": "standard",
+        "skinPose": false,
+        "look": "natural",
+        "naturalProfile": true,
+        "viewYaw": 0,
+        "frameSamples": [
+          491.29999999701977,
+          3.3000000044703484,
+          1.5999999940395355,
+          3,
+          0.8999999985098839,
+          1.5999999940395355,
+          1.1000000014901161,
+          3.100000001490116,
+          1,
+          1.2999999970197678,
+          0.7000000029802322
+        ],
+        "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+        "memoryGeometries": 0,
+        "memoryTextures": 0
+      },
+      "requests": [
+        "/fitting-studio",
+        "/assets/fitting-studio.css",
+        "/assets/fitting-studio-3d.css",
+        "/assets/fitting-studio-3d.js",
+        "/assets/studio/hero.png",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/fitting-studio.js",
+        "/assets/studio/male-sheet.png",
+        "/assets/placeholder.svg",
+        "/assets/gltf-proof.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb"
+      ]
+    },
+    {
+      "failureMode": "modelSheetBlocked",
+      "recoveryAction": "retry",
+      "status": "이미지를 읽지 못했습니다. 연결을 확인하고 다시 불러오기를 눌러주세요.",
+      "manualRecovery": true,
+      "requests": [
+        "/fitting-studio",
+        "/assets/fitting-studio.css",
+        "/assets/fitting-studio-3d.css",
+        "/assets/fitting-studio-3d.js",
+        "/assets/studio/hero.png",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/fitting-studio.js",
+        "/assets/studio/male-sheet.png",
+        "/assets/studio/male-sheet.png",
+        "/assets/placeholder.svg",
+        "/assets/studio/male-sheet.png"
+      ]
+    },
+    {
+      "failureMode": "modelSheetBlocked",
+      "recoveryAction": "reset",
+      "status": "이미지를 읽지 못했습니다. 연결을 확인하고 다시 불러오기를 눌러주세요.",
+      "manualRecovery": true,
+      "requests": [
+        "/fitting-studio",
+        "/assets/fitting-studio.css",
+        "/assets/fitting-studio-3d.css",
+        "/assets/fitting-studio-3d.js",
+        "/assets/studio/hero.png",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/fitting-studio.js",
+        "/assets/studio/male-sheet.png",
+        "/assets/studio/male-sheet.png",
+        "/assets/placeholder.svg",
+        "/assets/studio/male-sheet.png"
+      ]
+    }
+  ],
+  "environment": {
+    "browser": "Linux Chromium",
+    "nativeIpadSafari": false
+  },
+  "scope": "Generated 2D style images and a separate, actual stock 3D model rendered in the same page. No personalized photo fitting, exact sizing, image-to-3D reconstruction, retail stock or native iPad Safari certification."
+}

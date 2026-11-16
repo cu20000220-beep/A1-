@@ -12,6 +12,7 @@
     '실제 상품·가격·사이즈 자료는 공급원 승인 전까지 제공하지 않습니다. 결제·유료 GPT·발송은 비활성입니다.':'Real product, price and size data require source approval. Payments, paid GPT and delivery services are disabled.',
     '미리보기: 회원·DB·서버 API는 격리돼 있으며 검색·규칙 상담은 브라우저 안에서 작동합니다.':'Preview: accounts, databases and server APIs are isolated; searches and rule-based advice run in your browser.',
     'AI 스타일 스튜디오': 'AI STYLE STUDIO',
+    '스타일·피팅': 'STYLE & FITTING',
     '글로벌 쇼핑': 'GLOBAL SHOPPING',
     'AI 스타일리스트': 'AI STYLIST',
     '가격 비교': 'PRICE COMPARISON',
@@ -27,6 +28,7 @@
   const links = [
     ['home', '홈', 'index.html'],
     ['clothes', '옷 찾기', 'index.html#shopping-search'],
+    ['fitting', '스타일·피팅', 'fitting-studio.html'],
     ['studio', 'AI 스타일 스튜디오', 'index.html#ai-studio'],
     ['shopping', '글로벌 쇼핑', 'global.html#shopping'],
     ['stylist', 'AI 스타일리스트', 'stylist.html'],

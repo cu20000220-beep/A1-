@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>A1 FASHION · 스타일 스튜디오</title>
+  <meta name="description" content="남녀 가상 모델의 실사 스타일 이미지를 방향과 의상별로 비교하는 무료 A1 FASHION 스튜디오">
+  <link rel="icon" href="assets/placeholder.svg">
+  <link rel="stylesheet" href="assets/fitting-studio.css">
+  <link rel="stylesheet" href="assets/fitting-studio-3d.css">
+  <script src="assets/i18n.js" defer></script>
+  <script src="assets/preview-experience.js" defer></script>
+  <script src="assets/fitting-studio.js" defer></script>
+  <script src="assets/fitting-studio-3d.js" type="module"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="A1 FASHION 홈"><strong>A1</strong><span>FASHION</span></a>
+    <nav class="header-nav" aria-label="주요 메뉴"><a href="#studio">스타일 스튜디오</a><a href="stylist.html">무료 스타일 상담</a></nav>
+    <span data-language-switcher></span>
+  </header>
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">A1 STYLE STUDIO</p>
+        <h1 id="hero-title">내가 좋아할<br>다음 스타일.</h1>
+        <p class="hero-description">자연스러운 인물과 의류의 질감.<br> 다양한 방향과 스타일을 한눈에 비교하세요.</p>
+        <div class="hero-actions"><a class="button button-dark" href="#studio">스타일 살펴보기 <span aria-hidden="true">→</span></a><a class="text-link" href="index.html#ai-studio">내 사진 체형 분석 <span aria-hidden="true">↗</span></a></div>
+        <p class="hero-caption">모든 이용자 무료 베타</p>
+      </div>
+      <div class="hero-visual"><img id="studio-hero" src="assets/studio/hero.png" alt="크림색 니트를 입은 남녀 가상 패션 모델" width="1536" height="1024"><span class="hero-credit">A1 FASHION · STYLE STUDY</span></div>
+    </section>
+    <div class="studio-disclosure"><span class="disclosure-mark" aria-hidden="true">i</span><p><strong id="studio-mode-note">스타일 이미지 미리보기 · 2D</strong><span>AI로 제작한 가상 인물·예시 의상 이미지입니다. 실제 판매 상품이나 사용자 사진의 합성 결과가 아닙니다.</span></p></div>
+    <section class="studio-section" id="studio" aria-labelledby="studio-title">
+      <div class="section-heading"><div><p class="eyebrow">01 / YOUR STYLE</p><h2 id="studio-title">마음에 드는 스타일을<br>골라보세요.</h2></div><p>모델을 선택하고,<br>방향과 의상을 바꿔보세요.</p></div>
+      <div id="studio-modes" class="studio-mode-tabs" role="tablist" aria-label="미리보기 방식"><button type="button" role="tab" data-studio-mode="images" aria-selected="true">실사 스타일 이미지 · 2D</button><button type="button" role="tab" data-studio-mode="three" aria-selected="false">실제 3D 인체 샘플</button></div>
+      <div id="studio-root" data-state="loading">
+        <div class="studio-workspace">
+          <section class="model-stage" aria-label="선택한 스타일 이미지">
+            <div class="stage-topline"><span id="studio-model-name">MODEL A</span><span class="image-mode">2D STYLE IMAGE</span></div>
+            <div id="studio-model" class="studio-sprite" data-avatar="male" data-cell="0" role="img" aria-label="남성 가상 모델의 기본 의상 정면 이미지"></div>
+            <div class="stage-state" id="studio-loading"><span class="loading-dot" aria-hidden="true"></span><p>스타일 이미지를 준비하고 있습니다.</p></div>
+            <div class="stage-bottomline"><span id="studio-current-view">기본 의상 · 정면</span><span aria-hidden="true">A1 / 001</span></div>
+          </section>
+          <aside class="studio-panel" aria-label="스타일 선택">
+            <div class="panel-intro"><p class="eyebrow">STYLE SELECTOR</p><h3>나의 취향 찾기</h3><p>보이는 이미지를 직접 비교해보세요.</p></div>
+            <fieldset class="model-choice" id="studio-avatar"><legend>가상 모델</legend><div class="segmented"><button type="button" data-avatar-choice="male" aria-pressed="true">남성 모델</button><button type="button" data-avatar-choice="female" aria-pressed="false">여성 모델</button></div></fieldset>
+            <fieldset class="direction-choice" id="studio-directions"><legend>보는 방향</legend><div class="direction-grid"><button type="button" data-direction="front" aria-pressed="true">정면</button><button type="button" data-direction="quarter" aria-pressed="false">사선</button><button type="button" data-direction="side" aria-pressed="false">측면</button><button type="button" data-direction="back" aria-pressed="false">후면</button></div><p class="field-note" id="studio-direction-note">방향별로 준비한 이미지를 표시합니다. 연속 회전하는 3D 모델은 아닙니다.</p></fieldset>
+            <div class="selection-card"><span class="small-label">SELECTED LOOK</span><h4 id="studio-selected-style">기본 의상</h4><p id="studio-selected-detail">실루엣을 비교하기 위한 기본 스타일입니다.</p><button class="button button-light" type="button" id="studio-base">기본 의상과 방향 보기 <span aria-hidden="true">↗</span></button></div>
+            <p id="studio-status" role="status" aria-live="polite">스타일 이미지를 준비하고 있습니다.</p>
+            <div class="recovery-actions"><button type="button" id="studio-retry" hidden>이미지 다시 불러오기</button><button type="button" id="studio-reset">처음 선택으로</button></div>
+            <a class="panel-next" href="stylist.html"><span>어떤 옷이 좋을지 고민된다면</span><strong>무료 규칙 기반 스타일 상담 <span aria-hidden="true">↗</span></strong></a>
+          </aside>
+        </div>
+        <section class="looks-section" aria-labelledby="looks-title"><div class="looks-heading"><div><p class="eyebrow">02 / LOOK OPTIONS</p><h3 id="looks-title">다른 스타일도 만나보세요.</h3></div><span>예시 의상 · 실제 상품 아님</span></div><div id="studio-style-grid" class="looks-grid" aria-label="예시 의상 선택"></div><p class="looks-note">의상별 이미지는 정면만 준비되어 있습니다. 다른 방향은 기본 의상에서 확인하세요.</p></section>
+      </div>
+<section id="studio-3d-panel" class="studio-three-panel" hidden aria-label="실제 3D 인체 샘플">
+      <p class="studio-three-note">이 3D는 위 실사 이미지 속 인물과 다른 별도 샘플입니다. 원본 의상 한 벌이며 사진·체형 수치를 적용하지 않습니다.</p>
+      <p id="studio-3d-status" role="status" aria-live="polite">3D 보기를 선택하면 모델을 불러옵니다.</p>
+      <button id="studio-3d-retry" type="button" hidden>3D 화면 다시 불러오기</button>
+      <div id="studio-3d-mount"></div>
+      <template id="studio-3d-template"><p id="gltf-unavailable">이 기술 검증은 격리된 Preview에서만 제공됩니다.</p><div id="gltf-proof-root" data-load-state="blocked" hidden>
+    <p class="eyebrow">무료 베타 · 내추럴 3D 인체</p>
+    <h3>내추럴 3D 피팅룸</h3>
+    <p class="lead">얼굴·피부·눈·머리카락·의상이 함께 있는 3D 인체 샘플입니다. 전신을 돌려 실제 형상과 표면을 확인해 보세요.</p>
+    <p class="notice">이 샘플은 사용자의 얼굴·체형을 복원한 결과가 아닙니다. 사진·분석값을 읽거나 전송하지 않습니다. 실제 판매 의류의 피팅·사이즈·착용감을 보장하지 않습니다.</p>
+    <div class="workspace">
+      <section class="stage" aria-label="3D 전신 화면">
+        <canvas id="gltf-canvas" width="720" height="900" tabindex="0" aria-label="회전 가능한 예시 3D 전신과 티셔츠"></canvas>
+        <p id="gltf-canvas-state" aria-hidden="true">로컬 전신 파일을 준비하고 있습니다.</p>
+        <p class="gesture">한 손가락으로 회전 · 두 손가락으로 확대·축소</p>
+      </section>
+      <section class="panel" aria-label="렌더링 조작">
+        <label>아바타 모습<select id="gltf-look" disabled><option value="natural">내추럴 인체 샘플</option><option value="reference">기존 인체와 비교</option><option value="humanoid">SF 휴머노이드</option></select></label>
+        <label><span id="gltf-garment-title">샘플 의상</span><select id="gltf-garment" disabled><option value="source">원본 샘플 의상</option><option value="none">기본 아바타 · 티셔츠 없음</option><option value="LAB-A">기본 · 블루</option><option value="LAB-B">여유형 · 테라코타</option><option value="LAB-C">짧은형 · 그린</option></select></label>
+        <p id="natural-avatar-note" class="small">현재 인체 샘플에는 원본 의상 한 벌을 표시합니다. 교체 가능한 실제 의류 모델은 준비 중입니다. 기존 비교 모델에서는 예시 티셔츠 3종을 이용할 수 있습니다.</p>
+        <div class="buttons"><button id="gltf-front" disabled>정면</button><button id="gltf-side" disabled>측면</button><button id="gltf-back" disabled>후면</button></div>
+        <div class="buttons"><button id="gltf-left" disabled>왼쪽 회전</button><button id="gltf-right" disabled>오른쪽 회전</button></div>
+        <div class="buttons"><button id="gltf-zoom-in" disabled>확대</button><button id="gltf-zoom-out" disabled>축소</button></div>
+        <label>재질 비교<select id="gltf-material" disabled><option value="standard">조명·거칠기 적용</option><option value="basic">기본 색상과 비교</option></select></label>
+        <label class="check"><input id="gltf-skin-proof" type="checkbox" disabled>골격 변형 비교</label>
+        <p class="small">골격 변형은 glTF 스키닝 동작 검사입니다. 사용자 체형 복원이나 의류 핏 예측이 아닙니다.</p>
+        <p id="gltf-status" role="status" aria-live="polite">로컬 전신 파일을 준비하고 있습니다.</p>
+        <div class="buttons"><button id="gltf-delete" disabled>임시 3D 화면 지우기</button><button id="gltf-retry" type="button">다시 불러오기</button></div>
+        <p class="small">WebGL 2가 필요합니다. 표시되지 않으면 기존 WebGL 1 체험을 이용할 수 있습니다.</p>
+        <a href="avatar-lab.html">기존 3D 체험으로 돌아가기</a>
+      </section>
+    </div>
+    <footer><p>기본 인체: MetaPerson 공식 샘플 · BSD-3-Clause. 기존 비교 인체: MakeHuman hm08 · CC0. Three.js · MIT.</p><a href="assets/natural-avatar/LICENSE.txt">내추럴 인체 출처와 이용 조건</a> · <a href="assets/gltf-proof/LICENSE.txt">모델 출처와 이용 조건</a> · <a href="assets/vendor/three-0.187.0/LICENSE">렌더러 라이선스</a><nav><a href="index.html#shopping-search">국내 의류 검색</a><a href="stylist.html">무료 규칙 기반 스타일리스트</a></nav></footer>
+  </div></template>
+      <a data-studio-3d-fallback href="gltf-proof.html">기존 3D 화면에서 열기</a>
+      </section>
+    </section>
+    <section class="next-section" aria-labelledby="next-title"><div><p class="eyebrow">CONTINUE WITH A1</p><h2 id="next-title">스타일에서,<br>나에게 맞는 선택으로.</h2></div><div class="next-links"><a href="index.html#ai-studio"><span>01</span><div><h3>내 사진 체형 분석</h3><p>기존 기기 내 사진 분석으로 이동합니다.</p></div><b aria-hidden="true">↗</b></a><a href="product-lab.html"><span>02</span><div><h3>내 사진 로컬 2D 미리보기</h3><p>별도 동의 후 기기 안에서 이미지 배치를 체험하세요.</p></div><b aria-hidden="true">↗</b></a><a href="gltf-proof.html"><span>03</span><div><h3>실제 3D 연구실</h3><p>회전 가능한 3D 인체 샘플은 별도 화면에서 확인하세요.</p></div><b aria-hidden="true">↗</b></a><a href="index.html#shopping-search"><span>04</span><div><h3>국내 의류 검색</h3><p>원하는 조건으로 공식 판매처 검색을 시작하세요.</p></div><b aria-hidden="true">↗</b></a></div></section>
+  </main>
+  <footer class="site-footer"><a class="brand" href="index.html"><strong>A1</strong><span>FASHION</span></a><p>나를 이해하는 스타일, A1 FASHION.</p><p>이 화면은 2D 스타일 비교입니다. 사진 기반 개인화·실제 상품 피팅·정확한 사이즈 보장을 제공하지 않습니다.</p><a href="privacy.html">개인정보 처리 안내</a></footer>
+</body>
+</html>
