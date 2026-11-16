@@ -54,6 +54,7 @@ const publicEntries = [
   'gltf-proof.html',
   'assets/gltf-proof.js',
   'assets/gltf-proof.css',
+  'assets/humanoid-surface.js',
   'assets/gltf-proof',
   'assets/avatar-geometry.js',
   'assets/human-base.js',

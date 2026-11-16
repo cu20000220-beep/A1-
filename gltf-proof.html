@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>A1 · 전신 glTF 렌더링 검증</title>
+  <title>A1 · SF 휴머노이드 피팅룸</title>
   <link rel="icon" href="assets/placeholder.svg">
   <link rel="stylesheet" href="assets/gltf-proof.css">
   <script src="assets/i18n.js" defer></script>
@@ -14,9 +14,9 @@
   <header><a href="index.html">A1 FASHION</a><span data-language-switcher></span></header>
   <p id="gltf-unavailable">이 기술 검증은 격리된 Preview에서만 제공됩니다.</p>
   <main id="gltf-proof-root" data-load-state="blocked" hidden>
-    <p class="eyebrow">무료 베타 · 독립 렌더링 검사</p>
-    <h1>전신·의류 렌더링 검증</h1>
-    <p class="lead">기존 CC0 전신과 예시 티셔츠를 새 glTF 렌더러로 표시합니다. 새 실사형 디지털 휴먼이나 실제 상품 피팅이 완성된 화면은 아닙니다.</p>
+    <p class="eyebrow">무료 베타 · SF 아바타 스타일</p>
+    <h1>SF 휴머노이드 피팅룸</h1>
+    <p class="lead">붉은 합성 피부와 청록·금색 금속 패널을 가진 자체 디자인 아바타입니다. 전신을 회전하고 예시 티셔츠를 갈아입혀 보세요. 기존 인체 모델과도 비교할 수 있습니다.</p>
     <p class="notice">사진·체형 분석값을 읽거나 전송하지 않습니다. 티셔츠는 실제 판매 상품이 아닌 예시 3D 착용 이미지입니다. 정확한 사이즈·착용감·의복 물리 시뮬레이션을 보장하지 않습니다.</p>
     <div class="workspace">
       <section class="stage" aria-label="3D 전신 화면">
@@ -25,7 +25,8 @@
         <p class="gesture">한 손가락으로 회전 · 두 손가락으로 확대·축소</p>
       </section>
       <section class="panel" aria-label="렌더링 조작">
-        <label>예시 티셔츠<select id="gltf-garment" disabled><option value="LAB-A">기본 · 블루</option><option value="LAB-B">여유형 · 테라코타</option><option value="LAB-C">짧은형 · 그린</option><option value="none">착용 전과 비교</option></select></label>
+        <label>아바타 모습<select id="gltf-look" disabled><option value="humanoid">SF 휴머노이드</option><option value="reference">기존 인체와 비교</option></select></label>
+        <label>예시 티셔츠<select id="gltf-garment" disabled><option value="none">기본 아바타 · 티셔츠 없음</option><option value="LAB-A">기본 · 블루</option><option value="LAB-B">여유형 · 테라코타</option><option value="LAB-C">짧은형 · 그린</option></select></label>
         <div class="buttons"><button id="gltf-front" disabled>정면</button><button id="gltf-side" disabled>측면</button><button id="gltf-back" disabled>후면</button></div>
         <div class="buttons"><button id="gltf-left" disabled>왼쪽 회전</button><button id="gltf-right" disabled>오른쪽 회전</button></div>
         <div class="buttons"><button id="gltf-zoom-in" disabled>확대</button><button id="gltf-zoom-out" disabled>축소</button></div>

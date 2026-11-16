@@ -1,0 +1,343 @@
+{
+  "sourceHashes": {
+    "gltf-proof.html": "011624261433f215d5f4269a6a270861b36ad0623d507ad155f9e3f87dc80c82",
+    "assets/gltf-proof.js": "b493e16111241484436f08b39ad89bc763e35f0fd33833d38c6af4b0cc4a1e6a",
+    "assets/gltf-proof.css": "c0774baf2cbfaae9249b5402649ed4e931d99e819cba856328dc02df64e0dc34",
+    "assets/humanoid-surface.js": "6701889a05dfc9ebf36c37c191bfbf199b34ad0976c7fb89b76e0acf6281c8f7",
+    "assets/gltf-proof/avatar.glb": "1224f4f923d71b5c45688592519a56ae2e55128032390f605ff73926203c669e"
+  },
+  "reports": [
+    {
+      "profile": {
+        "width": 1280,
+        "height": 900,
+        "touch": false,
+        "lang": "ko"
+      },
+      "surface": {
+        "name": "ko-1280-humanoid-front",
+        "sha256": "5619d0cc76caa3b8f2fdb8d85a63c48fb565dedb98998924e5840f4d3bd476df",
+        "width": 866,
+        "height": 685,
+        "red": 2360,
+        "teal": 6466,
+        "gold": 350
+      },
+      "reference": {
+        "name": "ko-1280-reference-front",
+        "sha256": "bcbf9ada1a2e7ac030ae7072e19d65838e9a257d350cc4493170c5202cc1a21e",
+        "width": 866,
+        "height": 685,
+        "red": 0,
+        "teal": 96,
+        "gold": 76
+      },
+      "views": [
+        {
+          "name": "ko-1280-humanoid-side",
+          "sha256": "01d791c3f123a51128a4ad40141aef1c4175d59b2a9f985642183cf5f12d77c7",
+          "width": 866,
+          "height": 685,
+          "red": 1320,
+          "teal": 5187,
+          "gold": 87
+        },
+        {
+          "name": "ko-1280-humanoid-back",
+          "sha256": "1e2845ee2c7aad91703308f8d4156adc1f31f2e269c83f2c6eb28152bfaa92db",
+          "width": 866,
+          "height": 685,
+          "red": 786,
+          "teal": 7288,
+          "gold": 96
+        }
+      ],
+      "variants": [
+        {
+          "garment": "LAB-A",
+          "name": "ko-1280-LAB-A",
+          "sha256": "f73ba2eb62119e48b3478581ff7bba6e3b8b4cd447b4fb2a7eb8f7ddef695045",
+          "width": 866,
+          "height": 685,
+          "red": 1149,
+          "teal": 8648,
+          "gold": 102
+        },
+        {
+          "garment": "LAB-B",
+          "name": "ko-1280-LAB-B",
+          "sha256": "b72bd0cbec2ab656a403d265d426ffcb0215687e7b64c60f6a828ee4eca1b981",
+          "width": 866,
+          "height": 685,
+          "red": 7137,
+          "teal": 3434,
+          "gold": 4531
+        },
+        {
+          "garment": "LAB-C",
+          "name": "ko-1280-LAB-C",
+          "sha256": "aa7d6e2428df2682e36b2ca51223aaceb21c5fc8e24c8354ab444a9dac583af5",
+          "width": 866,
+          "height": 685,
+          "red": 1502,
+          "teal": 7926,
+          "gold": 240
+        }
+      ],
+      "pose": {
+        "name": "ko-1280-humanoid-pose",
+        "sha256": "0ae864976e8a5f8c99d6dd6bbe2f196ca822d45d6b67f3ddad460b0f38c1b361",
+        "width": 866,
+        "height": 685,
+        "red": 2353,
+        "teal": 6351,
+        "gold": 361
+      },
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 820,
+        "height": 1180,
+        "touch": true,
+        "lang": "ko"
+      },
+      "surface": {
+        "name": "ko-820-humanoid-front",
+        "sha256": "6d26211b49153521c4c83bb934b558c3a8d401465542e1a33838a3340db4f9bc",
+        "width": 782,
+        "height": 721,
+        "red": 2612,
+        "teal": 7147,
+        "gold": 351
+      },
+      "reference": {
+        "name": "ko-820-reference-front",
+        "sha256": "d49957a4167e255decd862b55a3e511537730a4c6bac0a7083f7e8ecdf7f2d65",
+        "width": 782,
+        "height": 721,
+        "red": 0,
+        "teal": 112,
+        "gold": 78
+      },
+      "views": [
+        {
+          "name": "ko-820-humanoid-side",
+          "sha256": "a31515a1f7a5fe3590d2ced2ca19aaf4cfbef3c3e6922af4a641cead38eeae41",
+          "width": 782,
+          "height": 721,
+          "red": 1467,
+          "teal": 5750,
+          "gold": 120
+        },
+        {
+          "name": "ko-820-humanoid-back",
+          "sha256": "f13d06be16db4df9ec0138cba477f38d0d6360272140099a9fd867203504a50d",
+          "width": 782,
+          "height": 721,
+          "red": 871,
+          "teal": 8013,
+          "gold": 143
+        }
+      ],
+      "variants": [
+        {
+          "garment": "LAB-A",
+          "name": "ko-820-LAB-A",
+          "sha256": "c954856833d3e74a2be795198c9e6218a0f537c7106c66d5791890fd359076bf",
+          "width": 782,
+          "height": 721,
+          "red": 1265,
+          "teal": 9546,
+          "gold": 109
+        },
+        {
+          "garment": "LAB-B",
+          "name": "ko-820-LAB-B",
+          "sha256": "5207e44fa30363c437007961dd814e281219bcbb1c67d8c8a0057eaa98f19669",
+          "width": 782,
+          "height": 721,
+          "red": 7929,
+          "teal": 3760,
+          "gold": 5026
+        },
+        {
+          "garment": "LAB-C",
+          "name": "ko-820-LAB-C",
+          "sha256": "c4c0cea91ecfa4b1221f0bec8ac6dc1f4ce0c2f8f88d66d5132f72293d3bc15c",
+          "width": 782,
+          "height": 721,
+          "red": 1662,
+          "teal": 8797,
+          "gold": 234
+        }
+      ],
+      "pose": {
+        "name": "ko-820-humanoid-pose",
+        "sha256": "222667e68fd2c3ff07984ad645a53b5164c10bad183923b6b8bd8e7d203a7968",
+        "width": 782,
+        "height": 721,
+        "red": 2599,
+        "teal": 7068,
+        "gold": 390
+      },
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 1180,
+        "height": 820,
+        "touch": true,
+        "lang": "en"
+      },
+      "surface": {
+        "name": "en-1180-humanoid-front",
+        "sha256": "b6ef0651ecdf3f4bf8ba359d87171d7d12c83f652de1f9d33a86a5fb22f7447d",
+        "width": 806,
+        "height": 625,
+        "red": 1941,
+        "teal": 5369,
+        "gold": 313
+      },
+      "reference": {
+        "name": "en-1180-reference-front",
+        "sha256": "5ac6c3ef36fe42ede4e60b9eece19ab7f0c9c802fe14f20831c63fd4cf85c3af",
+        "width": 806,
+        "height": 625,
+        "red": 1,
+        "teal": 81,
+        "gold": 61
+      },
+      "views": [
+        {
+          "name": "en-1180-humanoid-side",
+          "sha256": "85953fc5635d7013abf47f07e76e4aca147843edafe83f7654a6cb0242947c16",
+          "width": 806,
+          "height": 625,
+          "red": 1094,
+          "teal": 4295,
+          "gold": 87
+        },
+        {
+          "name": "en-1180-humanoid-back",
+          "sha256": "903497d719b0e1ca5f32bf44ff99598d163a33e684286b122698157e87e42179",
+          "width": 806,
+          "height": 625,
+          "red": 661,
+          "teal": 6039,
+          "gold": 99
+        }
+      ],
+      "variants": [
+        {
+          "garment": "LAB-A",
+          "name": "en-1180-LAB-A",
+          "sha256": "efbf2af34d2c190a43222e21805fcc5c6755ffcf3c595de3dd40df0264e9d174",
+          "width": 806,
+          "height": 625,
+          "red": 946,
+          "teal": 7161,
+          "gold": 95
+        },
+        {
+          "garment": "LAB-B",
+          "name": "en-1180-LAB-B",
+          "sha256": "93da1c11664a9801f53e4f282c2b07fd46788d20053ebfa852c06f4491cad8d9",
+          "width": 806,
+          "height": 625,
+          "red": 5941,
+          "teal": 2833,
+          "gold": 3778
+        },
+        {
+          "garment": "LAB-C",
+          "name": "en-1180-LAB-C",
+          "sha256": "abcc5f3180943464a86161cf258a255db4998d1365528af1aa2bf58cd8f3fbf6",
+          "width": 806,
+          "height": 625,
+          "red": 1229,
+          "teal": 6591,
+          "gold": 216
+        }
+      ],
+      "pose": {
+        "name": "en-1180-humanoid-pose",
+        "sha256": "52db4210403e1776660b19e274a357a46f42e7032509198c9ca04149d20bf9b7",
+        "width": 806,
+        "height": 625,
+        "red": 1949,
+        "teal": 5287,
+        "gold": 335
+      },
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    }
+  ],
+  "environment": {
+    "browser": "Linux Chromium with SwiftShader",
+    "nativeIpadSafari": false
+  },
+  "scope": "Original procedural SF material on the preserved CC0 mesh. No licensed movie character asset, personal photo, body reconstruction, paid API or exact product fit. Touch emulation is not native iPad testing."
+}
