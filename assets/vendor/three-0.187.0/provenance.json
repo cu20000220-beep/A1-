@@ -1,0 +1,45 @@
+{
+  "name": "three",
+  "version": "0.187.0",
+  "license": "MIT",
+  "source": "https://registry.npmjs.org/three/-/three-0.187.0.tgz",
+  "integrity": "sha512-Qiu7R+Cmh8CstZsY1uJOSWnVlfo7ZtNLV7mF8Jltk3LB3AtDu9cRZlcnRKkAk8Y4z6KKw35z7Y7Urd7jWY8etA==",
+  "modifications": "Addon bare imports changed to bundled relative build/three.module.js; no dynamic CDN or import map. All other source preserved. One upstream mixed space/tab indent on the SkinnedMesh material line in build/three.core.js normalized; no behavior change.",
+  "files": [
+    {
+      "path": "build/three.module.js",
+      "upstreamSha256": "104f56145899722094556490d787aae0617cc2fc3382f31df02d724ea1aee341",
+      "sha256": "104f56145899722094556490d787aae0617cc2fc3382f31df02d724ea1aee341"
+    },
+    {
+      "path": "build/three.core.js",
+      "upstreamSha256": "613e370f76638fdef83926642bf256dc9615684922de1ce1f63a8583e5d78578",
+      "sha256": "f2292eeef3332bf736b6be376d8dd8748f6f412ed484cbd58f529b2b7a6cc368"
+    },
+    {
+      "path": "examples/jsm/loaders/GLTFLoader.js",
+      "upstreamSha256": "532ac726e120039acbcd6cf54328c57acbf7b438176afaa6951257126d11bff1",
+      "sha256": "008ec07cc51409a175fe6f9e24d9998a97069e1de0a42298cd9fdad93bf2bc22"
+    },
+    {
+      "path": "examples/jsm/controls/OrbitControls.js",
+      "upstreamSha256": "e7fca2fe9e7670a828af9b28084669a5909445b7f36f1f26cee9bf8f2961c32c",
+      "sha256": "c7980ea949c527a829cf7416afa8f4dcf50aff31079685e6827d188d3635cc34"
+    },
+    {
+      "path": "examples/jsm/utils/BufferGeometryUtils.js",
+      "upstreamSha256": "7bda2a8ba836b2bcf67cb938d4b9e1bb5d1b1bc616817103ed858c0b58296ce7",
+      "sha256": "fa8b3930d2c5bc6366516c636dee51fedcaecf51bfd3c245b350bda655fe194b"
+    },
+    {
+      "path": "examples/jsm/utils/SkeletonUtils.js",
+      "upstreamSha256": "b1632a703206c3d830de9fcbe515696770d04b71a15ee6b50afa6d2c3298c86f",
+      "sha256": "9e53f7de94e1a632b88113536c1c404e243dac973bad2e8e6d514ff49b569e65"
+    },
+    {
+      "path": "LICENSE",
+      "upstreamSha256": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+      "sha256": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc"
+    }
+  ]
+}

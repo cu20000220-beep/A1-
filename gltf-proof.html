@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>A1 · 전신 glTF 렌더링 검증</title>
+  <link rel="icon" href="assets/placeholder.svg">
+  <link rel="stylesheet" href="assets/gltf-proof.css">
+  <script src="assets/i18n.js" defer></script>
+  <script src="assets/preview-experience.js" defer></script>
+  <script src="assets/gltf-proof.js" type="module"></script>
+</head>
+<body>
+  <header><a href="index.html">A1 FASHION</a><span data-language-switcher></span></header>
+  <p id="gltf-unavailable">이 기술 검증은 격리된 Preview에서만 제공됩니다.</p>
+  <main id="gltf-proof-root" data-load-state="blocked" hidden>
+    <p class="eyebrow">무료 베타 · 독립 렌더링 검사</p>
+    <h1>전신·의류 렌더링 검증</h1>
+    <p class="lead">기존 CC0 전신과 예시 티셔츠를 새 glTF 렌더러로 표시합니다. 새 실사형 디지털 휴먼이나 실제 상품 피팅이 완성된 화면은 아닙니다.</p>
+    <p class="notice">사진·체형 분석값을 읽거나 전송하지 않습니다. 티셔츠는 실제 판매 상품이 아닌 예시 3D 착용 이미지입니다. 정확한 사이즈·착용감·의복 물리 시뮬레이션을 보장하지 않습니다.</p>
+    <div class="workspace">
+      <section class="stage" aria-label="3D 전신 화면">
+        <canvas id="gltf-canvas" width="720" height="900" tabindex="0" aria-label="회전 가능한 예시 3D 전신과 티셔츠"></canvas>
+        <p id="gltf-canvas-state" aria-hidden="true">로컬 전신 파일을 준비하고 있습니다.</p>
+        <p class="gesture">한 손가락으로 회전 · 두 손가락으로 확대·축소</p>
+      </section>
+      <section class="panel" aria-label="렌더링 조작">
+        <label>예시 티셔츠<select id="gltf-garment" disabled><option value="LAB-A">기본 · 블루</option><option value="LAB-B">여유형 · 테라코타</option><option value="LAB-C">짧은형 · 그린</option><option value="none">착용 전과 비교</option></select></label>
+        <div class="buttons"><button id="gltf-front" disabled>정면</button><button id="gltf-side" disabled>측면</button><button id="gltf-back" disabled>후면</button></div>
+        <div class="buttons"><button id="gltf-left" disabled>왼쪽 회전</button><button id="gltf-right" disabled>오른쪽 회전</button></div>
+        <div class="buttons"><button id="gltf-zoom-in" disabled>확대</button><button id="gltf-zoom-out" disabled>축소</button></div>
+        <label>재질 비교<select id="gltf-material" disabled><option value="standard">조명·거칠기 적용</option><option value="basic">기본 색상과 비교</option></select></label>
+        <label class="check"><input id="gltf-skin-proof" type="checkbox" disabled>골격 변형 비교</label>
+        <p class="small">골격 변형은 glTF 스키닝 동작 검사입니다. 사용자 체형 복원이나 의류 핏 예측이 아닙니다.</p>
+        <p id="gltf-status" role="status" aria-live="polite">로컬 전신 파일을 준비하고 있습니다.</p>
+        <div class="buttons"><button id="gltf-delete" disabled>임시 3D 화면 지우기</button><button id="gltf-retry" type="button">다시 불러오기</button></div>
+        <p class="small">WebGL 2가 필요합니다. 표시되지 않으면 기존 WebGL 1 체험을 이용할 수 있습니다.</p>
+        <a href="avatar-lab.html">기존 3D 체험으로 돌아가기</a>
+      </section>
+    </div>
+    <footer><p>전신 자료: MakeHuman hm08 · CC0. 의류: 기존 A1 연결형 예시 메시. Three.js · MIT.</p><a href="assets/gltf-proof/LICENSE.txt">모델 출처와 이용 조건</a> · <a href="assets/vendor/three-0.187.0/LICENSE">렌더러 라이선스</a><nav><a href="index.html#shopping-search">국내 의류 검색</a><a href="stylist.html">무료 규칙 기반 스타일리스트</a></nav></footer>
+  </main>
+</body>
+</html>
