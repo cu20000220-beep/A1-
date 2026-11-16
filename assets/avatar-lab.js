@@ -5,6 +5,7 @@ function initializeAvatarLab(){
  let humanModel=false;
  try{if(window.A1HumanBase&&!G.hasHumanBase())G.installBase(window.A1HumanBase);humanModel=G.hasHumanBase();}catch{/* Keep the existing geometry available if a local asset is invalid. */}
  I.register({
+ '내추럴 3D 인체 샘플 보기 · 체형 수치 미적용':'View the natural 3D human sample · body measurements not applied',
  '스캔 머리 자료를 준비 중입니다. 기존 범용 모델을 표시합니다.':'Preparing the scan head assets. The existing generic model is shown.',
  '범용 스캔 머리 · 눈을 감은 정적 에셋이며 사용자 얼굴 복원이 아닙니다.':'Generic scan head · a static asset with closed eyes, not a reconstruction of your face.',
  '스캔 머리 재질을 준비하지 못해 기존 범용 모델을 표시합니다. 기존 모델로 계속 이용하거나 새로고침 후 확인해주세요.':'The scan head material could not load; the existing generic model is shown. Continue with that model or reload to check again.',

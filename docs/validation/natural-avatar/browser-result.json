@@ -1,0 +1,469 @@
+{
+  "sourceHashes": {
+    "gltf-proof.html": "c11543b058f9fde62517a01414a6b61b581ce17f55386ddae090ed0d8552cd9c",
+    "assets/gltf-proof.js": "85757de3c337e51aed25a1a034f8389d0a2cb8320bcb1e93962c88d6a33ef137",
+    "assets/gltf-proof.css": "c0774baf2cbfaae9249b5402649ed4e931d99e819cba856328dc02df64e0dc34",
+    "assets/natural-avatar/sample.glb": "f3626960d185720d76ed1e2a6d0dc3c1a42c59275a2863e96c0d34d11c47dad2",
+    "assets/natural-avatar/asset-manifest.json": "4b8d8c17f5cc8884d3a49a56eff48ea546c4eb0e13470a09a911cac0ad20d04b",
+    "assets/natural-avatar-profile.js": "220c2992e478c29cd8e9efa764d43fec76857664c892cb06f62afad182800e53"
+  },
+  "reports": [
+    {
+      "profile": {
+        "width": 1280,
+        "height": 900,
+        "touch": false,
+        "lang": "ko"
+      },
+      "initial": {
+        "state": "ready",
+        "disposed": false,
+        "meshes": 11,
+        "skinnedMeshes": 11,
+        "bones": 73,
+        "drawCalls": 12,
+        "triangles": 49897,
+        "renderCount": 5,
+        "garment": "source",
+        "materialMode": "standard",
+        "skinPose": false,
+        "look": "natural",
+        "naturalProfile": true,
+        "viewYaw": 0,
+        "frameSamples": [
+          527.1000000014901,
+          3.400000002235174,
+          1.9000000022351742,
+          2.699999999254942,
+          1.2999999970197678
+        ],
+        "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+        "memoryGeometries": 12,
+        "memoryTextures": 21
+      },
+      "active": {
+        "state": "ready",
+        "disposed": false,
+        "meshes": 11,
+        "skinnedMeshes": 11,
+        "bones": 73,
+        "drawCalls": 12,
+        "triangles": 49897,
+        "renderCount": 5,
+        "garment": "source",
+        "materialMode": "standard",
+        "skinPose": false,
+        "look": "natural",
+        "naturalProfile": true,
+        "viewYaw": 0,
+        "frameSamples": [
+          413.69999999925494,
+          0.6000000014901161,
+          0.6999999992549419,
+          0.5,
+          0.6000000014901161
+        ],
+        "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+        "memoryGeometries": 12,
+        "memoryTextures": 21
+      },
+      "frames": [
+        {
+          "name": "ko-1280-front",
+          "sha256": "aa80ef253db55f74b8299dfc4265b11a3b85c2b6c882d865b9d2838be8018571",
+          "width": 866,
+          "height": 685,
+          "colours": 3395,
+          "chromatic": 2846
+        },
+        {
+          "name": "ko-1280-side",
+          "sha256": "2bd3d90b40c6fbeeb2897838d9fe7c34183f9489a299d456cb27683f1d1ddf7d",
+          "width": 866,
+          "height": 685,
+          "colours": 2660,
+          "chromatic": 2081
+        },
+        {
+          "name": "ko-1280-back",
+          "sha256": "9a4cd9115d35073985a64f74f12a408d16255a4e12f4286bfcfcc69fd29a116d",
+          "width": 866,
+          "height": 685,
+          "colours": 3388,
+          "chromatic": 3302
+        }
+      ],
+      "reference": {
+        "name": "ko-1280-reference",
+        "sha256": "d1ed173f039d6e4aeec8367a9e8c78bdd97fda781e92a9ae47e7dd6d228ded8a",
+        "width": 866,
+        "height": 685,
+        "colours": 1887,
+        "chromatic": 514
+      },
+      "basic": {
+        "name": "ko-1280-basic-textures",
+        "sha256": "6c47be0378f78f2eb7cd4f2a40b71d6a6e8fb68d5ad39a843129f5b5e983f64d",
+        "width": 866,
+        "height": 685,
+        "colours": 1552,
+        "chromatic": 3206
+      },
+      "pose": {
+        "name": "ko-1280-pose",
+        "sha256": "68ccd8f9d6a9cbf2f4f3fa02d23cab6cd60f7a5870220d8399a18bb16c778728",
+        "width": 866,
+        "height": 685,
+        "colours": 3394,
+        "chromatic": 2837
+      },
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 820,
+        "height": 1180,
+        "touch": true,
+        "lang": "ko"
+      },
+      "initial": {
+        "state": "ready",
+        "disposed": false,
+        "meshes": 11,
+        "skinnedMeshes": 11,
+        "bones": 73,
+        "drawCalls": 12,
+        "triangles": 49897,
+        "renderCount": 5,
+        "garment": "source",
+        "materialMode": "standard",
+        "skinPose": false,
+        "look": "natural",
+        "naturalProfile": true,
+        "viewYaw": 0,
+        "frameSamples": [
+          911.6999999992549,
+          13.399999998509884,
+          1,
+          7.399999998509884,
+          0.6999999992549419
+        ],
+        "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+        "memoryGeometries": 12,
+        "memoryTextures": 21
+      },
+      "active": {
+        "state": "ready",
+        "disposed": false,
+        "meshes": 11,
+        "skinnedMeshes": 11,
+        "bones": 73,
+        "drawCalls": 12,
+        "triangles": 49897,
+        "renderCount": 5,
+        "garment": "source",
+        "materialMode": "standard",
+        "skinPose": false,
+        "look": "natural",
+        "naturalProfile": true,
+        "viewYaw": 0,
+        "frameSamples": [
+          477.5,
+          0.8999999985098839,
+          0.5,
+          0.6000000014901161,
+          0.5
+        ],
+        "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+        "memoryGeometries": 12,
+        "memoryTextures": 21
+      },
+      "frames": [
+        {
+          "name": "ko-820-front",
+          "sha256": "3a0130662fe99eac6f81879ba5980bdbc9ba58bba3cf8859473a775504010a47",
+          "width": 782,
+          "height": 721,
+          "colours": 3679,
+          "chromatic": 3168
+        },
+        {
+          "name": "ko-820-side",
+          "sha256": "111a339cfb98369ea6d3153c76e187309168d3a4bab3ee197ac5e9d1a4a2241b",
+          "width": 782,
+          "height": 721,
+          "colours": 2885,
+          "chromatic": 2272
+        },
+        {
+          "name": "ko-820-back",
+          "sha256": "0fd82bbd606018d64c9de1cbe80d2b8ceac79405cbe8fa3f55763d453645166e",
+          "width": 782,
+          "height": 721,
+          "colours": 3692,
+          "chromatic": 3679
+        }
+      ],
+      "reference": {
+        "name": "ko-820-reference",
+        "sha256": "0012c8eeca3a95978f817b5f59d09fc7669437aa6e585189f853d515eb223126",
+        "width": 782,
+        "height": 721,
+        "colours": 1977,
+        "chromatic": 580
+      },
+      "basic": {
+        "name": "ko-820-basic-textures",
+        "sha256": "b5c750b61be7e4d6986fe256305fa1083405cdee1134cd22590b5460da541374",
+        "width": 782,
+        "height": 721,
+        "colours": 1701,
+        "chromatic": 3562
+      },
+      "pose": {
+        "name": "ko-820-pose",
+        "sha256": "8965748e13567409f9d99ce3da2e792a13899799fb0a58e0d01f91c679535205",
+        "width": 782,
+        "height": 721,
+        "colours": 3700,
+        "chromatic": 3183
+      },
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 1180,
+        "height": 820,
+        "touch": true,
+        "lang": "en"
+      },
+      "initial": {
+        "state": "ready",
+        "disposed": false,
+        "meshes": 11,
+        "skinnedMeshes": 11,
+        "bones": 73,
+        "drawCalls": 12,
+        "triangles": 49897,
+        "renderCount": 5,
+        "garment": "source",
+        "materialMode": "standard",
+        "skinPose": false,
+        "look": "natural",
+        "naturalProfile": true,
+        "viewYaw": 0,
+        "frameSamples": [
+          452.5,
+          1.5999999977648258,
+          1.2999999970197678,
+          6.800000000745058,
+          1.8999999985098839
+        ],
+        "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+        "memoryGeometries": 12,
+        "memoryTextures": 21
+      },
+      "active": {
+        "state": "ready",
+        "disposed": false,
+        "meshes": 11,
+        "skinnedMeshes": 11,
+        "bones": 73,
+        "drawCalls": 12,
+        "triangles": 49897,
+        "renderCount": 5,
+        "garment": "source",
+        "materialMode": "standard",
+        "skinPose": false,
+        "look": "natural",
+        "naturalProfile": true,
+        "viewYaw": 0,
+        "frameSamples": [
+          2944.89999999851,
+          13.199999999254942,
+          2.599999997764826,
+          8.600000001490116,
+          46.30000000074506
+        ],
+        "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+        "memoryGeometries": 12,
+        "memoryTextures": 21
+      },
+      "frames": [
+        {
+          "name": "en-1180-front",
+          "sha256": "8b56ecf4db53cb6f8c59a5b61996fb29e611aa8da45910d03ebc9a3141bbf00f",
+          "width": 806,
+          "height": 625,
+          "colours": 2946,
+          "chromatic": 2364
+        },
+        {
+          "name": "en-1180-side",
+          "sha256": "ea539d0785521a9d311d09523bdfb26da9f646127a62492e1540820e90faf3a7",
+          "width": 806,
+          "height": 625,
+          "colours": 2313,
+          "chromatic": 1679
+        },
+        {
+          "name": "en-1180-back",
+          "sha256": "b4079c2534bd92ae67d1f6408bdc32039193a325dff7b4901b14093e3658bef8",
+          "width": 806,
+          "height": 625,
+          "colours": 2940,
+          "chromatic": 2716
+        }
+      ],
+      "reference": {
+        "name": "en-1180-reference",
+        "sha256": "5ac6c3ef36fe42ede4e60b9eece19ab7f0c9c802fe14f20831c63fd4cf85c3af",
+        "width": 806,
+        "height": 625,
+        "colours": 1684,
+        "chromatic": 429
+      },
+      "basic": {
+        "name": "en-1180-basic-textures",
+        "sha256": "31725071d87db3f540041aed04a17e28b57d19f20858c997fda14b6edabaa0f8",
+        "width": 806,
+        "height": 625,
+        "colours": 1411,
+        "chromatic": 2645
+      },
+      "pose": {
+        "name": "en-1180-pose",
+        "sha256": "b1baf33c23a0f7d561abc7019c01f71a88d541593b5d22665875ed798a4d2790",
+        "width": 806,
+        "height": 625,
+        "colours": 2950,
+        "chromatic": 2373
+      },
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/placeholder.svg",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "productionBlocked": true,
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/placeholder.svg"
+      ]
+    },
+    {
+      "failureMode": "naturalModelBlocked",
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/placeholder.svg"
+      ],
+      "status": "전신 모델 파일을 읽지 못했습니다. 연결을 확인한 뒤 다시 불러오기를 누르세요."
+    }
+  ],
+  "environment": {
+    "browser": "Linux Chromium with SwiftShader",
+    "nativeIpadSafari": false
+  },
+  "scope": "Licensed textured stock reference, not the uploaded user or exact garment fitting. Pixel assertions establish rendering and interactions, not cinematic photorealism. Touch emulation is not native iPad performance."
+}

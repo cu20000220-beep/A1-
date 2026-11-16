@@ -104,7 +104,9 @@ async function dragAndPinch(page) {
       { width: 820, height: 1180, touch: true, lang: 'ko' }, { width: 1180, height: 820, touch: true, lang: 'en' }]) {
       const trial = await prepare(browser, profile), { page, context } = trial;
       const prefix = profile.lang + '-' + profile.width;
-      assert.equal((await snapshot(page)).look, 'humanoid', 'SF surface is visible by default');
+      await page.locator('#gltf-look').selectOption('humanoid');
+      await page.waitForFunction(() => A1GltfProof.snapshot().state === 'ready' && A1GltfProof.snapshot().look === 'humanoid');
+      assert.equal((await snapshot(page)).look, 'humanoid', 'the preserved SF surface can be selected');
       assert.equal(await page.locator('#gltf-look').inputValue(), 'humanoid');
       await page.locator('#gltf-garment').selectOption('none');
       await page.locator('#gltf-front').click();
@@ -112,11 +114,13 @@ async function dragAndPinch(page) {
       await headCapture(page, prefix + '-humanoid-head');
       await page.screenshot({ path: path.join(out, prefix + '-overview.png'), fullPage: true });
       await page.locator('#gltf-look').selectOption('reference');
+      await page.waitForFunction(() => A1GltfProof.snapshot().state === 'ready' && A1GltfProof.snapshot().look === 'reference');
       const reference = await capture(page, prefix + '-reference-front');
       assert.notEqual(sf.sha256, reference.sha256, 'appearance control changes body pixels without a garment change');
       assert.ok(sf.red > reference.red * 1.4 + 25, 'burgundy synthetic face/body must actually render');
       assert.ok(sf.teal > reference.teal + 60, 'teal panel surface must actually render');
       await page.locator('#gltf-look').selectOption('humanoid');
+      await page.waitForFunction(() => A1GltfProof.snapshot().state === 'ready' && A1GltfProof.snapshot().look === 'humanoid');
       const views = [];
       for (const view of ['side', 'back']) { await page.locator('#gltf-' + view).click(); views.push(await capture(page, prefix + '-humanoid-' + view)); }
       assert.equal(new Set([sf.sha256, ...views.map(v => v.sha256)]).size, 3);

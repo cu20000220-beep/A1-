@@ -42,6 +42,7 @@ jobs:
           tests/fullbody-asset-policy.cjs tests/gltf-package-inspector.cjs
           tests/fullbody-intake-cli.cjs
           tests/gltf-proof.cjs tests/gltf-proof-export.cjs
+          tests/natural-avatar-asset.cjs
       - name: Package public assets only
         run: node scripts/build-site.cjs
       - name: Check public artifact exposure

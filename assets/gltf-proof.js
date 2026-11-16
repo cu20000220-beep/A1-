@@ -2,6 +2,7 @@ import * as THREE from './vendor/three-0.187.0/build/three.module.js';
 import { GLTFLoader } from './vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from './vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js';
 import { createHumanoidMaterial } from './humanoid-surface.js';
+import { applyNaturalProfile, useEmbeddedImageElements } from './natural-avatar-profile.js';
 
 // Independent renderer proof. No photo bridge, storage, APIs or arbitrary files.
 const root = document.querySelector('#gltf-proof-root');
@@ -10,6 +11,15 @@ const pairs = {
   '이 기술 검증은 격리된 Preview에서만 제공됩니다.': 'This technical proof is available only in an isolated Preview.',
   '무료 베타 · 독립 렌더링 검사': 'Free beta · Independent rendering proof',
   '무료 베타 · SF 아바타 스타일': 'Free beta · Sci-fi avatar style',
+  '무료 베타 · 내추럴 3D 인체': 'Free beta · Natural 3D human',
+  '내추럴 3D 피팅룸': 'Natural 3D fitting room',
+  '얼굴·피부·눈·머리카락·의상이 함께 있는 3D 인체 샘플입니다. 전신을 돌려 실제 형상과 표면을 확인해 보세요.': 'A 3D human sample with a coherent face, skin, eyes, hair and outfit. Rotate the full body to inspect the actual geometry and surfaces.',
+  '이 샘플은 사용자의 얼굴·체형을 복원한 결과가 아닙니다. 사진·분석값을 읽거나 전송하지 않습니다. 실제 판매 의류의 피팅·사이즈·착용감을 보장하지 않습니다.': 'This sample is not a reconstruction of your face or body. No photos or analysis values are read or transmitted. It does not guarantee the fit, size or comfort of retail clothing.',
+  '내추럴 인체 샘플': 'Natural human sample', '샘플 의상': 'Sample outfit', '원본 샘플 의상': 'Original sample outfit',
+  '현재 인체 샘플에는 원본 의상 한 벌을 표시합니다. 교체 가능한 실제 의류 모델은 준비 중입니다. 기존 비교 모델에서는 예시 티셔츠 3종을 이용할 수 있습니다.': 'This human sample displays its original outfit. Interchangeable retail garment models are being prepared. The original comparison body still supports three example T-shirts.',
+  '내추럴 인체 샘플을 표시했습니다. 회전·확대와 피부·모발·의류 표면을 확인할 수 있습니다.': 'The natural human sample is displayed. Rotate and zoom to inspect the skin, hair and outfit surfaces.',
+  '기본 인체: MetaPerson 공식 샘플 · BSD-3-Clause. 기존 비교 인체: MakeHuman hm08 · CC0. Three.js · MIT.': 'Default human: official MetaPerson sample · BSD-3-Clause. Original comparison body: MakeHuman hm08 · CC0. Three.js · MIT.',
+  '내추럴 인체 출처와 이용 조건': 'Natural human source and license',
   'SF 휴머노이드 피팅룸': 'Sci-fi humanoid fitting room',
   '붉은 합성 피부와 청록·금색 금속 패널을 가진 자체 디자인 아바타입니다. 전신을 회전하고 예시 티셔츠를 갈아입혀 보세요. 기존 인체 모델과도 비교할 수 있습니다.': 'An original avatar with red synthetic skin and teal-and-gold metallic panels. Rotate the body, try example T-shirts, and compare it with the original body.',
   '아바타 모습': 'Avatar appearance', 'SF 휴머노이드': 'Sci-fi humanoid', '기존 인체와 비교': 'Compare original body', '기본 아바타 · 티셔츠 없음': 'Base avatar · No T-shirt',
@@ -47,13 +57,20 @@ if (window.A1Preview && /^[a-z0-9-]+\.a1fashion\.pages\.dev$/.test(location.host
 function startProof() {
   const $ = selector => document.querySelector(selector);
   const controlsElements = [...root.querySelectorAll('button:not(#gltf-retry),select,input')];
-  let renderer, scene, camera, controls, model, observer, controller;
+  let renderer, scene, camera, controls, model, observer, controller, naturalRig;
   let state = 'loading', generation = 0, renderCount = 0, disposed = false;
   let materials = new Map(), frameSamples = [], lastMemory = { geometries: 0, textures: 0 };
-  let drawCalls = 0, triangles = 0, skinPose = false, garment = 'none', materialMode = 'standard', look = 'humanoid';
+  let drawCalls = 0, triangles = 0, skinPose = false, garment = 'source', materialMode = 'standard', look = 'natural';
   const shirts = { 'LAB-A': 'ExampleTshirtA', 'LAB-B': 'ExampleTshirtB', 'LAB-C': 'ExampleTshirtC' };
   function status(message) { I.setText($('#gltf-status'), message); I.setText($('#gltf-canvas-state'), message); }
   function setState(value) { state = value; root.dataset.loadState = value; $('#gltf-canvas-state').hidden = value === 'ready'; controlsElements.forEach(el => { el.disabled = value !== 'ready'; }); }
+  function capabilities() {
+    const natural = look === 'natural';
+    $('#gltf-garment').disabled = natural || state !== 'ready';
+    $('#natural-avatar-note').hidden = !natural;
+    I.setText($('#gltf-garment-title'), natural ? '샘플 의상' : '예시 티셔츠');
+    for (const option of $('#gltf-garment').options) option.hidden = natural ? option.value !== 'source' : option.value === 'source';
+  }
   function render() {
     if (!renderer || !scene || !camera || disposed) return;
     const start = performance.now();
@@ -76,7 +93,7 @@ function startProof() {
     skeletons.forEach(skeleton => skeleton.dispose()); textures.forEach(texture => { texture.dispose(); texture.source?.data?.close?.(); });
     geometries.forEach(geometry => geometry.dispose()); ownedMaterials.forEach(material => material.dispose());
     if (renderer) { try { renderer.clear(); renderer.dispose(); lastMemory = { ...renderer.info.memory }; renderer.forceContextLoss(); } catch { /* A lost context is already unavailable. */ } }
-    renderer = scene = camera = controls = model = observer = null; materials.clear();
+    renderer = scene = camera = controls = model = observer = naturalRig = null; materials.clear();
     drawCalls = triangles = 0;
   }
   function failed(code) {
@@ -92,16 +109,18 @@ function startProof() {
   async function approvedAsset(signal) {
     let manifest, bytes;
     try {
-      const record = await fetch('assets/gltf-proof/asset-manifest.json', { credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store', signal });
+      const natural = look === 'natural', base = natural ? 'assets/natural-avatar/' : 'assets/gltf-proof/';
+      const record = await fetch(base + 'asset-manifest.json', { credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store', signal });
       if (!record.ok) throw Error(); manifest = await record.json();
-      const response = await fetch('assets/gltf-proof/avatar.glb', { credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store', signal });
+      const response = await fetch(base + (natural ? 'sample.glb' : 'avatar.glb'), { credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store', signal });
       if (!response.ok) throw Error(); bytes = await response.arrayBuffer();
     } catch (error) { if (signal.aborted) throw error; throw Error('asset_network'); }
     // This is a fixed reviewed, self-contained local package; arbitrary URLs,
     // uploaded files and personal data are deliberately not accepted here.
     try {
-      if (manifest.license?.id !== 'CC0-1.0' || !manifest.license.publicWebDelivery || manifest.model?.path !== 'avatar.glb' ||
-          bytes.byteLength !== manifest.model.bytes || bytes.byteLength > 4 * 1024 * 1024 || !crypto.subtle) throw Error();
+      const natural = look === 'natural';
+      if (manifest.license?.id !== (natural ? 'BSD-3-Clause' : 'CC0-1.0') || !manifest.license.publicWebDelivery || manifest.model?.path !== (natural ? 'sample.glb' : 'avatar.glb') ||
+          bytes.byteLength !== manifest.model.bytes || bytes.byteLength > (natural ? 12 : 4) * 1024 * 1024 || !crypto.subtle) throw Error();
       const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(n => n.toString(16).padStart(2, '0')).join('');
       if (hash !== manifest.model.sha256) throw Error();
       const view = new DataView(bytes);
@@ -115,13 +134,13 @@ function startProof() {
     return bytes;
   }
   function updateGarment() {
+    if (look === 'natural') { garment = 'source'; render(); return; }
     garment = $('#gltf-garment').value;
     for (const [id, name] of Object.entries(shirts)) model.getObjectByName(name).visible = garment === id;
     render();
   }
   function updateMaterial() {
     materialMode = $('#gltf-material').value;
-    look = $('#gltf-look').value;
     for (const [mesh, pair] of materials) mesh.material = mesh.name === 'Body' && look === 'humanoid'
       ? pair[materialMode === 'basic' ? 'humanoidBasic' : 'humanoid'] : pair[materialMode];
     render();
@@ -134,9 +153,11 @@ function startProof() {
   function zoom(factor) { camera.position.sub(controls.target).multiplyScalar(factor).clampLength(controls.minDistance, controls.maxDistance).add(controls.target); controls.update(); render(); }
   async function initialize() {
     const token = ++generation; clean(); disposed = false; setState('loading');
-    frameSamples = []; renderCount = 0; skinPose = false; garment = 'none'; materialMode = 'standard'; look = 'humanoid';
+    look = ['natural','reference','humanoid'].includes($('#gltf-look').value) ? $('#gltf-look').value : 'natural';
+    frameSamples = []; renderCount = 0; skinPose = false; garment = look === 'natural' ? 'source' : 'none'; materialMode = 'standard';
     $('#gltf-garment').value = garment; $('#gltf-material').value = materialMode; $('#gltf-skin-proof').checked = false;
     $('#gltf-look').value = look;
+    capabilities();
     status('로컬 전신 파일을 준비하고 있습니다.');
     const old = $('#gltf-canvas'), canvas = old.cloneNode(false); old.replaceWith(canvas);
     controller = new AbortController(); const signal = controller.signal;
@@ -165,16 +186,29 @@ function startProof() {
       canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); if (!disposed && token === generation) failed('context_lost'); });
       const bytes = await approvedAsset(signal);
       if (token !== generation || signal.aborted) return;
-      const manager = new THREE.LoadingManager(); manager.setURLModifier(() => { throw Error('asset_invalid'); });
+      const manager = new THREE.LoadingManager(); manager.setURLModifier(url => {
+        // URI preflight forbids every external reference. These are only Blob
+        // URLs made from the already verified embedded images by GLTFLoader.
+        if (look === 'natural' && url.startsWith('blob:' + location.origin + '/')) return url;
+        throw Error('asset_invalid');
+      });
       const loader = new GLTFLoader(manager);
+      // Image elements use the existing img-src blob: policy. Fetching Blob
+      // images via ImageBitmapLoader would require relaxing connect-src.
+      if (look === 'natural') useEmbeddedImageElements(loader, manager);
       const gltf = await loader.parseAsync(bytes, '');
       if (token !== generation || signal.aborted) { gltf.scene.traverse(mesh => { mesh.geometry?.dispose(); mesh.material?.dispose?.(); mesh.skeleton?.dispose(); }); return; }
       model = gltf.scene;
-      if (!model.getObjectByName('Body')?.isSkinnedMesh || !model.getObjectByName('Spine') || Object.values(shirts).some(name => !model.getObjectByName(name)?.isSkinnedMesh)) throw Error('asset_invalid');
+      if (look === 'natural') {
+        if (!model.getObjectByName('AvatarHead')?.isSkinnedMesh || !model.getObjectByName('AvatarBody')?.isSkinnedMesh || !model.getObjectByName('outfit')) throw Error('asset_invalid');
+        naturalRig = applyNaturalProfile(model);
+      } else if (!model.getObjectByName('Body')?.isSkinnedMesh || !model.getObjectByName('Spine') || Object.values(shirts).some(name => !model.getObjectByName(name)?.isSkinnedMesh)) throw Error('asset_invalid');
       model.traverse(mesh => {
         if (!mesh.isMesh) return;
         const standard = mesh.material;
-        const basic = new THREE.MeshBasicMaterial({ color: standard.color, side: standard.side, vertexColors: standard.vertexColors });
+        const basic = new THREE.MeshBasicMaterial({ color: standard.color, side: standard.side, vertexColors: standard.vertexColors,
+          map: standard.map, alphaMap: standard.alphaMap, transparent: standard.transparent, opacity: standard.opacity,
+          alphaTest: standard.alphaTest, depthWrite: standard.depthWrite });
         const pair = { standard, basic };
         if (mesh.name === 'Body') { pair.humanoid = createHumanoidMaterial(standard); pair.humanoidBasic = createHumanoidMaterial(standard, { unlit: true }); }
         materials.set(mesh, pair);
@@ -182,14 +216,21 @@ function startProof() {
       scene.add(model);
       const resize = () => { if (!renderer) return; const rect = canvas.getBoundingClientRect(); renderer.setSize(Math.max(1, rect.width), Math.max(1, rect.height), false); camera.aspect = Math.max(1, rect.width) / Math.max(1, rect.height); camera.updateProjectionMatrix(); render(); };
       observer = new ResizeObserver(resize); observer.observe(canvas); controls.update(); updateMaterial(); updateGarment(); resize();
-      setState('ready'); status('전신·예시 티셔츠를 표시했습니다. 회전과 의류 변경을 확인할 수 있습니다.');
+      setState('ready'); capabilities(); status(look === 'natural'
+        ? '내추럴 인체 샘플을 표시했습니다. 회전·확대와 피부·모발·의류 표면을 확인할 수 있습니다.'
+        : '전신·예시 티셔츠를 표시했습니다. 회전과 의류 변경을 확인할 수 있습니다.');
     } catch (error) { if (token === generation && !signal.aborted) failed(error.message); }
     finally { clearTimeout(timer); }
   }
   $('#gltf-garment').addEventListener('change', updateGarment);
   $('#gltf-material').addEventListener('change', updateMaterial);
-  $('#gltf-look').addEventListener('change', updateMaterial);
-  $('#gltf-skin-proof').addEventListener('change', () => { skinPose = $('#gltf-skin-proof').checked; model.getObjectByName('Spine').rotation.z = skinPose ? 0.12 : 0; render(); });
+  $('#gltf-look').addEventListener('change', initialize);
+  $('#gltf-skin-proof').addEventListener('change', () => {
+    skinPose = $('#gltf-skin-proof').checked;
+    if (naturalRig) { naturalRig.spine.quaternion.copy(naturalRig.spineNeutralQuaternion); if (skinPose) naturalRig.spine.rotateZ(0.08); }
+    else model.getObjectByName('Spine').rotation.z = skinPose ? 0.12 : 0;
+    render();
+  });
   for (const [name, yaw] of [['front', 0], ['side', Math.PI / 2], ['back', Math.PI]]) $('#gltf-' + name).addEventListener('click', () => view(yaw));
   $('#gltf-left').addEventListener('click', () => view(Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) - Math.PI / 18));
   $('#gltf-right').addEventListener('click', () => view(Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) + Math.PI / 18));
@@ -200,7 +241,7 @@ function startProof() {
   Object.defineProperty(window, 'A1GltfProof', { value: Object.freeze({ snapshot() {
     let meshes = 0, skinnedMeshes = 0, bones = new Set();
     model?.traverse(object => { if (object.isMesh) meshes++; if (object.isSkinnedMesh) { skinnedMeshes++; for (const bone of object.skeleton.bones) bones.add(bone); } });
-    return { state, disposed, meshes, skinnedMeshes, bones: bones.size, drawCalls, triangles, renderCount, garment, materialMode, skinPose, look,
+    return { state, disposed, meshes, skinnedMeshes, bones: bones.size, drawCalls, triangles, renderCount, garment, materialMode, skinPose, look, naturalProfile: look === 'natural',
       viewYaw: camera ? Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) : 0,
       frameSamples: [...frameSamples], timingScope: 'CPU render submission milliseconds; not GPU frame time or FPS',
       memoryGeometries: lastMemory.geometries, memoryTextures: lastMemory.textures };

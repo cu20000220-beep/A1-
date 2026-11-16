@@ -1,7 +1,7 @@
 {
   "sourceHashes": {
-    "gltf-proof.html": "13cf6e37bb8159a64135df8664a22dfcfdc6ee43742f71e770a8716b1f1bc57f",
-    "assets/gltf-proof.js": "05f39ba74bc7d4ab3ce113eaa802e18a9ad36bc2995a9bcca3a6fc5d44e5d955",
+    "gltf-proof.html": "c11543b058f9fde62517a01414a6b61b581ce17f55386ddae090ed0d8552cd9c",
+    "assets/gltf-proof.js": "85757de3c337e51aed25a1a034f8389d0a2cb8320bcb1e93962c88d6a33ef137",
     "assets/gltf-proof.css": "c0774baf2cbfaae9249b5402649ed4e931d99e819cba856328dc02df64e0dc34",
     "assets/gltf-proof/avatar.glb": "1224f4f923d71b5c45688592519a56ae2e55128032390f605ff73926203c669e",
     "assets/gltf-proof/asset-manifest.json": "66cde46c724909a5752905ae4bd051eca116e728ed13292d0716e4a6e5ecb08f"
@@ -20,18 +20,21 @@
         "meshes": 4,
         "skinnedMeshes": 4,
         "bones": 2,
-        "drawCalls": 3,
-        "triangles": 30636,
-        "renderCount": 4,
-        "garment": "LAB-A",
+        "drawCalls": 2,
+        "triangles": 26820,
+        "renderCount": 5,
+        "garment": "none",
         "materialMode": "standard",
         "skinPose": false,
+        "look": "reference",
+        "naturalProfile": false,
         "viewYaw": 0,
         "frameSamples": [
-          383.20000000001164,
-          1,
-          7.400000000023283,
-          1.7999999999883585
+          421.5999999977648,
+          36.69999999925494,
+          0.30000000074505806,
+          0.19999999925494194,
+          0.9000000022351742
         ],
         "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
         "memoryGeometries": 5,
@@ -41,73 +44,73 @@
         {
           "garment": "LAB-A",
           "name": "ko-1280-LAB-A",
-          "sha256": "ae06ab5582c617f52ad7ffeeffc01e3e9051336a5c5fdb5f2308325cc5a843ae",
+          "sha256": "fbc5c68bd15f046a7bceded274fdd562a3458d732736ef8911571d6022baf8b3",
           "width": 866,
           "height": 685,
-          "colors": 1646,
+          "colors": 1602,
           "triangles": 30636
         },
         {
           "garment": "LAB-B",
           "name": "ko-1280-LAB-B",
-          "sha256": "ded960d89c3c8bb730a015d3c0e723355761f30e00a488919c258e24cb0e202b",
+          "sha256": "228894276423b4d10bb992f1c28ee40bfc2e312d714d6050989a642ac8d2783c",
           "width": 866,
           "height": 685,
-          "colors": 1711,
+          "colors": 1660,
           "triangles": 30968
         },
         {
           "garment": "LAB-C",
           "name": "ko-1280-LAB-C",
-          "sha256": "25ed5977e8430c0343cf3837aa6e4e375dfeb721516ee449ce61a95a44bc4c70",
+          "sha256": "cbfaccb39dc2b3d44c1556b575c3cfafcf91a54008e86bc27f2076f5e164dea4",
           "width": 866,
           "height": 685,
-          "colors": 1562,
+          "colors": 1551,
           "triangles": 30020
         },
         {
           "garment": "none",
           "name": "ko-1280-none",
-          "sha256": "bcbf9ada1a2e7ac030ae7072e19d65838e9a257d350cc4493170c5202cc1a21e",
+          "sha256": "d1ed173f039d6e4aeec8367a9e8c78bdd97fda781e92a9ae47e7dd6d228ded8a",
           "width": 866,
           "height": 685,
-          "colors": 1330,
+          "colors": 1326,
           "triangles": 26820
         }
       ],
       "frames": [
         {
           "name": "ko-1280-front",
-          "sha256": "ae06ab5582c617f52ad7ffeeffc01e3e9051336a5c5fdb5f2308325cc5a843ae",
+          "sha256": "d1ed173f039d6e4aeec8367a9e8c78bdd97fda781e92a9ae47e7dd6d228ded8a",
           "width": 866,
           "height": 685,
-          "colors": 1646
+          "colors": 1326
         },
         {
           "name": "ko-1280-side",
-          "sha256": "1a8b277e67c5d97034fa2b9444c710e6136b0386e151719ea324173b065de05a",
+          "sha256": "3624ad14ca58b4c3a29125c7bd5f0d966ae68ee3261bc57d3f86185e43ba9422",
           "width": 866,
           "height": 685,
-          "colors": 1236
+          "colors": 1032
         },
         {
           "name": "ko-1280-back",
-          "sha256": "142d954195ed47cd3cfb6295bcc7ad967991bae3426b7e93270f7a3c0064ccc0",
+          "sha256": "b8f3a61557bdbb3e09cea3cd4e2439b0195cb49aed9ec99920b86b9f4e0a09dc",
           "width": 866,
           "height": 685,
-          "colors": 1432
+          "colors": 1232
         },
         {
           "name": "ko-1280-skin-proof",
-          "sha256": "d2f2f05c457b7fde0b32bb4bc04c466b0b0fac35982b0a6b09efcb8a5da8b004",
+          "sha256": "ef65e96583cd291fa096ee89212d941f39c6fe97825c03a18d23a0e4058e754f",
           "width": 866,
           "height": 685,
-          "colors": 1607
+          "colors": 1656
         }
       ],
       "fullRotationRadians": 6.283185307179583,
-      "cpuRenderSubmissionP50Ms": 0.3999999999650754,
-      "cpuRenderSubmissionP95Ms": 2.699999999953434,
+      "cpuRenderSubmissionP50Ms": 0.5,
+      "cpuRenderSubmissionP95Ms": 5.099999997764826,
       "requests": [
         "/gltf-proof",
         "/assets/gltf-proof.css",
@@ -117,11 +120,15 @@
         "/assets/vendor/three-0.187.0/build/three.module.js",
         "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
         "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
         "/assets/vendor/three-0.187.0/build/three.core.js",
-        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
         "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
         "/assets/gltf-proof/avatar.glb",
         "/assets/gltf-proof/asset-manifest.json",
         "/assets/gltf-proof/avatar.glb"
@@ -143,18 +150,21 @@
         "meshes": 4,
         "skinnedMeshes": 4,
         "bones": 2,
-        "drawCalls": 3,
-        "triangles": 30636,
-        "renderCount": 4,
-        "garment": "LAB-A",
+        "drawCalls": 2,
+        "triangles": 26820,
+        "renderCount": 5,
+        "garment": "none",
         "materialMode": "standard",
         "skinPose": false,
+        "look": "reference",
+        "naturalProfile": false,
         "viewYaw": 0,
         "frameSamples": [
-          231.59999999997672,
-          0.7000000000116415,
-          1.2000000000116415,
-          0.7000000000116415
+          240.69999999925494,
+          0.3999999985098839,
+          0.4000000022351742,
+          0.29999999701976776,
+          0.9000000022351742
         ],
         "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
         "memoryGeometries": 5,
@@ -201,24 +211,24 @@
       "frames": [
         {
           "name": "ko-820-front",
-          "sha256": "aa2f1a0d9e0b4382a31451a9d97d3d226dd36588460cbc42e78acab64a9c3d55",
+          "sha256": "0012c8eeca3a95978f817b5f59d09fc7669437aa6e585189f853d515eb223126",
           "width": 782,
           "height": 721,
-          "colors": 1737
+          "colors": 1428
         },
         {
           "name": "ko-820-side",
-          "sha256": "10e64ca68450c1c8ffd29cebb6a3aa206ee69804e90735d8e06b5a40b7d5436c",
+          "sha256": "6f3529df12228ef02268786e68ec4c55900641cc3ad31c761ef33d3b81c5f380",
           "width": 782,
           "height": 721,
-          "colors": 1309
+          "colors": 1106
         },
         {
           "name": "ko-820-back",
-          "sha256": "3c6dc319f78c64a6fa67926c9a631e9a8b7c08b65298e22c4847ac8f1fa63e9d",
+          "sha256": "78d0466ca5a0a22b289d248a1f0a14abc87546f86d1f64647bc1c26c82cfc151",
           "width": 782,
           "height": 721,
-          "colors": 1477
+          "colors": 1276
         },
         {
           "name": "ko-820-skin-proof",
@@ -229,8 +239,8 @@
         }
       ],
       "fullRotationRadians": 6.283185307179583,
-      "cpuRenderSubmissionP50Ms": 0.3999999999650754,
-      "cpuRenderSubmissionP95Ms": 1.7999999999883585,
+      "cpuRenderSubmissionP50Ms": 0.4000000022351742,
+      "cpuRenderSubmissionP95Ms": 5.5,
       "requests": [
         "/gltf-proof",
         "/assets/gltf-proof.css",
@@ -240,12 +250,16 @@
         "/assets/vendor/three-0.187.0/build/three.module.js",
         "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
         "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
         "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/placeholder.svg",
         "/assets/gltf-proof/asset-manifest.json",
         "/assets/gltf-proof/avatar.glb",
-        "/assets/placeholder.svg",
         "/assets/gltf-proof/asset-manifest.json",
         "/assets/gltf-proof/avatar.glb"
       ],
@@ -266,18 +280,21 @@
         "meshes": 4,
         "skinnedMeshes": 4,
         "bones": 2,
-        "drawCalls": 3,
-        "triangles": 30636,
-        "renderCount": 4,
-        "garment": "LAB-A",
+        "drawCalls": 2,
+        "triangles": 26820,
+        "renderCount": 5,
+        "garment": "none",
         "materialMode": "standard",
         "skinPose": false,
+        "look": "reference",
+        "naturalProfile": false,
         "viewYaw": 0,
         "frameSamples": [
-          414.70000000001164,
+          145.5,
           0.5,
-          0.9000000000232831,
-          0.7000000000116415
+          0.10000000149011612,
+          0.10000000149011612,
+          1.300000000745058
         ],
         "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
         "memoryGeometries": 5,
@@ -324,24 +341,24 @@
       "frames": [
         {
           "name": "en-1180-front",
-          "sha256": "6c1f5e182e9751d0a079fdf2a63905d28bf0bf801b5e530a4ca7f78680400ece",
-          "width": 806,
-          "height": 625,
-          "colors": 1456
-        },
-        {
-          "name": "en-1180-side",
-          "sha256": "fde92ff95327c23f0b83e01984bd190533cdd93644eb5bd87be75dfe4062250a",
-          "width": 806,
-          "height": 625,
-          "colors": 1097
-        },
-        {
-          "name": "en-1180-back",
-          "sha256": "099e6cf86d0480f6398acf748cab473d62c0a7c061eae5042718b5ab38d16f7f",
+          "sha256": "5ac6c3ef36fe42ede4e60b9eece19ab7f0c9c802fe14f20831c63fd4cf85c3af",
           "width": 806,
           "height": 625,
           "colors": 1212
+        },
+        {
+          "name": "en-1180-side",
+          "sha256": "b28cfb396e356e5ab792fc0cc27fbfe748662bafe7758007dd0ed5a1a1d2e4a8",
+          "width": 806,
+          "height": 625,
+          "colors": 929
+        },
+        {
+          "name": "en-1180-back",
+          "sha256": "8182c40e296efc296d29591d94e5ce84bdcd1259d12784738137e8806a6629eb",
+          "width": 806,
+          "height": 625,
+          "colors": 1084
         },
         {
           "name": "en-1180-skin-proof",
@@ -352,8 +369,8 @@
         }
       ],
       "fullRotationRadians": 6.283185307179583,
-      "cpuRenderSubmissionP50Ms": 0.30000000004656613,
-      "cpuRenderSubmissionP95Ms": 1.5,
+      "cpuRenderSubmissionP50Ms": 0.3999999985098839,
+      "cpuRenderSubmissionP95Ms": 1.800000000745058,
       "requests": [
         "/gltf-proof",
         "/assets/gltf-proof.css",
@@ -363,11 +380,15 @@
         "/assets/vendor/three-0.187.0/build/three.module.js",
         "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
         "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
         "/assets/vendor/three-0.187.0/build/three.core.js",
-        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
         "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
         "/assets/gltf-proof/avatar.glb",
         "/assets/gltf-proof/asset-manifest.json",
         "/assets/gltf-proof/avatar.glb"
@@ -388,11 +409,13 @@
         "/assets/vendor/three-0.187.0/build/three.module.js",
         "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
         "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
         "/assets/vendor/three-0.187.0/build/three.core.js",
-        "/assets/gltf-proof/asset-manifest.json",
-        "/assets/gltf-proof/avatar.glb",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
         "/assets/placeholder.svg"
       ],
       "errors": [],
@@ -412,9 +435,11 @@
         "/assets/vendor/three-0.187.0/build/three.module.js",
         "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
         "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
-        "/assets/vendor/three-0.187.0/build/three.core.js",
         "/assets/placeholder.svg"
       ],
       "errors": [],
@@ -432,11 +457,13 @@
         "/assets/vendor/three-0.187.0/build/three.module.js",
         "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
         "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
-        "/assets/vendor/three-0.187.0/build/three.core.js",
-        "/assets/gltf-proof/asset-manifest.json",
-        "/assets/gltf-proof/avatar.glb",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
         "/assets/placeholder.svg"
       ]
     },
@@ -451,9 +478,11 @@
         "/assets/vendor/three-0.187.0/build/three.module.js",
         "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
         "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
         "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
-        "/assets/vendor/three-0.187.0/build/three.core.js",
         "/assets/placeholder.svg"
       ],
       "state": "blocked"

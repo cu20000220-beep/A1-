@@ -39,7 +39,7 @@ async function prepare(browser,profile,{modelBlocked=false,noWebgl=false,product
   const relative=url.pathname==='/gltf-proof'?'gltf-proof.html':url.pathname.slice(1);
   assert.ok(relative==='gltf-proof.html'||relative==='favicon.ico'||relative.startsWith('assets/'),'only static application resources are requested');
   const full=path.resolve(root,relative);assert.ok(full.startsWith(root+path.sep),'no escaped static path');
-  if(modelBlocked&&relative==='assets/gltf-proof/avatar.glb'){await route.abort('failed');return;}
+  if(modelBlocked&&['assets/gltf-proof/avatar.glb','assets/natural-avatar/sample.glb'].includes(relative)){await route.abort('failed');return;}
   if(relative==='favicon.ico'&&!fs.existsSync(full)){await route.fulfill({status:204,body:''});return;}
   assert.ok(fs.existsSync(full),'requested static file exists: '+relative);
   await route.fulfill({body:fs.readFileSync(full),contentType:mime[path.extname(relative)]||'application/octet-stream',headers:relative==='gltf-proof.html'?{'Content-Security-Policy':policy()}: {}});
@@ -78,6 +78,8 @@ function percentile(rows,p){if(!rows.length)return null;const sorted=[...rows].s
  try{
   for(const profile of [{width:1280,height:900,touch:false,lang:'ko'},{width:820,height:1180,touch:true,lang:'ko'},{width:1180,height:820,touch:true,lang:'en'}]){
    const trial=await prepare(browser,profile),{page,context,requests,errors,consoleErrors,violations}=trial;
+   await page.locator('#gltf-look').selectOption('reference');
+   await page.waitForFunction(()=>A1GltfProof.snapshot().state==='ready'&&A1GltfProof.snapshot().look==='reference');
    const initial=await readSnapshot(page);assert.equal(initial.state,'ready');assert.ok(initial.skinnedMeshes>=2,'glTF must load real skinned body and separate clothing');assert.ok(initial.bones>=2);assert.ok(initial.triangles>1000,'actual human/garment geometry must draw');assert.ok(initial.drawCalls>=2);
    const box=await canvas(page).boundingBox();assert.ok(box.width>=320&&box.height>=400,'body display must remain large on touch/tablet screens');
    const frames=[];
