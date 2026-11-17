@@ -25,6 +25,18 @@
       "guardedDirectNavigation": true
     },
     {
+      "name": "persisted-page-return-reopens-public-search-only",
+      "simulatedLifecycle": true,
+      "nativeSafari": false,
+      "passed": true
+    },
+    {
+      "name": "persisted-return-ignores-late-abort-resistant-read",
+      "simulatedLifecycle": true,
+      "nativeSafari": false,
+      "passed": true
+    },
+    {
       "mode": "empty",
       "passed": true
     },
@@ -44,9 +56,9 @@
   ],
   "passed": true,
   "sourceHashes": {
-    "assets/product-discovery-view.js": "5a4b6eccdf0bc491749a42fbf73248a517c4f0f7d85e7c738223aa8628357ba2",
+    "assets/product-discovery-view.js": "75ca793fb85297ac56609096ad9a05dae74dd8f1cb68c466cd1f03f05cc45a3b",
     "assets/product-discovery-view.css": "c1359da7b095c8248d71e8126a922c5f097e4c6501a87304405ac35f3f8b86a1",
-    "assets/shopping-search.js": "1df0a194513665537f7f764404ababcad968888a4c8da4116f4117f526f0d9cb",
+    "assets/shopping-search.js": "82cd7a6c19595055652d7751f98979c398bf4a8672b79b5df1fc88e2c72e7514",
     "assets/stylist.js": "36eb74b279b0e010ea5cc20d5befb98f1513e14a5c76f1a920af2ff597b63d03",
     "assets/product-discovery.js": "260b4403295335a1a5e2e1cb1708105b1f66242d8d283e2e4136f4375e3d7a4e"
   }

@@ -13,12 +13,12 @@ function fixture(){const now=Date.now()-1000;const base={brand:'PRIVATE TEST FAC
 function csp(relative){if(relative!=='stylist.html')return undefined;return fs.readFileSync(path.join(root,'_headers'),'utf8').split('/stylist*\n')[1].split('\n\n')[0].match(/Content-Security-Policy:\s*(.*)/)[1];}
 async function prepare(browser,profile,{mode='normal',published=false,delayed=false}={}){
  const context=await browser.newContext({viewport:{width:profile.width,height:1180},hasTouch:true,isMobile:true,locale:profile.lang==='ko'?'ko-KR':'en-US'}),calls=[],errors=[],violations=[];
- let allowMerchant=null,failed=mode==='error',release,started;
+ let allowMerchant=null,failed=mode==='error',release,started,delayedOnce=false;
  const gate=new Promise(r=>release=r),seen=new Promise(r=>started=r);const data=published?JSON.parse(fs.readFileSync(path.join(root,'assets/observed-products.json'),'utf8')):mode==='empty'?{version:1,observedAt:Date.now()-1000,products:[]}:fixture();
  await context.route('**/*',async route=>{const req=route.request(),u=new URL(req.url());assert.equal(req.method(),'GET');calls.push(u.href);assert.ok(!u.pathname.startsWith('/api/'));
   if(u.origin!==origin){assert.equal(req.isNavigationRequest(),true);assert.equal(u.href,allowMerchant);await route.fulfill({contentType:'text/html',body:'<!doctype html><title>PRIVATE INTERCEPTED NAVIGATION</title>Retailer acceptance not tested.'});return;}
   for(const[k,v]of u.searchParams){assert.equal(k,'v');assert.match(v,/^[a-z0-9-]+$/);}
-  if(u.pathname==='/assets/observed-products.json'){if(delayed){started();await gate;}if(failed){await route.fulfill({status:503,contentType:'application/json',body:'{}'});return;}await route.fulfill({contentType:'application/json',body:JSON.stringify(data)});return;}
+  if(u.pathname==='/assets/observed-products.json'){if(delayed&&!delayedOnce){delayedOnce=true;started();await gate;}if(failed){await route.fulfill({status:503,contentType:'application/json',body:'{}'});return;}await route.fulfill({contentType:'application/json',body:JSON.stringify(data)});return;}
   if(u.pathname==='/stylist.html'){await route.fulfill({status:308,headers:{Location:'/stylist'},body:''});return;}
   const rel=u.pathname==='/'?'index.html':u.pathname==='/stylist'?'stylist.html':u.pathname.slice(1),full=path.resolve(root,rel);assert.ok(full.startsWith(root+'/'));
   if(rel==='favicon.ico'&&!fs.existsSync(full)){await route.fulfill({status:204,body:''});return;}
@@ -49,6 +49,23 @@ try{
   for(const url of trial.calls)assert.doesNotMatch(url,/010-1234|shoulderHipRatio|legTorsoRatio|metrics|base64/);
   await page.goto(origin+'/',{waitUntil:'networkidle'});await searchMain(page,'남성 검정 슬랙스 5만원 이하');const genuine=page.locator('[data-discovery-buy="SYNTHETIC-OBSERVATION-1"]').first();trial.merchant(await genuine.getAttribute('href'));await genuine.click();assert.equal(page.url(),'https://www.musinsa.com/products/1168906');report.cases.push({profile,privateFixtures:true,mainAndStylist:true,noImages:true,noPaidAPI:true,guardedDirectNavigation:true});await trial.context.close();
  }
+ {const trial=await prepare(browser,{width:820,lang:'ko'}),{page}=trial;await page.goto(origin+'/',{waitUntil:'networkidle'});await searchMain(page,'남성 검정 슬랙스 5만원 이하');
+  await page.evaluate(()=>document.dispatchEvent(new CustomEvent('a1:analysis-ready',{detail:{metrics:{shoulderHipRatio:1.25,legTorsoRatio:1.6}}})));
+  await page.locator('#shopping-analysis-consent').check();await page.locator('#shopping-product-filters').locator('xpath=..').locator('summary').click();await page.locator('#shopping-measure-chest').fill('103');
+  await page.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true})));
+  assert.equal(await page.locator('#shopping-query').inputValue(),'');assert.equal(await page.locator('#shopping-analysis-consent').isChecked(),false);assert.equal(await page.locator('#shopping-analysis-consent').isDisabled(),true);assert.equal(await page.locator('#shopping-measure-chest').inputValue(),'');assert.equal(await page.locator('#shopping-discovery [data-discovery-id]').count(),0);
+  await page.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true})));await searchMain(page,'남성 검정 슬랙스 5만원 이하');assert.equal(await page.locator('#shopping-discovery [data-discovery-id]').count(),2);
+  assert.equal(await page.locator('#shopping-analysis-consent').isDisabled(),true);assert.deepEqual(trial.errors,[]);assert.deepEqual(trial.violations,[]);
+  report.cases.push({name:'persisted-page-return-reopens-public-search-only',simulatedLifecycle:true,nativeSafari:false,passed:true});await trial.context.close();}
+ {const trial=await prepare(browser,{width:820,lang:'ko'},{delayed:true}),{page}=trial;
+  // A transport that ignores abort must still never repopulate the old view or
+  // overwrite the new document-lifecycle request's shared loading state.
+  await page.addInitScript(()=>{const original=window.fetch;window.fetch=(input,options)=>{if(new URL(typeof input==='string'?input:input.url,location.href).pathname==='/assets/observed-products.json'){options={...options};delete options.signal;}return original(input,options);};});
+  await page.goto(origin+'/stylist',{waitUntil:'networkidle'});await page.locator('#stylist-message').fill('남성 검정 슬랙스 5만원 이하');await page.locator('#stylist-send').click();await trial.seen;
+  await page.evaluate(()=>{window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true}));window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}));});
+  let answer=await sendStylist(page,'남성 흰색 셔츠 3만원 이하');assert.equal(await answer.locator('[data-discovery-id]').count(),1);assert.match(await answer.innerText(),/WHITE SHIRT/);
+  trial.release();await page.waitForLoadState('networkidle');assert.equal(await page.locator('[data-stylist-discovery]').count(),1);assert.equal(await answer.locator('[data-discovery-id]').count(),1);assert.equal(trial.calls.filter(u=>new URL(u).pathname==='/assets/observed-products.json').length,2);assert.deepEqual(trial.errors,[]);assert.deepEqual(trial.violations,[]);
+  report.cases.push({name:'persisted-return-ignores-late-abort-resistant-read',simulatedLifecycle:true,nativeSafari:false,passed:true});await trial.context.close();}
  for(const mode of['empty','error']){
   const trial=await prepare(browser,{width:820,lang:'ko'},{mode});await trial.page.goto(origin+'/',{waitUntil:'networkidle'});await trial.page.waitForFunction(m=>document.querySelector('#shopping-discovery')?.dataset.state===(m==='error'?'error':'ready'),mode);
   assert.equal(await trial.page.locator('[data-discovery-id]').count(),0);

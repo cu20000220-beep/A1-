@@ -208,5 +208,8 @@
  document.addEventListener('a1:analysis-cleared',clear);$('#shopping-analysis-consent').addEventListener('change',()=>{$('#shopping-style-advice').replaceChildren();if(!$('#shopping-analysis-consent').checked)restoreBodyQuery();renderCatalog();});
  document.addEventListener('a1:language-changed',()=>{render();renderCatalog();if($('#shopping-style-advice').children.length)advice();});
  loadCatalog();
- window.addEventListener('pagehide',()=>{disposed=true;discoveryView?.dispose();controller?.abort();clearTimeout(expiryTimer);clear();conditions=null;$('#shopping-query').value='';$('#shopping-search-results').replaceChildren();$('#shopping-interpreted').replaceChildren();$('#shopping-interpreted').hidden=true;});
+ window.addEventListener('pagehide',()=>{disposed=true;discoveryView?.clear();controller?.abort();controller=null;clearTimeout(expiryTimer);clear();conditions=null;invalidQuery=false;catalog={version:1,generatedAt:null,products:[]};catalogState='loading';clearProductUI();$('#shopping-query').value='';$('#shopping-search-results').replaceChildren();$('#shopping-interpreted').replaceChildren();$('#shopping-interpreted').hidden=true;});
+ // Safari can restore this document from BFCache. Reopen only public reads;
+ // photos, measurements, consent and previous searches stay cleared.
+ window.addEventListener('pageshow',event=>{if(event.persisted){disposed=false;loadCatalog();}});
 })();

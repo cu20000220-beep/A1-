@@ -1,0 +1,584 @@
+{
+  "origin": "https://acdf5329.a1fashion.pages.dev",
+  "entry": "/fitting-studio",
+  "checkedAt": "2026-11-17T18:03:20.909Z",
+  "actualMediaPipe": true,
+  "nativeIpadSafari": false,
+  "passed": true,
+  "transport": "Actual deployed responses and headers through the configured proxy, no local asset replacement.",
+  "requests": [
+    {
+      "path": "/fitting-studio",
+      "status": 200,
+      "mime": "text/html; charset=utf-8",
+      "sha256": "35f8b9f8a6eecac7ad8471ec394f18c48e1223f994c969747f5ad6a31e385f5e"
+    },
+    {
+      "path": "/assets/fitting-studio.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8",
+      "sha256": "aa0e8432f45f686d07561ffb846b54976f4dfbe29bec2727c1eca3b818ecea9f"
+    },
+    {
+      "path": "/assets/product-discovery-view.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8",
+      "sha256": "c1359da7b095c8248d71e8126a922c5f097e4c6501a87304405ac35f3f8b86a1"
+    },
+    {
+      "path": "/assets/product-lab.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8",
+      "sha256": "a85b3bdfd550e4d9535e784bd389395325db47f53a41781c069f77e8171f2dee"
+    },
+    {
+      "path": "/assets/fitting-studio-photo.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8",
+      "sha256": "1883b3c0a0bf81eb828a94257ab2167ac9b9edb3386a6a17eef2f73df47fa72e"
+    },
+    {
+      "path": "/assets/fitting-studio-3d.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "a0220558c33df6814bc95f3cc514b6c31af03c03d901763fdd0fffc93ed43c2c"
+    },
+    {
+      "path": "/assets/fitting-studio.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "0c4a5852acb0ad859b280b4e03495a7ec24af084da23bea917923987dc87491f"
+    },
+    {
+      "path": "/assets/fitting-studio-3d.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8",
+      "sha256": "b5c0ca87e84758da9db1feb14061df43ac78edb5ed782b45db31aa391c6e82a7"
+    },
+    {
+      "path": "/assets/preview-experience.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "acf15bdddc63e8443fe67adc619fba3ea04b5f1730032c06db9f70f5e1c6681b"
+    },
+    {
+      "path": "/assets/i18n.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "a53f0c0f8937fc9ea5c90ae823b63eb16925c7bd8828dcb26521277fd69aa5fd"
+    },
+    {
+      "path": "/assets/studio/hero.png",
+      "status": 200,
+      "mime": "image/png",
+      "sha256": "128fb7c3173617f9e214974ec05ca33e7c76f666885f81a966183758dfe59436"
+    },
+    {
+      "path": "/assets/fitting-studio-photo.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "5acf5cd1aa6265d81f157a4cd76c317ec8c33444b6ed246cc878ab00aaafd2ba"
+    },
+    {
+      "path": "/assets/studio/male-sheet.png",
+      "status": 200,
+      "mime": "image/png",
+      "sha256": "ef1672b946e4ab2b3349dbb3bb1324a6ffd5c9ad03d178188dcede4b40ffa899"
+    },
+    {
+      "path": "/assets/placeholder.svg",
+      "status": 200,
+      "mime": "image/svg+xml",
+      "sha256": "ba019c7bfbc7176422ee963d0da565da9e82e79f2e253e90078993c4629b5b74"
+    },
+    {
+      "path": "/assets/i18n-main.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "5aa9bc47d67ba202e383471844e59c7ed3f0f952f4042b770424971e7b26e219"
+    },
+    {
+      "path": "/assets/i18n-analysis.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "8bd106ab4b8b53d848a8f6bf6b9aaa03a34de309f5fd0d23a11f0a136fb44e8b"
+    },
+    {
+      "path": "/assets/body-analysis.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "0c57ee64139b3e378e7d1ed12f78e57d25b23f575c884ff4419e24f2e4d9d68b"
+    },
+    {
+      "path": "/assets/product-matching.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "136bc6820c9b7f6719c302650df2e5f96f9565120733c452fe3c19dc7663326d"
+    },
+    {
+      "path": "/assets/offer-comparison.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "9f374ef5d79cbd9cba9337ffba11dffe5a33077f8980ec2f6893451698f2acc5"
+    },
+    {
+      "path": "/assets/product-catalog.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "56c4eb3694c87c334043e4d919814412e6f407b55df80d5a6f9425fa2c996093"
+    },
+    {
+      "path": "/assets/shopping-query.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "fff064224161095690066a5483e2699ee826a430003f4fb51c3402016a85fa02"
+    },
+    {
+      "path": "/assets/lab-loader.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "f020362eb39f6a9b6d8324bec6db9e2fe038451a9262764bc81a6aa8018c5d1b"
+    },
+    {
+      "path": "/assets/catalog-fitting.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "1a1e6d13e5917857ffa79bcd2a723984bf1729f50c76594ba0c6965cd2c130d9"
+    },
+    {
+      "path": "/assets/product-discovery.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "260b4403295335a1a5e2e1cb1708105b1f66242d8d283e2e4136f4375e3d7a4e"
+    },
+    {
+      "path": "/assets/product-discovery-view.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "5a4b6eccdf0bc491749a42fbf73248a517c4f0f7d85e7c738223aa8628357ba2"
+    },
+    {
+      "path": "/product-lab",
+      "status": 200,
+      "mime": "text/html; charset=utf-8",
+      "sha256": "8f395a2834b7150be0d45eaddac1976ee95b38631607e7ae670d8778c0137457"
+    },
+    {
+      "path": "/assets/product-lab.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "116dba1b29aaa185b4825c6fc5bb67967c3825f36584cd59ab711af699d63d34"
+    },
+    {
+      "path": "/assets/lab-garment.svg",
+      "status": 200,
+      "mime": "image/svg+xml",
+      "sha256": "7ce1f12c6f6abf34efafc280bbed9d7e391f278014f15cf592f2eebb38390db2"
+    },
+    {
+      "path": "/assets/lab-entry.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "44e1cee043f1f71898ca3f63cdfd39be309e664fbf736fffbfb0c0840cb7a427"
+    },
+    {
+      "path": "/assets/approved-products.json",
+      "status": 200,
+      "mime": "application/json",
+      "sha256": "1beaf56b68133d3567a02991494b5a8b5f42d9728d3d7e2e089d2fe71c66c45d"
+    },
+    {
+      "path": "/assets/observed-products.json",
+      "status": 200,
+      "mime": "application/json",
+      "sha256": "5ae19418ff98c04bdb57c833a3939e79e9386bb3b2b8ece6499dfa90afe05d04"
+    },
+    {
+      "path": "/assets/avatar-photo-bridge.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "9da12c4dbbc88efa3462383169a220b7e367eee40db05bda3825b4d6073dddbb"
+    },
+    {
+      "path": "/assets/ai-studio.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "96c97079c5ac32a8392825a4e2f8c8839850fbafe3708b2d52390868ab06f916"
+    },
+    {
+      "path": "/assets/vendor/mediapipe/pose.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "fcb703afcce65d0a1c540f6a70c3bb45fc84521498c21a9d4160265dde648ab4"
+    },
+    {
+      "path": "/assets/vendor/mediapipe/pose_solution_simd_wasm_bin.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "3983d1dca31d945d81abb70b18dd61f28ef4736e112463d7cfb1cbadef588127"
+    },
+    {
+      "path": "/assets/vendor/mediapipe/pose_web.binarypb",
+      "status": 200,
+      "mime": "application/octet-stream",
+      "sha256": "dc8efd1c2d62007b34278467407fda5f70847f41310e0e39f0f59fc17b1d01f7"
+    },
+    {
+      "path": "/assets/vendor/mediapipe/pose_solution_packed_assets_loader.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "d7aa29b7d8e11b5c97a58d719e982dd15c2de72995d95112d60492b854840a36"
+    },
+    {
+      "path": "/assets/vendor/mediapipe/pose_landmark_lite.tflite",
+      "status": 200,
+      "mime": "application/octet-stream",
+      "sha256": "f17bfbecadb61c3be1baa8b8d851cc6619c870a87167b32848ad20db306b9d61"
+    },
+    {
+      "path": "/assets/vendor/mediapipe/pose_solution_packed_assets.data",
+      "status": 200,
+      "mime": "application/octet-stream",
+      "sha256": "a63c614bef30d35947f13be361820b1e4e3bec9cfeebf4d11216a18373108e85"
+    },
+    {
+      "path": "/assets/vendor/mediapipe/pose_solution_simd_wasm_bin.wasm",
+      "status": 200,
+      "mime": "application/wasm",
+      "sha256": "195a929430e2ce130b3efb82e64ba27c8e68cb0f6bad870b715688060ea6f7e2"
+    },
+    {
+      "path": "/assets/gltf-proof.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "10d38daed16a21ebf69063069377f0322b6ad7c90e76845cc503962415dbcd40"
+    },
+    {
+      "path": "/assets/natural-avatar-profile.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "220c2992e478c29cd8e9efa764d43fec76857664c892cb06f62afad182800e53"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "c7980ea949c527a829cf7416afa8f4dcf50aff31079685e6827d188d3635cc34"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "008ec07cc51409a175fe6f9e24d9998a97069e1de0a42298cd9fdad93bf2bc22"
+    },
+    {
+      "path": "/assets/humanoid-surface.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "6701889a05dfc9ebf36c37c191bfbf199b34ad0976c7fb89b76e0acf6281c8f7"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "fa8b3930d2c5bc6366516c636dee51fedcaecf51bfd3c245b350bda655fe194b"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "9e53f7de94e1a632b88113536c1c404e243dac973bad2e8e6d514ff49b569e65"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/build/three.module.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "104f56145899722094556490d787aae0617cc2fc3382f31df02d724ea1aee341"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/build/three.core.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "f2292eeef3332bf736b6be376d8dd8748f6f412ed484cbd58f529b2b7a6cc368"
+    },
+    {
+      "path": "/assets/natural-avatar/asset-manifest.json",
+      "status": 200,
+      "mime": "application/json",
+      "sha256": "4b8d8c17f5cc8884d3a49a56eff48ea546c4eb0e13470a09a911cac0ad20d04b"
+    },
+    {
+      "path": "/assets/natural-avatar/sample.glb",
+      "status": 200,
+      "mime": "model/gltf-binary",
+      "sha256": "f3626960d185720d76ed1e2a6d0dc3c1a42c59275a2863e96c0d34d11c47dad2"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "mime": "text/html; charset=utf-8",
+      "sha256": "7c83a8d8690fcda15574fda0a203e5342bbd01ba8f9c921088a4c69212b6f2a9"
+    },
+    {
+      "path": "/assets/i18n-main.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "5aa9bc47d67ba202e383471844e59c7ed3f0f952f4042b770424971e7b26e219"
+    },
+    {
+      "path": "/assets/i18n.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "a53f0c0f8937fc9ea5c90ae823b63eb16925c7bd8828dcb26521277fd69aa5fd"
+    },
+    {
+      "path": "/assets/app.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "491f36ba0c4e145e43fa02de46169aaa0ad0b836708d8d14bf5efabc5a7b1fed"
+    },
+    {
+      "path": "/assets/site-navigation.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8",
+      "sha256": "d6a10c042024c02ef74fc404a8563ca931313e08ca7cacda4a9e86d9fbe1b12d"
+    },
+    {
+      "path": "/assets/fitting-studio-3d.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8",
+      "sha256": "b5c0ca87e84758da9db1feb14061df43ac78edb5ed782b45db31aa391c6e82a7"
+    },
+    {
+      "path": "/assets/photos/hero.jpg",
+      "status": 200,
+      "mime": "image/jpeg",
+      "sha256": "fa021089b54552f9706b17f8afc0a2faec5a3e398950e82ca6b2b44e321d3902"
+    },
+    {
+      "path": "/assets/i18n-app.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "077c70c67ddd1a4ebcd407a6829b109c17457c42ab86de491b7cb523310eee0f"
+    },
+    {
+      "path": "/assets/i18n-analysis.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "8bd106ab4b8b53d848a8f6bf6b9aaa03a34de309f5fd0d23a11f0a136fb44e8b"
+    },
+    {
+      "path": "/assets/style.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8",
+      "sha256": "56215f55de2ba31bddd43bfa4b47bc4e4287ef538d0e3d1676617b735331bdb5"
+    },
+    {
+      "path": "/assets/product-lab.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8",
+      "sha256": "a85b3bdfd550e4d9535e784bd389395325db47f53a41781c069f77e8171f2dee"
+    },
+    {
+      "path": "/assets/preview-experience.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "acf15bdddc63e8443fe67adc619fba3ea04b5f1730032c06db9f70f5e1c6681b"
+    },
+    {
+      "path": "/assets/premium-client.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "b27428b7dacefb0662ffde77c28883ab7013c9f27973bdcb1d30a5bff3c53832"
+    },
+    {
+      "path": "/assets/shopping-query.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "fff064224161095690066a5483e2699ee826a430003f4fb51c3402016a85fa02"
+    },
+    {
+      "path": "/assets/site-navigation.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "5faff4b95c2c03f4b97ed2f28c1d08aed16267689275525e87ed93b6031f45ab"
+    },
+    {
+      "path": "/assets/shopping-search.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8",
+      "sha256": "e4e1cadcd527bac7f04f69b62e0f3294bfb0395dbeea7538501f6e5180fd7713"
+    },
+    {
+      "path": "/assets/product-catalog.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "56c4eb3694c87c334043e4d919814412e6f407b55df80d5a6f9425fa2c996093"
+    },
+    {
+      "path": "/assets/lab-entry.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "44e1cee043f1f71898ca3f63cdfd39be309e664fbf736fffbfb0c0840cb7a427"
+    },
+    {
+      "path": "/assets/ai-studio.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "96c97079c5ac32a8392825a4e2f8c8839850fbafe3708b2d52390868ab06f916"
+    },
+    {
+      "path": "/assets/stylist-analysis-bridge.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "ac8e62ca2a4ff8238aa5dba6c9e1dcaf728ea0ceb094e6a21891ccd8924e760c"
+    },
+    {
+      "path": "/assets/free-beta.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "61fa7927ba56e777635a7ec72308f56bcf4139f33ee42c3640f3c17914a72873"
+    },
+    {
+      "path": "/assets/catalog-fitting.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "1a1e6d13e5917857ffa79bcd2a723984bf1729f50c76594ba0c6965cd2c130d9"
+    },
+    {
+      "path": "/assets/offer-comparison.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "9f374ef5d79cbd9cba9337ffba11dffe5a33077f8980ec2f6893451698f2acc5"
+    },
+    {
+      "path": "/assets/product-matching.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "136bc6820c9b7f6719c302650df2e5f96f9565120733c452fe3c19dc7663326d"
+    },
+    {
+      "path": "/assets/avatar-photo-bridge.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "9da12c4dbbc88efa3462383169a220b7e367eee40db05bda3825b4d6073dddbb"
+    },
+    {
+      "path": "/assets/lab-loader.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "f020362eb39f6a9b6d8324bec6db9e2fe038451a9262764bc81a6aa8018c5d1b"
+    },
+    {
+      "path": "/assets/shopping-search.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "1df0a194513665537f7f764404ababcad968888a4c8da4116f4117f526f0d9cb"
+    },
+    {
+      "path": "/assets/product-lab.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "116dba1b29aaa185b4825c6fc5bb67967c3825f36584cd59ab711af699d63d34"
+    },
+    {
+      "path": "/stylist",
+      "status": 200,
+      "mime": "text/html; charset=utf-8",
+      "sha256": "589d729804e7b09fef4c282764cb5adb2d1db43b7030cdd1d92b63ea8ed3bbbe"
+    },
+    {
+      "path": "/assets/product-matching.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "136bc6820c9b7f6719c302650df2e5f96f9565120733c452fe3c19dc7663326d"
+    },
+    {
+      "path": "/assets/stylist.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "36eb74b279b0e010ea5cc20d5befb98f1513e14a5c76f1a920af2ff597b63d03"
+    },
+    {
+      "path": "/assets/stylist.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8",
+      "sha256": "7b556fb026c4c70b9c3466dac65d00724528c473ffc74518f5e844a1664d0dd6"
+    },
+    {
+      "path": "/assets/i18n-stylist.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "sha256": "cc4900b7ea08ca0397c5eb9e8fef3c62f2c6c3df90b45620fb638b19a4837bce"
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [],
+  "csp": [],
+  "apiIsolation": {
+    "status": 503,
+    "error": "preview_isolated"
+  },
+  "analysisSucceeded": true,
+  "analysisStatus": "무료 분석을 완료했습니다. 무료 베타 스타일 예시도 이용할 수 있습니다.",
+  "observedProductReference": {
+    "snapshotCount": 10,
+    "bodyIdeas": 2,
+    "filteredCount": 2,
+    "photos": 0
+  },
+  "three": {
+    "state": "ready",
+    "disposed": false,
+    "meshes": 11,
+    "skinnedMeshes": 11,
+    "bones": 73,
+    "drawCalls": 12,
+    "triangles": 49897,
+    "renderCount": 5,
+    "garment": "source",
+    "materialMode": "standard",
+    "skinPose": false,
+    "look": "natural",
+    "naturalProfile": true,
+    "viewYaw": 0,
+    "frameSamples": [
+      396.1000000014901,
+      4,
+      1.5,
+      1,
+      0.7999999970197678
+    ],
+    "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+    "memoryGeometries": 12,
+    "memoryTextures": 21
+  },
+  "distinct3DViews": true,
+  "ratiosAppliedToGeometry": false,
+  "local2DFitting": {
+    "photoReselection": false,
+    "transforms": 5,
+    "beforeAfter": true,
+    "aiSynthesis": false
+  },
+  "shopping": {
+    "officialLinks": true,
+    "merchantServerAccessVerified": false
+  },
+  "jointDeletion": true,
+  "actualProductSearch": {
+    "ids": [
+      "musinsa-1168906",
+      "musinsa-4644434"
+    ],
+    "query": "남성 검정 슬랙스 5만원 이하",
+    "observedPriceEachKRW": 49900,
+    "stock": "unknown",
+    "merchantServerAcceptanceVerified": false
+  },
+  "freeStylist": {
+    "rulesOnly": true,
+    "actualCandidateCount": 2,
+    "paidApiCalls": 0
+  }
+}

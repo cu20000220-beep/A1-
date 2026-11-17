@@ -26,7 +26,7 @@
   '확인한 정보와 제한':'Observed facts and limits','상품 종류 일치':'Clothing type matches','색상 일치':'Color matches','컬렉션 일치':'Collection matches','핏 표기 일치':'Listed fit matches','페이지 표시 가격 기준 예산 범위':'Observed page price is within the budget',
   '색상 미확인':'Color unconfirmed','컬렉션 미확인':'Collection unconfirmed','핏 정보 미확인':'Fit unconfirmed','사이즈 미확인':'Size unconfirmed','스타일 세부 정보 미확인':'Style details unconfirmed','용도 정보 미확인':'Occasion details unconfirmed','확인 후 24시간 경과 · 판매처 재확인 필요':'Over 24 hours since checking · recheck at the seller'
  });
- let loading=null,snapshot=null,requestController=null;
+ let loading=null,snapshot=null,requestController=null,loadGeneration=0;
  const reasonLabels={type_matches:'상품 종류 일치',color_matches:'색상 일치',collection_matches:'컬렉션 일치',fit_matches:'핏 표기 일치',observed_price_within_budget:'페이지 표시 가격 기준 예산 범위'};
  const warningLabels={color_unconfirmed:'색상 미확인',collection_unconfirmed:'컬렉션 미확인',fit_unconfirmed:'핏 정보 미확인',size_unconfirmed:'사이즈 미확인',style_unconfirmed:'스타일 세부 정보 미확인',occasion_unconfirmed:'용도 정보 미확인',observation_stale:'확인 후 24시간 경과 · 판매처 재확인 필요'};
  const node=(tag,text)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;return el;};
@@ -34,16 +34,19 @@
   if(refresh&&!loading)snapshot=null;
   if(snapshot)return snapshot;
   if(loading)return loading;
-  requestController=new AbortController();const active=requestController,timer=setTimeout(()=>active.abort(),12000);
-  loading=(async()=>{
+  requestController=new AbortController();const active=requestController,generation=loadGeneration,timer=setTimeout(()=>active.abort(),12000);
+  const pending=(async()=>{
    const response=await fetch('/assets/observed-products.json',{credentials:'omit',cache:'no-store',redirect:'error',signal:active.signal});
    if(!response.ok||!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')||''))throw Error('discovery_response');
    const url=new URL(response.url||'/assets/observed-products.json',location.origin);
    if(url.origin!==location.origin||url.pathname!=='/assets/observed-products.json'||url.search)throw Error('discovery_response');
    const text=await response.text();if(text.length>1_000_000)throw Error('discovery_size');
-   const value=JSON.parse(text);D.validateSnapshot(value);snapshot=value;return value;
+   const value=JSON.parse(text);D.validateSnapshot(value);
+   if(active.signal.aborted||generation!==loadGeneration||requestController!==active)throw new DOMException('Discovery read was cleared.','AbortError');
+   snapshot=value;return value;
   })();
-  try{return await loading;}finally{clearTimeout(timer);if(requestController===active)requestController=null;loading=null;}
+  loading=pending;
+  try{return await pending;}finally{clearTimeout(timer);if(requestController===active)requestController=null;if(loading===pending)loading=null;}
  }
  function create(target){
   if(!target||target.dataset.discoveryView)return null;
@@ -101,6 +104,6 @@
   retry.addEventListener('click',()=>{if(last)search(last,{refresh:true});});document.addEventListener('a1:language-changed',language);
   return Object.freeze({target,search,clear,dispose});
  }
- window.addEventListener('pagehide',()=>{requestController?.abort();snapshot=null;});
+ window.addEventListener('pagehide',()=>{loadGeneration++;requestController?.abort();requestController=null;loading=null;snapshot=null;});
  window.A1ProductDiscoveryView=Object.freeze({create});
 })();

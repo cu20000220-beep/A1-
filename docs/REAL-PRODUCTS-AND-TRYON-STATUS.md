@@ -59,3 +59,20 @@
 브라우저는 Linux Chromium 터치 모사다. 실제 iPad Safari·판매처 서버의 구매 성공·실제 AI 합성은 미검증이다. Preview URL·최신 커밋·GitHub CI는 PR #4에 기록한다. **전체 의류 추천+실사 AI/3D 피팅 서비스 출시는 NO-GO**이며, 현재 결과를 그 서비스의 완성이라고 보고하지 않는다.
 
 모든 소비자 무료 베타를 유지한다. main 병합·Production 배포·운영 Firebase/DB/회원/구독 데이터 변경·운영 환경 변수 변경·유료 API 활성화를 하지 않는다. Preview API503 보호는 그대로다.
+
+
+## 실제 배포 확인 근거 (ac53c75)
+
+https://acdf5329.a1fashion.pages.dev 배포의 실제 응답·헤더·소스 해시로 확인했다. 로컬 파일 대체나 Pose 모의 없이 기존 공개 저장소 사진으로 실제 MediaPipe를 실행했다.
+
+- 메인: 동일 출처 GET56개, 분석 → 자연형 GLB → 2D 조절·비교 → 삭제 통과.
+- 스타일 스튜디오 및 상품/상담 통합: GET84개, 위 경로와 공식 후보10개 표시, 비율 별도 동의 후 참고 조건2개·후보2개 필터링, 철회/삭제, 메인 검색2후보, 무료 상담2후보 통과.
+- JS·콘솔·CSP 오류0, `/api/health`503 `preview_isolated`. 실제 iPad Safari나 판매처 서버 구매 응답을 확인한 것은 아니다.
+- [배포 실행 기록](validation/real-products/live-ac53c75/preview-result.json), [실제 검색 결과](validation/real-products/live-ac53c75/search-products.png), [실제 무료 상담 후보](validation/real-products/live-ac53c75/stylist-products.png).
+
+
+## 판매처에서 돌아온 뒤 후보가 사라지는 문제
+
+Safari BFCache와 같은 `pagehide/pageshow` 생명주기에서 메인 검색이 영구 종료 상태로 남아 공식 후보가 0개로 유지되는 것을 재현했다. 페이지를 떠날 때 공개 뷰는 재사용 가능한 `clear()`로 비우고, 캐시 복귀 시 공개 자료 조회만 다시 시작한다. 이전 사진·비율·직접 입력 치수·동의·검색어는 되살리지 않는다. 중단된 옛 조회가 늦게 끝나도 새 세대의 자료나 로딩 상태를 덮지 못하도록 요청 식별과 세대를 검사한다.
+
+검색/상담 브라우저 검사는 8개 통과했다. 추가된 두 검사는 생명주기 이벤트를 통한 공개 검색 재사용/개인 자료 삭제와 abort를 무시하는 늦은 응답 격리를 확인한다. 실제 iPad의 BFCache 작동이나 독립 Safari를 검증한 것으로 표현하지 않는다.
