@@ -1,0 +1,53 @@
+{
+  "merchantAcceptanceVerified": false,
+  "nativeSafari": false,
+  "cases": [
+    {
+      "profile": {
+        "width": 820,
+        "lang": "ko"
+      },
+      "privateFixtures": true,
+      "mainAndStylist": true,
+      "noImages": true,
+      "noPaidAPI": true,
+      "guardedDirectNavigation": true
+    },
+    {
+      "profile": {
+        "width": 390,
+        "lang": "en"
+      },
+      "privateFixtures": true,
+      "mainAndStylist": true,
+      "noImages": true,
+      "noPaidAPI": true,
+      "guardedDirectNavigation": true
+    },
+    {
+      "mode": "empty",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "passed": true
+    },
+    {
+      "name": "clear-during-metadata-load",
+      "passed": true
+    },
+    {
+      "name": "actual-published-official-observations",
+      "count": 10,
+      "priceInventoryAndRightsLimitsPreserved": true
+    }
+  ],
+  "passed": true,
+  "sourceHashes": {
+    "assets/product-discovery-view.js": "5a4b6eccdf0bc491749a42fbf73248a517c4f0f7d85e7c738223aa8628357ba2",
+    "assets/product-discovery-view.css": "c1359da7b095c8248d71e8126a922c5f097e4c6501a87304405ac35f3f8b86a1",
+    "assets/shopping-search.js": "1df0a194513665537f7f764404ababcad968888a4c8da4116f4117f526f0d9cb",
+    "assets/stylist.js": "36eb74b279b0e010ea5cc20d5befb98f1513e14a5c76f1a920af2ff597b63d03",
+    "assets/product-discovery.js": "260b4403295335a1a5e2e1cb1708105b1f66242d8d283e2e4136f4375e3d7a4e"
+  }
+}

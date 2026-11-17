@@ -218,7 +218,9 @@
     // an individual product page as an unapproved generic search endpoint.
     if(a.matches('[data-catalog-buy],[data-catalog-source],[data-offer-buy]')&&a.closest('#shopping-search')
       ||a.hasAttribute('data-stylist-catalog-buy')&&a.closest('#stylist-chat')
-      ||a.hasAttribute('data-selected-catalog-buy')&&a.closest('#lab-selected-catalog'))return;
+      ||a.hasAttribute('data-selected-catalog-buy')&&a.closest('#lab-selected-catalog')
+      ||a.matches('[data-lab-catalog-buy],[data-lab-catalog-source]')&&a.closest('#lab-root .lab-approved-card')
+      ||a.hasAttribute('data-discovery-buy')&&a.closest('#shopping-discovery,[data-stylist-discovery],#lab-observed-products')&&window.A1ProductDiscovery?.safeProductUrl(a.href))return;
     const controlled=a.hasAttribute('data-public-retailer')||a.closest('#retailer-results,#preview-style-results,.stylist-search-links');
     let merchant=false;try{merchant=stores.some(row=>new URL(row[2]).hostname===new URL(a.href).hostname);}catch{}
     if(!controlled&&!merchant)return;

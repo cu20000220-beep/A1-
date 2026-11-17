@@ -1,0 +1,20 @@
+{
+  "publicOfficialPageCandidates": 10,
+  "observedPrices": 4,
+  "unconfirmedPrices": 6,
+  "retailerImagesUsed": 0,
+  "retailerFittingImagePermissionsVerified": 0,
+  "realAITryonRequests": 0,
+  "nativeIpadSafariVerified": false,
+  "apiConnectivityProbe": {
+    "url": "https://api.fashn.ai/",
+    "method": "HEAD",
+    "result": "managed proxy CONNECT 403; no authentication, image or paid job submitted"
+  },
+  "sourceHashes": {
+    "assets/observed-products.json": "5ae19418ff98c04bdb57c833a3939e79e9386bb3b2b8ece6499dfa90afe05d04",
+    "assets/approved-products.json": "1beaf56b68133d3567a02991494b5a8b5f42d9728d3d7e2e089d2fe71c66c45d",
+    "catalog/source-approvals.json": "c65b40284dd5851db681e9025d837f28a578e52e9b13e836731c547ec318ef9e",
+    "server/virtual-tryon.mjs": "090a68538de6b141b65cd7f2bdc1f0ae2d17fa832b17e0b52d03860715a6b254"
+  }
+}

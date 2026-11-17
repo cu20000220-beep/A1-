@@ -1,0 +1,80 @@
+{
+  "scope": "Synthetic approved-feed responses plus the separately labelled published official-page observations. Pose is mocked. Not native iPad Safari.",
+  "cases": [
+    {
+      "profile": {
+        "entry": "/",
+        "width": 820,
+        "lang": "ko"
+      },
+      "passed": true,
+      "organic": 2,
+      "sponsored": 1,
+      "unavailable": 1,
+      "syntheticOnly": true,
+      "selectedImagePixelChanges": 103440,
+      "bodyPhotoReselected": false
+    },
+    {
+      "profile": {
+        "entry": "/product-lab",
+        "width": 1180,
+        "lang": "ko"
+      },
+      "passed": true,
+      "organic": 2,
+      "sponsored": 1,
+      "unavailable": 1,
+      "syntheticOnly": true,
+      "selectedImagePixelChanges": 103440,
+      "bodyPhotoReselected": false
+    },
+    {
+      "profile": {
+        "entry": "/fitting-studio",
+        "width": 390,
+        "lang": "en"
+      },
+      "passed": true,
+      "organic": 2,
+      "sponsored": 1,
+      "unavailable": 1,
+      "syntheticOnly": true,
+      "selectedImagePixelChanges": 103440,
+      "bodyPhotoReselected": false
+    },
+    {
+      "mode": "empty",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "passed": true
+    },
+    {
+      "name": "filtered-and-expired-selection",
+      "passed": true
+    },
+    {
+      "name": "delete-during-catalog-read",
+      "passed": true
+    },
+    {
+      "name": "published-facts-and-explicit-body-reference-filter",
+      "source": "actual-public-observations",
+      "products": 10,
+      "images": 0,
+      "inferenceMocked": true,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "sourceHashes": {
+    "assets/product-lab.js": "116dba1b29aaa185b4825c6fc5bb67967c3825f36584cd59ab711af699d63d34",
+    "assets/product-lab.css": "a85b3bdfd550e4d9535e784bd389395325db47f53a41781c069f77e8171f2dee",
+    "assets/product-catalog.js": "56c4eb3694c87c334043e4d919814412e6f407b55df80d5a6f9425fa2c996093",
+    "assets/catalog-fitting.js": "1a1e6d13e5917857ffa79bcd2a723984bf1729f50c76594ba0c6965cd2c130d9",
+    "assets/fitting-studio-photo.js": "5acf5cd1aa6265d81f157a4cd76c317ec8c33444b6ed246cc878ab00aaafd2ba",
+    "scripts/lib/catalog-public-headers.cjs": "3859e508cc4343debfa7f32b4c6bec6e6111f8ea4574857acc00cb2ed6d1f7d1"
+  }
+}

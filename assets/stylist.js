@@ -6,12 +6,13 @@
   const Catalog=window.A1ProductCatalog,Query=window.A1ShoppingQuery,OfferComparison=window.A1OfferComparison;
   const $ = selector => document.querySelector(selector);
   const I = window.A1I18n;
+  if(preview)I.register({'현재 조건에 맞는 승인 피드 상품은 없습니다. 공식페이지 확인 후보는 별도로 표시합니다.':'No approved feed products match these conditions. Official-page candidates are shown separately.'});
   const t = (source, values) => I.t(source, values);
   const tx = (element, source, values) => I.setText(typeof element === 'string' ? $(element) : element, source, values);
   const form = $('#stylist-form'), chat = $('#stylist-chat');
   const merchants = new Set(['www.coupang.com','search.shopping.naver.com','www.ebay.com','www.ebay.co.uk','www.ebay.de','www.amazon.com','www.amazon.co.jp','www.amazon.co.uk','www.amazon.de','search.rakuten.co.jp','www.zalando.de']);
   const currencies = new Set(['KRW','USD','EUR','GBP','JPY']);
-  const conversations = [], pending = new Set();
+  const conversations = [], pending = new Set(), discoveryViews = new Set();
   // Preview needs are bounded parser fields in page memory, never raw history
   // concatenated into search terms. Only real control edits replace a prior turn.
   const previewControlEdits = new Set();
@@ -45,6 +46,7 @@
     block.append(title, copy); chat.replaceChildren(block);
   }
   function clearConversation({resetProfile = false, clearMetrics = true} = {}) {
+    for(const view of discoveryViews)view.dispose();discoveryViews.clear();
     previewAnswer = null; previewNeeds = null; previewControlEdits.clear();clearTimeout(previewCatalogTimer);previewCatalogTimer=undefined;
     generation++;
     clearTimeout(expiryTimer); expiryTimer = undefined; accessUntil = 0;
@@ -216,7 +218,7 @@
   });
   function rerenderPreviewAnswer(){
     if(!preview||!previewAnswer)return;const {request,question}=previewAnswer;
-    const result=catalogAnswer({...request,language:I.language});chat.replaceChildren();
+    const result=catalogAnswer({...request,language:I.language});for(const view of discoveryViews)view.dispose();discoveryViews.clear();chat.replaceChildren();
     const bubble=node('article',undefined,'stylist-message is-user');bubble.dataset.i18nIgnore='';bubble.append(node('h3',t('나의 질문')),node('p',question));chat.append(bubble);renderAnswer(result,request.intent);
   }
   function schedulePreviewCatalogRefresh(){
@@ -306,7 +308,8 @@
     if (Array.isArray(result.advice)) { const list=node('ul'); for (const item of result.advice.slice(0,8)) if (typeof item?.text === 'string') list.append(node('li',item.text)); bubble.append(list); }
     const products = (Array.isArray(result.products)?result.products:[]).slice(0,12);
     if (products.length) for (const product of products) { const card = productCard(product); if (card) bubble.append(card); }
-    else if(!result.needsClarification)bubble.append(node('p',t('현재 조건에 맞는 검증 상품이 없습니다. 상품·가격·할인율을 생성하지 않습니다.')));
+    else if(!result.needsClarification)bubble.append(node('p',t(preview&&window.A1ProductDiscoveryView?'현재 조건에 맞는 승인 피드 상품은 없습니다. 공식페이지 확인 후보는 별도로 표시합니다.':'현재 조건에 맞는 검증 상품이 없습니다. 상품·가격·할인율을 생성하지 않습니다.')));
+    if(preview&&result.clothingConditions&&!result.needsClarification&&window.A1ProductDiscoveryView){const section=node('section');section.dataset.stylistDiscovery='';bubble.append(section);const view=window.A1ProductDiscoveryView.create(section);if(view){discoveryViews.add(view);view.search(result.clothingConditions);}}
     const bodySuggestions=renderBodySuggestions(result);if(bodySuggestions)bubble.append(bodySuggestions);
     if (Array.isArray(result.searchLinks) && result.searchLinks.length) {
       const links = node('div',undefined,'stylist-search-links'); links.append(node('p',t('판매처 검색 연결 · 개별 상품 연동이 아닙니다.')));
@@ -323,7 +326,7 @@
     } else if (intent === 'discount') bubble.append(node('p',t('현재 확인된 할인 정보가 없습니다. 할인율을 만들어 표시하지 않습니다.')));
     if (Array.isArray(result.notices)) for (const notice of result.notices.slice(0,6)) if (typeof notice === 'string') bubble.append(node('p',notice,'stylist-source'));
     if (Number.isSafeInteger(result.usage?.remainingUserRequests) && result.usage.remainingUserRequests >= 0) bubble.append(node('p',t('오늘 남은 상담: {count}',{count:result.usage.remainingUserRequests}),'stylist-source'));
-    chat.append(bubble); while (chat.children.length > 16) chat.firstElementChild.remove();if(preview)schedulePreviewCatalogRefresh();
+    chat.append(bubble); while (chat.children.length > 16) chat.firstElementChild.remove();for(const view of discoveryViews)if(!view.target.isConnected){view.dispose();discoveryViews.delete(view);}if(preview)schedulePreviewCatalogRefresh();
     bubble.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   }
   form.addEventListener('submit',async event => {

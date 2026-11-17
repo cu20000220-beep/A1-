@@ -13,6 +13,10 @@ const catalog=require('./lib/product-catalog.cjs').validateSnapshot(
   JSON.parse(fs.readFileSync(path.join(root,'assets/approved-products.json'),'utf8')),
   JSON.parse(fs.readFileSync(path.join(root,'catalog/source-approvals.json'),'utf8'))
 );
+// Independent factual product links carry no retailer image/fitting permission.
+const discoveryFile = path.join(root, 'assets/observed-products.json');
+if (fs.statSync(discoveryFile).size > 1000000) throw Error('Product observations exceed 1 MB');
+require('../assets/product-discovery.js').validateSnapshot(JSON.parse(fs.readFileSync(discoveryFile, 'utf8')));
 const files = [];
 
 function collect(relative) {
@@ -40,6 +44,10 @@ const publicEntries = [
   'assets/catalog-fitting.js',
   'assets/offer-comparison.js',
   'assets/approved-products.json',
+  'assets/product-discovery.js',
+  'assets/product-discovery-view.js',
+  'assets/product-discovery-view.css',
+  'assets/observed-products.json',
   'templates/seller-products.csv',
   'templates/seller-products.json',
   'assets/shopping-search.js',
