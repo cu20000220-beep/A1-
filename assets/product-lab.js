@@ -93,7 +93,7 @@ function initializeProductLab(){
  function showAll(){const bodyConsent=$('#lab-body-consent').checked;form.reset();$('#lab-body-consent').checked=bodyConsent;fixtures=true;rows=makeFixtures();update();reveal('#lab-products');}
  $('#lab-show-all').addEventListener('click',showAll);
  $('#lab-pick-garment').addEventListener('click',()=>{if(!fixtures){fixtures=true;rows=makeFixtures();update();}reveal(ranked.length?'#lab-products':'#lab-catalog');});
- document.addEventListener('a1:lab-navigate',e=>{const target=e.detail?.target;if(!['#lab-preferences','#lab-comparison','#lab-fitting'].includes(target))return;
+ document.addEventListener('a1:lab-navigate',e=>{const target=e.detail?.target;if(!['#lab-preferences','#lab-comparison','#lab-fitting','#lab-local-photo-fitting'].includes(target))return;
   if(target==='#lab-fitting'&&!selected){reveal('#lab-local-photo-fitting');}else reveal(target);
  });
  function eraseFit(){generation++;fitCanvas.width=fitCanvas.height=1;fitCanvas.hidden=true;$('#lab-fit-result').hidden=true;$('#lab-fit-status').textContent='';}
@@ -129,7 +129,10 @@ function initializeProductLab(){
  function update(){try{const p=M.preferences(input());ranked=fixtures?M.rank(rows,p,{mode:'fixture'}).matches:[];
    if(selected&&!ranked.some(r=>r.product.id===selected.id)){selected=null;eraseFit();$('#lab-selected').textContent='';}
    compare=new Set([...compare].filter(id=>ranked.some(r=>r.product.id===id)));render();$('#lab-searches').replaceChildren();
-   for(const row of window.A1Preview.retailers({country:'KR',category:'tops'}).retailers)$('#lab-searches').append(window.A1Preview.retailerActions(row));
+   const Q=window.A1ShoppingQuery;
+   const publicConditions={type:'clothing',color:p.color,gender:['men','women'].includes(p.gender)?p.gender:'all',fit:'any',purpose:{work:'work',event:'event',casual:'daily'}[p.occasion]||'any'};
+   const links=Q?Q.links(publicConditions):window.A1Preview.retailers({country:'KR',category:'tops'}).retailers;
+   for(const row of links)$('#lab-searches').append(window.A1Preview.retailerActions(row));
    notify(fixtures?(ranked.length===3?'시험 의류 3개를 표시했습니다. 실제 판매 상품이 아닙니다.':'현재 조건으로 일부 시험 의류가 제외됐습니다. 3개 모두 보려면 시험 조건으로 보기를 누르세요.'):'시험 결과를 갱신했습니다. 실제 상품·가격 정보가 아닙니다.');return true;
   }catch(error){ranked=[];render();notify(error instanceof TypeError?'조건 입력 오류: 예산은 0 이상의 정수로 입력하고 통화·사이즈를 확인해주세요.':'추천 표시 오류가 발생했습니다. 시험 조건으로 다시 시도하거나 페이지를 새로 열어주세요.');return false;}}
  let garment=null,garmentReady=null;
@@ -155,6 +158,32 @@ function initializeProductLab(){
  // Separately reviewed catalog images may be read with anonymous CORS.
  // No photograph upload, model call, proxy bypass or browser storage exists.
  const localPhotoCanvas=$('#lab-local-photo-canvas'),garmentPreview=$('#lab-garment-photo-preview');
+ // Continue to official search using only a bounded clothing description.
+ // Garment pixels, body ratios, filename and photo identity never enter it.
+ I.register({
+  '피팅한 스타일을 공식 쇼핑몰에서 검색':'Search the fitted style at official retailers',
+  '원하는 의류 조건':'Clothing preferences to search',
+  '공식 검색 링크 준비':'Prepare official search links',
+  '의류 사진에서 상품을 자동 식별하지 않습니다. 원하는 종류·색상·핏·용도를 입력하세요. 사진·체형 수치는 판매처로 보내지 않습니다.':'The garment photo is not automatically identified as a product. Enter the clothing type, color, fit and purpose. Photos and body ratios are not sent to sellers.',
+  '검색 링크를 준비했습니다. 아래 판매처 버튼을 직접 눌러주세요. 예산은 판매처에서 다시 확인하세요.':'Search links are ready. Select a retailer below yourself. Check the budget filter at the seller.',
+  '짧은 의류 조건만 입력해주세요. 사진·연락처·이메일·링크·신체 수치는 넣지 마세요.':'Enter only brief clothing preferences. Do not include photos, contact details, email, links or body measurements.'
+ });
+ const searchForm=node('form');searchForm.id='lab-photo-search';searchForm.className='lab-photo-search';
+ const searchTitle=node('h3');I.setText(searchTitle,'피팅한 스타일을 공식 쇼핑몰에서 검색');
+ const searchNote=node('p');I.setText(searchNote,'의류 사진에서 상품을 자동 식별하지 않습니다. 원하는 종류·색상·핏·용도를 입력하세요. 사진·체형 수치는 판매처로 보내지 않습니다.');
+ const searchLabel=node('label');I.setText(searchLabel,'원하는 의류 조건');
+ const searchInput=node('input');searchInput.type='text';searchInput.id='lab-photo-search-query';searchInput.maxLength=300;searchInput.placeholder='남성 검정 슬랙스 5만원 이하';searchInput.autocomplete='off';searchLabel.append(searchInput);
+ const searchSubmit=node('button');searchSubmit.type='submit';I.setText(searchSubmit,'공식 검색 링크 준비');
+ const searchStatus=node('p');searchStatus.id='lab-photo-search-status';searchStatus.setAttribute('role','status');
+ const searchResults=node('div');searchResults.id='lab-photo-search-results';
+ searchForm.append(searchTitle,searchNote,searchLabel,searchSubmit,searchStatus,searchResults);$('#lab-local-photo-fitting').append(searchForm);
+ searchForm.addEventListener('submit',event=>{
+  event.preventDefault();searchResults.replaceChildren();
+  try{const Q=window.A1ShoppingQuery,conditions=Q.parse(searchInput.value);
+   for(const row of Q.links(conditions))searchResults.append(window.A1Preview.retailerActions(row));
+   I.setText(searchStatus,'검색 링크를 준비했습니다. 아래 판매처 버튼을 직접 눌러주세요. 예산은 판매처에서 다시 확인하세요.');
+  }catch{I.setText(searchStatus,'짧은 의류 조건만 입력해주세요. 사진·연락처·이메일·링크·신체 수치는 넣지 마세요.');}
+ });
  let localGarment=null,preparedGarment=null,localRevision=0,pendingGarment=null,localDisposed=false,localCatalogProduct=null;
  const catalogPanel=node('section');catalogPanel.id='lab-selected-catalog';catalogPanel.hidden=true;$('#lab-garment-photo-rights').closest('label').before(catalogPanel);
  I.register({'선택한 상품':'Selected product','상품 이미지 이용 권한 확인 · 사진 사용 동의는 별도입니다.':'Product-image permission reviewed · using your photo requires separate consent.','판매처에서 이 상품 구매하기':'Buy this product at the seller','판매처 이미지의 브라우저 처리를 허용하지 않거나 이미지를 열지 못했습니다. 이용 가능한 의류 사진을 기기에서 선택해주세요.':'The seller image cannot be processed in this browser or did not load. Choose a garment photo you may use from your device.'});
@@ -252,7 +281,7 @@ function initializeProductLab(){
  $('#lab-fit').addEventListener('click',()=>draw(true));for(const id of ['lab-fit-y','lab-fit-scale'])$('#'+id).addEventListener('input',()=>{if(!fitCanvas.hidden)draw();});
  $('#lab-fit-consent').addEventListener('change',()=>{if(!$('#lab-fit-consent').checked)eraseFit();else if(selected&&metrics)draw(true);});
  $('#lab-fit-clear').addEventListener('click',()=>{$('#lab-fit-consent').checked=false;eraseFit();reveal('#lab-fit-flow');});
- function clear(){generation++;metrics=null;fixtures=false;rows=[];ranked=[];selected=null;compare.clear();form.reset();$('#lab-reload-image').hidden=true;$('#lab-body-consent').checked=false;$('#lab-body-consent').disabled=true;$('#lab-fit-consent').checked=false;eraseFit();clearLocalPhoto({silent:true});$('#lab-selected').textContent='';$('#lab-status').textContent='';$('#lab-searches').replaceChildren();render();}
+ function clear(){generation++;metrics=null;fixtures=false;rows=[];ranked=[];selected=null;compare.clear();form.reset();searchForm.reset();searchResults.replaceChildren();searchStatus.textContent='';$('#lab-reload-image').hidden=true;$('#lab-body-consent').checked=false;$('#lab-body-consent').disabled=true;$('#lab-fit-consent').checked=false;eraseFit();clearLocalPhoto({silent:true});$('#lab-selected').textContent='';$('#lab-status').textContent='';$('#lab-searches').replaceChildren();render();}
  document.addEventListener('a1:analysis-cleared',clear);window.addEventListener('pagehide',clear);
  document.addEventListener('a1:lab-enter',e=>{if(!metrics&&M.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#lab-body-consent').disabled=false;}});
  document.addEventListener('a1:analysis-ready',e=>{eraseLocalResult();$('#lab-local-photo-consent').checked=false;if(M.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#lab-body-consent').checked=false;$('#lab-body-consent').disabled=false;tx('#ai-notes','사진상 2D 참고 비율이며 실제 치수·건강·의류 사이즈를 판단하지 않습니다. 원본 사진은 외부로 전송하지 않으며 연구실 기능은 무료입니다.');}if(window.A1CatalogFitting?.current())importCatalogProduct();});

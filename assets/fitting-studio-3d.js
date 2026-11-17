@@ -152,6 +152,6 @@
   });
   Object.defineProperty(window, 'A1FittingStudio3D', { value: Object.freeze({ snapshot() {
     return { mode, loaded, loading: Boolean(loading) || viewerState() === 'loading', state: viewerState(), actual3D: mode === 'three' && loaded && viewerState() === 'ready' };
-  } }), writable: false, configurable: false });
+  }, open() { return choose('three'); }, close() { return choose('images'); } }), writable: false, configurable: false });
   publishMode();
 })();

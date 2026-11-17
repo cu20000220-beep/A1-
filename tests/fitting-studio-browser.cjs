@@ -220,11 +220,12 @@ async function truthAndLinks(page, lang) {
     assert.ok(await failure.page.locator('#studio-retry').isVisible());
     assert.ok(await failure.page.locator('#studio-retry').isEnabled());
     const failedReads = () => failure.requests.filter(file => file === '/assets/studio/male-sheet.png').length;
-    // CSS background decoding and the explicit Image preloader may each issue
-    // one failed request when the browser cannot coalesce them. Neither path
-    // may keep retrying without a user action.
+    // Several CSS sprites and the explicit Image preloader share this URL.
+    // Chromium can coalesce or independently re-request initial failures.
+    // Verify the behavioral requirement: requests stop in the error state
+    // until a user explicitly retries, rather than assuming a cache count.
     const settledFailures = failedReads();
-    assert.ok(settledFailures >= 1 && settledFailures <= 2, 'only the background and preloader can attempt the failed sheet');
+    assert.ok(settledFailures >= 1, 'the blocked model sheet was actually requested');
     await failure.page.waitForTimeout(250);
     assert.equal(failedReads(), settledFailures, 'failed image loads do not loop automatically');
     assert.deepEqual(failure.errors, []); assert.deepEqual(failure.violations, []);

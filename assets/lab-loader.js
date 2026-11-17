@@ -2,7 +2,7 @@
 'use strict';
 (()=>{
  if(!window.A1Preview)return;
- const I=window.A1I18n,config={avatar:{path:'/avatar-lab',root:'#avatar-root',init:'initializeAvatarLab'},product:{path:'/product-lab',root:'#lab-root',init:'initializeProductLab'}};
+ const I=window.A1I18n,config={avatar:{path:'/avatar-lab',root:'#avatar-root',init:'initializeAvatarLab'},natural:{path:'/gltf-proof',root:'#gltf-proof-root'},product:{path:'/product-lab',root:'#lab-root',init:'initializeProductLab'}};
  const messages={
  REQUEST:'화면 요청이 차단되었거나 연결되지 않았습니다. 다시 시도하거나 독립 연구실을 Safari에서 여세요.',
  TIMEOUT:'화면 요청 시간이 초과됐습니다. 연결을 확인하고 다시 시도해주세요.',

@@ -4,13 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>A1 FASHION · 스타일 스튜디오</title>
-  <meta name="description" content="남녀 가상 모델의 실사 스타일 이미지를 방향과 의상별로 비교하는 무료 A1 FASHION 스튜디오">
+  <meta name="description" content="스타일 이미지 비교·3D 인체 샘플·기기 내 사진 분석과 의류 사진 2D 피팅을 연결하는 무료 A1 FASHION 스튜디오">
   <link rel="icon" href="assets/placeholder.svg">
   <link rel="stylesheet" href="assets/fitting-studio.css">
   <link rel="stylesheet" href="assets/fitting-studio-3d.css">
+  <link rel="stylesheet" href="assets/product-lab.css">
+  <link rel="stylesheet" href="assets/fitting-studio-photo.css">
   <script src="assets/i18n.js" defer></script>
   <script src="assets/preview-experience.js" defer></script>
   <script src="assets/fitting-studio.js" defer></script>
+  <script src="assets/fitting-studio-photo.js" defer></script>
   <script src="assets/fitting-studio-3d.js" type="module"></script>
 </head>
 <body>
@@ -31,6 +34,15 @@
       <div class="hero-visual"><img id="studio-hero" src="assets/studio/hero.png" alt="크림색 니트를 입은 남녀 가상 패션 모델" width="1536" height="1024"><span class="hero-credit">A1 FASHION · STYLE STUDY</span></div>
     </section>
     <div class="studio-disclosure"><span class="disclosure-mark" aria-hidden="true">i</span><p><strong id="studio-mode-note">스타일 이미지 미리보기 · 2D</strong><span>AI로 제작한 가상 인물·예시 의상 이미지입니다. 실제 판매 상품이나 사용자 사진의 합성 결과가 아닙니다.</span></p></div>
+    <section id="studio-photo-flow" aria-labelledby="studio-photo-title" data-state="idle">
+      <h2 id="studio-photo-title">내 사진으로 이어서 피팅하기</h2>
+      <p>사진 분석부터 의류 사진 배치까지 이 페이지에서 이어갑니다. 개인 사진과 분석값은 기기 메모리에만 유지합니다.</p>
+      <p>3D는 별도 인체 샘플이며, 의류 사진은 내 사진 위에 2D로 겹칩니다. AI 자연 합성이나 실제 상품 3D 착용이 아닙니다.</p>
+      <div class="studio-photo-actions"><button id="studio-open-analysis" type="button">사진 선택·체형 분석</button><button id="studio-open-photo-fitting" type="button">내 사진 2D 피팅 열기</button></div>
+      <p id="studio-photo-status" role="status" aria-live="polite"></p>
+      <button id="studio-photo-retry" type="button" hidden>사진 피팅 다시 시도</button>
+      <div id="studio-photo-mount" hidden></div>
+    </section>
     <section class="studio-section" id="studio" aria-labelledby="studio-title">
       <div class="section-heading"><div><p class="eyebrow">01 / YOUR STYLE</p><h2 id="studio-title">마음에 드는 스타일을<br>골라보세요.</h2></div><p>모델을 선택하고,<br>방향과 의상을 바꿔보세요.</p></div>
       <div id="studio-modes" class="studio-mode-tabs" role="tablist" aria-label="미리보기 방식"><button type="button" role="tab" data-studio-mode="images" aria-selected="true">실사 스타일 이미지 · 2D</button><button type="button" role="tab" data-studio-mode="three" aria-selected="false">실제 3D 인체 샘플</button></div>
@@ -93,6 +105,6 @@
     </section>
     <section class="next-section" aria-labelledby="next-title"><div><p class="eyebrow">CONTINUE WITH A1</p><h2 id="next-title">스타일에서,<br>나에게 맞는 선택으로.</h2></div><div class="next-links"><a href="index.html#ai-studio"><span>01</span><div><h3>내 사진 체형 분석</h3><p>기존 기기 내 사진 분석으로 이동합니다.</p></div><b aria-hidden="true">↗</b></a><a href="product-lab.html"><span>02</span><div><h3>내 사진 로컬 2D 미리보기</h3><p>별도 동의 후 기기 안에서 이미지 배치를 체험하세요.</p></div><b aria-hidden="true">↗</b></a><a href="gltf-proof.html"><span>03</span><div><h3>실제 3D 연구실</h3><p>회전 가능한 3D 인체 샘플은 별도 화면에서 확인하세요.</p></div><b aria-hidden="true">↗</b></a><a href="index.html#shopping-search"><span>04</span><div><h3>국내 의류 검색</h3><p>원하는 조건으로 공식 판매처 검색을 시작하세요.</p></div><b aria-hidden="true">↗</b></a></div></section>
   </main>
-  <footer class="site-footer"><a class="brand" href="index.html"><strong>A1</strong><span>FASHION</span></a><p>나를 이해하는 스타일, A1 FASHION.</p><p>이 화면은 2D 스타일 비교입니다. 사진 기반 개인화·실제 상품 피팅·정확한 사이즈 보장을 제공하지 않습니다.</p><a href="privacy.html">개인정보 처리 안내</a></footer>
+  <footer class="site-footer"><a class="brand" href="index.html"><strong>A1</strong><span>FASHION</span></a><p>나를 이해하는 스타일, A1 FASHION.</p><p>스타일 이미지는 2D 예시이며 사진 피팅은 기기 내 2D 겹치기입니다. 3D는 별도 인체 샘플이며 AI 자연 합성·실제 상품 3D 착용·정확한 사이즈 보장은 제공하지 않습니다.</p><a href="privacy.html">개인정보 처리 안내</a></footer>
 </body>
 </html>

@@ -51,7 +51,8 @@ I.register(pairs);
 
 if (window.A1Preview && /^[a-z0-9-]+\.a1fashion\.pages\.dev$/.test(location.hostname.toLowerCase())) {
   root.hidden = false;
-  document.querySelector('#gltf-unavailable').hidden = true;
+  const unavailable = document.querySelector('#gltf-unavailable');
+  if (unavailable) unavailable.hidden = true;
   startProof();
 }
 

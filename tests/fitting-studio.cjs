@@ -29,7 +29,9 @@ test('studio confines its optional real 3D asset reads to this origin and packag
   const policy = headers.match(/^\/fitting-studio\*\n\s+Content-Security-Policy:\s*([^\r\n]+)/m)?.[1];
   assert.ok(policy);
   assert.match(policy, /(?:^|;)\s*connect-src 'self'(?:;|$)/);
-  assert.match(policy, /(?:^|;)\s*script-src 'self'(?:;|$)/);
+  const scriptTokens = policy.match(/(?:^|;)\s*script-src ([^;]+)/)?.[1].trim().split(/\s+/);
+  assert.ok(scriptTokens?.includes("'self'"));
+  assert.ok(scriptTokens.every(token => ["'self'", "'wasm-unsafe-eval'"].includes(token)), 'only the existing local analysis WASM permission may accompany self');
   assert.match(policy, /(?:^|;)\s*img-src 'self' blob:(?:;|$)/);
   assert.match(policy, /(?:^|;)\s*frame-ancestors 'none'(?:;|$)/);
   assert.doesNotMatch(html, /<iframe\b/i);
@@ -39,5 +41,5 @@ test('studio confines its optional real 3D asset reads to this origin and packag
     assert.equal(fs.statSync(path.join(root, tag[1])).isFile(), true);
   }
   const build = fs.readFileSync(path.join(root, 'scripts/build-site.cjs'), 'utf8');
-  for (const entry of ['fitting-studio.html','assets/fitting-studio.css','assets/fitting-studio.js','assets/fitting-studio-3d.css','assets/fitting-studio-3d.js','assets/studio']) assert.ok(build.includes("'" + entry + "'"));
+  for (const entry of ['fitting-studio.html','assets/fitting-studio.css','assets/fitting-studio.js','assets/fitting-studio-3d.css','assets/fitting-studio-3d.js','assets/fitting-studio-photo.js','assets/fitting-studio-photo.css','assets/studio']) assert.ok(build.includes("'" + entry + "'"));
 });

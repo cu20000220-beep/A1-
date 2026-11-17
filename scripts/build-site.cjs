@@ -57,6 +57,8 @@ const publicEntries = [
   'assets/fitting-studio.js',
   'assets/fitting-studio-3d.js',
   'assets/fitting-studio-3d.css',
+  'assets/fitting-studio-photo.js',
+  'assets/fitting-studio-photo.css',
   'assets/studio',
   'assets/gltf-proof.js',
   'assets/gltf-proof.css',

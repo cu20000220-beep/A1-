@@ -3,7 +3,9 @@
   const $ = selector => document.querySelector(selector);
   const advisor = window.A1BodyAnalysis;
   const vendor = new URL('vendor/mediapipe/', new URL('.', document.currentScript.src));
-  let freeBeta = false;
+  // Preview has no policy API: its on-device flow is the free beta. This
+  // changes presentation only; Production still follows server policy below.
+  let freeBeta = Boolean(window.A1Preview);
   let photograph = null;
   let pendingPhoto = null;
   let analysis = null;
