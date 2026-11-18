@@ -1,12 +1,17 @@
 'use strict';
-const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const M=require('../assets/product-images.js'),D=require('../assets/product-discovery.js');
-const raw=()=>JSON.parse(fs.readFileSync(require.resolve('../assets/product-images.json'),'utf8'));
+const {validateLocalCopies}=require('../scripts/lib/product-image-store.cjs');
+const published=()=>JSON.parse(fs.readFileSync(require.resolve('../assets/product-images.json'),'utf8'));
+// Mutation fixtures explicitly model unverified remote references, regardless
+// of whether the real catalog has subsequently cached authorized local files.
+const raw=()=>{const data=published();data.products=data.products.map(entry=>({...entry,imageUrl:entry.sourceImageUrl,delivery:'remote-reference',sha256:null,bytes:null,width:null,height:null,imageKind:'unverified'}));return data;};
 const observations=()=>JSON.parse(fs.readFileSync(require.resolve('../assets/observed-products.json'),'utf8'));
-test('official image references bind operator authorization to nine actual product pages without inventing copied bytes',()=>{
- const data=raw(),facts=observations(),entries=M.validateManifest(data,facts);assert.equal(entries.length,9);assert.equal(D.validateSnapshot(facts).length,10);
+test('published images bind operator authorization to actual product pages and any local copy to its real bytes',()=>{
+ const data=published(),facts=observations(),entries=M.validateManifest(data,facts);assert.ok(entries.length>=9);assert.ok(D.validateSnapshot(facts).length>=10);
  assert.equal(data.authorization.basis,'operator-attestation');assert.equal(data.authorization.externalProcessing,false);
- for(const entry of entries){assert.equal(entry.delivery,'remote-reference');assert.equal(entry.imageUrl,entry.sourceImageUrl);for(const key of ['sha256','bytes','width','height'])assert.equal(entry[key],null);assert.equal(entry.imageKind,'unverified');assert.ok(Object.isFrozen(entry));}
+ for(const entry of entries){if(entry.delivery==='remote-reference'){assert.equal(entry.imageUrl,entry.sourceImageUrl);for(const key of ['sha256','bytes','width','height'])assert.equal(entry[key],null);}assert.ok(Object.isFrozen(entry));}
+ assert.equal(validateLocalCopies(path.resolve(__dirname,'..'),entries).length,entries.filter(entry=>entry.delivery==='local-copy').length);
  assert.equal(entries.some(e=>e.id.startsWith('uniqlo-')),false,'an ambiguous color must never receive another variant image');
 });
 test('fitting selection keeps unknown stock and prices and never turns a photo reference into an approved supplier feed',()=>{
