@@ -20,14 +20,10 @@ require('../assets/product-discovery.js').validateSnapshot(JSON.parse(fs.readFil
 const observations=JSON.parse(fs.readFileSync(discoveryFile,'utf8'));
 const imagesFile=path.join(root,'assets/product-images.json');
 if(fs.statSync(imagesFile).size>1000000)throw Error('Product images manifest exceeds 1 MB');
-const productImages=JSON.parse(fs.readFileSync(imagesFile,'utf8'));
+const productImageBytes=fs.readFileSync(imagesFile);
+const productImages=JSON.parse(productImageBytes);
 const imageEntries=require('../assets/product-images.js').validateManifest(productImages,observations);
-for(const image of imageEntries)if(image.delivery==='local-copy'){
- const file=path.join(root,image.imageUrl.slice(1));
- if(fs.lstatSync(file).isSymbolicLink())throw Error('Product image symlink refused');
- const bytes=fs.readFileSync(file);
- if(bytes.length!==image.bytes||require('node:crypto').createHash('sha256').update(bytes).digest('hex')!==image.sha256)throw Error('Product image hash mismatch');
-}
+const reviewedImageCopies=new Map(require('./lib/product-image-store.cjs').validateLocalCopies(root,imageEntries).map(record=>[record.relative,record.bytes]));
 const files = [];
 
 function collect(relative) {
@@ -132,7 +128,9 @@ const publicEntries = [
   'assets/vendor'
 ];
 for (const entry of publicEntries) collect(entry);
-if(fs.existsSync(path.join(root,'assets/catalog-images')))collect('assets/catalog-images');
+// Never publish an entire intake directory: unrelated/private files in it are
+// not deployment assets. Copy only the exact validated manifest-bound bytes.
+for(const relative of reviewedImageCopies.keys())files.push(relative);
 if (files.length + 1 > 1000) throw new Error('Deployment exceeds the dashboard upload file limit.');
 
 // Never replace an existing directory unless a previous invocation created it.
@@ -149,7 +147,9 @@ fs.writeFileSync(path.join(output, marker), signature);
 for (const relative of files) {
   const target = path.join(output, relative);
   fs.mkdirSync(path.dirname(target), {recursive:true});
-  fs.copyFileSync(path.join(root, relative), target);
+  if(reviewedImageCopies.has(relative))fs.writeFileSync(target,reviewedImageCopies.get(relative));
+  else if(relative==='assets/product-images.json')fs.writeFileSync(target,productImageBytes);
+  else fs.copyFileSync(path.join(root, relative), target);
 }
 // Keep connect-src/script-src/API isolation intact. Only image origins from the
 // privately validated snapshot can extend the stylist image display policy.

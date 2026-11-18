@@ -1,0 +1,101 @@
+{
+  "realRetailerPixels": false,
+  "realRetailerDownloadVerified": false,
+  "merchantAcceptanceVerified": false,
+  "nativeIpadSafari": false,
+  "analysisMocked": true,
+  "privateRasterFixture": "assets/photos/coat.jpg at exact official CDN URL or temporary local intake output; not a retailer photo",
+  "cases": [
+    {
+      "name": "real-id-private-image-to-same-photo-local-2d",
+      "profile": {
+        "entry": "/",
+        "width": 820,
+        "lang": "ko"
+      },
+      "changedPixels": 101277,
+      "transforms": 5,
+      "separateConsent": true,
+      "noReselection": true,
+      "unknownStockPreserved": true,
+      "privateFixtureOnly": true,
+      "passed": true
+    },
+    {
+      "name": "real-id-private-image-to-same-photo-local-2d",
+      "profile": {
+        "entry": "/fitting-studio",
+        "width": 390,
+        "lang": "en"
+      },
+      "changedPixels": 101277,
+      "transforms": 5,
+      "separateConsent": true,
+      "noReselection": true,
+      "unknownStockPreserved": true,
+      "privateFixtureOnly": true,
+      "passed": true
+    },
+    {
+      "name": "public-product-fragment-before-photo-retains-selection-with-separate-consent",
+      "publicIdFragmentRemoved": true,
+      "privateFixtureOnly": true,
+      "passed": true
+    },
+    {
+      "name": "cors-denial-explained-without-proxy-or-fake-fit",
+      "expectedBrowserCorsError": true,
+      "passed": true
+    },
+    {
+      "name": "offline-intake-to-same-origin-local-2d",
+      "actualTemporaryIntake": true,
+      "localCopySha256": "a17a8d8718998a5b6290b6b2b03472a055a4e2c0dd0331dd6f6f183d94dac8a7",
+      "changedPixels": 101277,
+      "outsideOriginRequests": 0,
+      "separateConsent": true,
+      "noReselection": true,
+      "privateFixtureOnly": true,
+      "passed": true
+    },
+    {
+      "name": "failed-image-disabled-fact-candidate-retained",
+      "passed": true
+    },
+    {
+      "name": "missing-image-manifest-keeps-real-facts-without-images",
+      "passed": true
+    },
+    {
+      "name": "clear-during-observed-image-selection-never-resurrects",
+      "passed": true
+    },
+    {
+      "name": "selected-item-link-rejects-tamper-and-synthetic-click",
+      "actualMerchantResponse": false,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "sourceHashes": {
+    "assets/product-images.js": "6c54d559a4a3082b2812e68be26c917d1b262e288bf0ae2da7c0506934fc39da",
+    "assets/product-images.json": "e72eed385a190a94cecc057eeddefd10d2eaabe0fc5541c27b9659d6f44ad702",
+    "assets/catalog-fitting.js": "a2742ba20d0fd7476aeee67d8089f4c09cb937bea4ba15677c59c0d4a685f076",
+    "assets/product-discovery-view.js": "11aacc4e4c43049d836cf48e488902bf02d13a44e768e460b6e8014b0104c25e",
+    "assets/product-discovery-view.css": "87b1fc56bc76247c6661b6a3051bacd29ad30ecb50eac2698d47d05a1472333e",
+    "assets/product-lab.js": "d718b635c1c96d0bde0cb05263a7598ef9cc6651c0eb746d1451545a0dd05307",
+    "assets/preview-experience.js": "acf15bdddc63e8443fe67adc619fba3ea04b5f1730032c06db9f70f5e1c6681b",
+    "assets/fitting-studio-photo.js": "6cf9e4fb7fdbb9116b2fe03fd062bd8216f9ee9a15cf1e358da2799d67900ce9",
+    "index.html": "6ecb78caa9e7fe41ebcc573db7940fc5488bc0c45c66d93edad477b24bac25a0",
+    "fitting-studio.html": "35f8b9f8a6eecac7ad8471ec394f18c48e1223f994c969747f5ad6a31e385f5e",
+    "scripts/lib/catalog-public-headers.cjs": "3b302d35f389fc4306a13d0684ae7709c40029bae7211a191634dcd24a0d5410",
+    "scripts/cache-product-image.cjs": "269882ac40515cc8d38e7d49db74ae7fd7b650a33f79ed6c02f9db20dbb53158",
+    "scripts/lib/product-image-store.cjs": "278fbf80b43b8af013d6eb85aed59b88c499026c34171e2b56508b0d189da2be",
+    "scripts/lib/product-image-file.cjs": "f7dd7aa4ad86821e91374cf0decaa3fca5bc0349355cdfc631361b19b02236b7",
+    "assets/photos/coat.jpg": "a17a8d8718998a5b6290b6b2b03472a055a4e2c0dd0331dd6f6f183d94dac8a7",
+    "scripts/build-site.cjs": "0efd9e09ae5be210cf9f1d6efcf51ad6b08e72dbb20e78997ad6299b805cd25c"
+  },
+  "postTestNonFunctionalChanges": [
+    "File-store comment clarified; report source-hash collection extended to build script. No executed behavior changed."
+  ]
+}

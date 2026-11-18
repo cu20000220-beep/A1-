@@ -1,0 +1,20 @@
+{
+  "baselineCommit": "7b61547",
+  "realProductImageCopies": 0,
+  "officialImageReferences": 9,
+  "operatorAuthorizationAlreadyRecorded": true,
+  "networkHostsGranted": false,
+  "externalAPIRequests": 0,
+  "publicArtifactsChanged": false,
+  "unitTests": 376,
+  "nativeIpadVerified": false,
+  "sourceHashes": {
+    "scripts/cache-product-image.cjs": "269882ac40515cc8d38e7d49db74ae7fd7b650a33f79ed6c02f9db20dbb53158",
+    "scripts/lib/product-image-file.cjs": "f7dd7aa4ad86821e91374cf0decaa3fca5bc0349355cdfc631361b19b02236b7",
+    "scripts/lib/product-image-store.cjs": "278fbf80b43b8af013d6eb85aed59b88c499026c34171e2b56508b0d189da2be",
+    "scripts/build-site.cjs": "0efd9e09ae5be210cf9f1d6efcf51ad6b08e72dbb20e78997ad6299b805cd25c",
+    "assets/product-images.json": "e72eed385a190a94cecc057eeddefd10d2eaabe0fc5541c27b9659d6f44ad702",
+    "assets/approved-products.json": "1beaf56b68133d3567a02991494b5a8b5f42d9728d3d7e2e089d2fe71c66c45d",
+    "catalog/source-approvals.json": "c65b40284dd5851db681e9025d837f28a578e52e9b13e836731c547ec318ef9e"
+  }
+}
