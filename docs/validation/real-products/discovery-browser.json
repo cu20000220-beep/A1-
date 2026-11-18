@@ -56,8 +56,8 @@
   ],
   "passed": true,
   "sourceHashes": {
-    "assets/product-discovery-view.js": "75ca793fb85297ac56609096ad9a05dae74dd8f1cb68c466cd1f03f05cc45a3b",
-    "assets/product-discovery-view.css": "c1359da7b095c8248d71e8126a922c5f097e4c6501a87304405ac35f3f8b86a1",
+    "assets/product-discovery-view.js": "11aacc4e4c43049d836cf48e488902bf02d13a44e768e460b6e8014b0104c25e",
+    "assets/product-discovery-view.css": "87b1fc56bc76247c6661b6a3051bacd29ad30ecb50eac2698d47d05a1472333e",
     "assets/shopping-search.js": "82cd7a6c19595055652d7751f98979c398bf4a8672b79b5df1fc88e2c72e7514",
     "assets/stylist.js": "36eb74b279b0e010ea5cc20d5befb98f1513e14a5c76f1a920af2ff597b63d03",
     "assets/product-discovery.js": "260b4403295335a1a5e2e1cb1708105b1f66242d8d283e2e4136f4375e3d7a4e"

@@ -17,6 +17,17 @@ const catalog=require('./lib/product-catalog.cjs').validateSnapshot(
 const discoveryFile = path.join(root, 'assets/observed-products.json');
 if (fs.statSync(discoveryFile).size > 1000000) throw Error('Product observations exceed 1 MB');
 require('../assets/product-discovery.js').validateSnapshot(JSON.parse(fs.readFileSync(discoveryFile, 'utf8')));
+const observations=JSON.parse(fs.readFileSync(discoveryFile,'utf8'));
+const imagesFile=path.join(root,'assets/product-images.json');
+if(fs.statSync(imagesFile).size>1000000)throw Error('Product images manifest exceeds 1 MB');
+const productImages=JSON.parse(fs.readFileSync(imagesFile,'utf8'));
+const imageEntries=require('../assets/product-images.js').validateManifest(productImages,observations);
+for(const image of imageEntries)if(image.delivery==='local-copy'){
+ const file=path.join(root,image.imageUrl.slice(1));
+ if(fs.lstatSync(file).isSymbolicLink())throw Error('Product image symlink refused');
+ const bytes=fs.readFileSync(file);
+ if(bytes.length!==image.bytes||require('node:crypto').createHash('sha256').update(bytes).digest('hex')!==image.sha256)throw Error('Product image hash mismatch');
+}
 const files = [];
 
 function collect(relative) {
@@ -45,6 +56,8 @@ const publicEntries = [
   'assets/offer-comparison.js',
   'assets/approved-products.json',
   'assets/product-discovery.js',
+  'assets/product-images.js',
+  'assets/product-images.json',
   'assets/product-discovery-view.js',
   'assets/product-discovery-view.css',
   'assets/observed-products.json',
@@ -119,6 +132,7 @@ const publicEntries = [
   'assets/vendor'
 ];
 for (const entry of publicEntries) collect(entry);
+if(fs.existsSync(path.join(root,'assets/catalog-images')))collect('assets/catalog-images');
 if (files.length + 1 > 1000) throw new Error('Deployment exceeds the dashboard upload file limit.');
 
 // Never replace an existing directory unless a previous invocation created it.
@@ -139,5 +153,5 @@ for (const relative of files) {
 }
 // Keep connect-src/script-src/API isolation intact. Only image origins from the
 // privately validated snapshot can extend the stylist image display policy.
-fs.writeFileSync(path.join(output,'_headers'),require('./lib/catalog-public-headers.cjs').catalogPublicHeaders(fs.readFileSync(path.join(root,'_headers'),'utf8'),catalog.products));
+fs.writeFileSync(path.join(output,'_headers'),require('./lib/catalog-public-headers.cjs').catalogPublicHeaders(fs.readFileSync(path.join(root,'_headers'),'utf8'),catalog.products,{manifest:productImages,observations}));
 console.log(`Built ${files.length} static files in dist/ (no package installation or external requests).`);

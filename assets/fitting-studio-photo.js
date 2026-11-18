@@ -94,7 +94,7 @@
     // Fixed local dependencies, in order. ai-studio is loaded after its DOM and
     // the lab listeners so its existing currentScript/MediaPipe path is intact.
     for (const path of ['assets/i18n-main.js', 'assets/i18n-analysis.js', 'assets/body-analysis.js',
-      'assets/product-matching.js', 'assets/offer-comparison.js', 'assets/product-catalog.js', 'assets/shopping-query.js', 'assets/lab-loader.js', 'assets/catalog-fitting.js', 'assets/product-discovery.js', 'assets/product-discovery-view.js']) {
+      'assets/product-matching.js', 'assets/offer-comparison.js', 'assets/product-catalog.js', 'assets/shopping-query.js', 'assets/lab-loader.js', 'assets/product-discovery.js', 'assets/product-images.js', 'assets/catalog-fitting.js', 'assets/product-discovery-view.js']) {
       await loadScript(path);
       if (token !== revision) throw Error('CANCELLED');
     }

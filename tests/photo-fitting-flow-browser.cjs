@@ -57,6 +57,7 @@ async function prepare(browser, profile, { delayedPath } = {}) {
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
     assert.equal(request.method(), 'GET', 'no personal photo, dimensions or message may be uploaded');
+    if (url.pathname === '/assets/product-images.json') { await route.fulfill({contentType:'application/json',body:JSON.stringify({version:1,authorization:JSON.parse(fs.readFileSync(path.join(root,'assets/product-images.json'),'utf8')).authorization,products:[]})});return; }
     if (url.origin !== origin) {
       assert.equal(request.isNavigationRequest(), true, 'only an explicit merchant navigation may leave this origin');
       assert.equal(request.url(), allowMerchant, 'only the tested user-selected official search URL is permitted');

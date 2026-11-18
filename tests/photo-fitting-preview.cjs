@@ -6,6 +6,10 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const origin=process.env.A1_PREVIEW_ORIGIN;
 if(!/^https:\/\/[a-z0-9-]+\.a1fashion\.pages\.dev$/.test(origin||''))throw Error('Set A1_PREVIEW_ORIGIN to an isolated Preview, never Production.');
 const root=path.resolve(__dirname,'..'),out=process.env.A1_PREVIEW_EVIDENCE||'/workspace/work/photo-fitting-live';
+const imagePolicy=process.env.A1_PREVIEW_PRODUCT_IMAGES||'available';
+if(!['available','blocked'].includes(imagePolicy))throw Error('Invalid product-image network policy.');
+const productImages=JSON.parse(fs.readFileSync(path.join(root,'assets/product-images.json'),'utf8'));
+const imageUrls=new Set(require('../assets/product-images.js').validateManifest(productImages,JSON.parse(fs.readFileSync(path.join(root,'assets/observed-products.json'),'utf8'))).filter(e=>e.delivery==='remote-reference').map(e=>e.imageUrl));
 const entry=process.env.A1_FLOW_ENTRY==='studio'?'/fitting-studio':'/';
 fs.mkdirSync(out,{recursive:true});
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
@@ -13,7 +17,7 @@ const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
  const api=await request.newContext({...(process.env.HTTPS_PROXY?{proxy:{server:process.env.HTTPS_PROXY}}:{}),ignoreHTTPSErrors:false});
  let browser;
  const report={origin,entry,checkedAt:new Date().toISOString(),actualMediaPipe:true,nativeIpadSafari:false,passed:false,
-  transport:'Actual deployed responses and headers through the configured proxy, no local asset replacement.',requests:[],errors:[],consoleErrors:[],csp:[]};
+  transport:'Actual deployed responses and headers through the configured proxy, no local asset replacement.',requests:[],errors:[],consoleErrors:[],csp:[],productImages:{policy:imagePolicy,merchantImageBytesVerified:false,requests:[],expectedLoadErrors:[]}};
  try{
   const isolation=await api.get(origin+'/api/health',{timeout:30000});
   report.apiIsolation={status:isolation.status(),error:(await isolation.json()).error};
@@ -22,7 +26,16 @@ const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
   const context=await browser.newContext({viewport:{width:820,height:1180},hasTouch:true,isMobile:true,locale:'ko-KR'}),cache=new Map();
   await context.route('**/*',async route=>{
    const req=route.request(),url=new URL(req.url());
-   assert.equal(url.origin,origin);assert.equal(req.method(),'GET');assert.ok(!url.pathname.startsWith('/api/'));
+   assert.equal(req.method(),'GET');
+   if(url.origin!==origin){
+    assert.ok(imageUrls.has(url.href),'only exact public product-image URLs may leave Preview');assert.equal(req.resourceType(),'image');assert.equal(req.postData(),null);assert.ok(!req.headers().referer);
+    report.productImages.requests.push({url:url.href,method:'GET',personalData:false});
+    if(imagePolicy==='blocked'){await route.abort('blockedbyclient');return;}
+    const response=await api.get(url.href,{timeout:30000}),body=await response.body(),headers=response.headers();delete headers['content-encoding'];delete headers['content-length'];
+    assert.equal(response.status(),200);assert.match(headers['content-type'],/^image\/(?:png|jpeg|webp)/);assert.ok(body.length<=6000000);report.productImages.merchantImageBytesVerified=true;
+    await route.fulfill({status:response.status(),body,headers});return;
+   }
+   assert.ok(!url.pathname.startsWith('/api/'));
    if(!cache.has(url.href))cache.set(url.href,(async()=>{
     const response=await api.get(url.href,{timeout:45000}),body=await response.body(),headers=response.headers();
     delete headers['content-encoding'];delete headers['content-length'];
@@ -35,7 +48,7 @@ const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
    await route.fulfill(await cache.get(url.href));
   });
   const page=await context.newPage();page.on('pageerror',e=>report.errors.push(e.message));
-  page.on('console',m=>{if(m.type()==='error')report.consoleErrors.push(m.text());});
+  page.on('console',m=>{if(m.type()==='error'){if(imagePolicy==='blocked'&&/net::ERR_BLOCKED_BY_CLIENT/.test(m.text()))report.productImages.expectedLoadErrors.push(m.text());else report.consoleErrors.push(m.text());}});
   await page.exposeFunction('recordFittingCsp',v=>report.csp.push(v));
   await page.addInitScript(()=>document.addEventListener('securitypolicyviolation',e=>window.recordFittingCsp(e.effectiveDirective)));
   await page.goto(origin+entry,{waitUntil:'networkidle'});

@@ -34,6 +34,7 @@ async function prepare(browser,{entry='/',width=820,lang='ko',mode='ready',delay
  const headers=catalogPublicHeaders(fs.readFileSync(path.join(root,'_headers'),'utf8'),snapshot.products);
  await context.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url());assert.equal(req.method(),'GET');assert.ok(!url.pathname.startsWith('/api/'));calls.push(url.href);
+  if(url.pathname==='/assets/product-images.json'){await route.fulfill({contentType:'application/json',body:JSON.stringify({version:1,authorization:JSON.parse(fs.readFileSync(path.join(root,'assets/product-images.json'),'utf8')).authorization,products:[]})});return;}
   if(url.origin!==origin){assert.equal(url.origin,'https://images.retailer.example');assert.equal(req.isNavigationRequest(),false);assert.equal(url.search,'');assert.ok(['/catalog.png','/fitting.png'].includes(url.pathname));await route.fulfill({body:garmentPixels(),contentType:'image/png',headers:{'Access-Control-Allow-Origin':origin}});return;}
   for(const[key,value]of url.searchParams){assert.equal(key,'v');assert.match(value,/^[a-z0-9-]+$/);}
   if(url.pathname==='/assets/approved-products.json'){

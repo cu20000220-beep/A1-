@@ -18,6 +18,7 @@ async function prepare(browser,profile,{mode='normal',published=false,delayed=fa
  await context.route('**/*',async route=>{const req=route.request(),u=new URL(req.url());assert.equal(req.method(),'GET');calls.push(u.href);assert.ok(!u.pathname.startsWith('/api/'));
   if(u.origin!==origin){assert.equal(req.isNavigationRequest(),true);assert.equal(u.href,allowMerchant);await route.fulfill({contentType:'text/html',body:'<!doctype html><title>PRIVATE INTERCEPTED NAVIGATION</title>Retailer acceptance not tested.'});return;}
   for(const[k,v]of u.searchParams){assert.equal(k,'v');assert.match(v,/^[a-z0-9-]+$/);}
+  if(u.pathname==='/assets/product-images.json'){await route.fulfill({contentType:'application/json',body:JSON.stringify({version:1,authorization:JSON.parse(fs.readFileSync(path.join(root,'assets/product-images.json'),'utf8')).authorization,products:[]})});return;}
   if(u.pathname==='/assets/observed-products.json'){if(delayed&&!delayedOnce){delayedOnce=true;started();await gate;}if(failed){await route.fulfill({status:503,contentType:'application/json',body:'{}'});return;}await route.fulfill({contentType:'application/json',body:JSON.stringify(data)});return;}
   if(u.pathname==='/stylist.html'){await route.fulfill({status:308,headers:{Location:'/stylist'},body:''});return;}
   const rel=u.pathname==='/'?'index.html':u.pathname==='/stylist'?'stylist.html':u.pathname.slice(1),full=path.resolve(root,rel);assert.ok(full.startsWith(root+'/'));
