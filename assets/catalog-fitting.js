@@ -1,8 +1,12 @@
-/* Preview only. Public product IDs, never photos/ratios in navigation or storage. */
+/* Local fitting. Public product IDs, never photos/ratios in navigation or storage. */
 'use strict';
 (()=>{
- if(!window.A1Preview)return;
- const C=window.A1ProductCatalog,I=window.A1I18n;let selected=null,selectedObservation=null,selectedImages=null,revision=0,controller,timer;
+ function initialize(){
+ const experience=window.A1Preview||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null);
+ const C=window.A1ProductCatalog,I=window.A1I18n;
+ if(!experience||!C||!I||!window.A1LabTemplates||window.A1CatalogFitting)return;
+ document.removeEventListener('a1:public-beta-ready',initialize);
+ let selected=null,selectedObservation=null,selectedImages=null,revision=0,controller,timer;
  I.register({
   '선택한 상품으로 사진 미리보기':'Preview this product on my photo',
   '선택한 상품의 이미지 미리보기 이용 권한이 확인되지 않았습니다.':'Image-preview permission for this product has not been verified.',
@@ -34,6 +38,7 @@
   selected=Object.freeze({...product});clearTimeout(timer);timer=setTimeout(clear,Math.max(1,Math.min(2147483647,product.expiresAt-Date.now()+1)));
   document.dispatchEvent(new CustomEvent('a1:catalog-fitting-selected',{detail:{id}}));
   const ready=Boolean(document.querySelector('#ai-result')&&!document.querySelector('#ai-result').hidden),target=document.querySelector(ready?'#lab-local-photo-fitting':'#ai-form');target?.scrollIntoView({block:'start'});
+  if(ready&&window.A1LabNavigation)await window.A1LabNavigation.open('#lab-local-photo-fitting');
   if(!ready)status('선택한 상품은 유지했습니다. 먼저 사진을 선택하고 분석한 뒤 이미지 사용에 동의해주세요.');
  }
  function clear(){revision++;controller?.abort();clearTimeout(timer);selected=null;selectedObservation=selectedImages=null;document.dispatchEvent(new CustomEvent('a1:catalog-fitting-clear'));}
@@ -66,4 +71,7 @@
  window.A1CatalogFitting=Object.freeze({open,openObserved,current,clear});
  const fragment=new URLSearchParams(location.hash.slice(1)),id=fragment.get('fit-product'),observedId=fragment.get('fit-observed-product');
  if(id||observedId){history.replaceState(null,'',location.pathname+location.search);const resume=()=>observedId?openObserved(observedId):open(id);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',resume,{once:true});else resume();}
+ }
+ if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',initialize,{once:true});
+ document.addEventListener('a1:public-beta-ready',initialize);initialize();
 })();

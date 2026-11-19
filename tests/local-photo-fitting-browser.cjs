@@ -12,6 +12,7 @@ function pose(){
  for(const [width,lang]of [[390,'ko'],[820,'en']]){
   const context=await browser.newContext({viewport:{width,height:1180},hasTouch:true,isMobile:true,locale:lang==='ko'?'ko-KR':'en-US'}),calls=[],errors=[],csp=[];
   await context.route('**/*',async route=>{const r=route.request(),u=new URL(r.url());assert.equal(r.method(),'GET');assert.equal(u.origin,origin);assert.ok(!u.pathname.startsWith('/api/'));calls.push(u.pathname);if(['/product-lab.html','/avatar-lab.html'].includes(u.pathname)){await route.fulfill({status:308,headers:{Location:u.pathname.slice(0,-5)},body:''});return;}
+   if(u.pathname==='/assets/product-images.json'){await route.fulfill({contentType:'application/json',body:JSON.stringify({version:1,authorization:JSON.parse(fs.readFileSync(path.join(root,'assets/product-images.json'),'utf8')).authorization,products:[]})});return;}
    for(const[k,v]of u.searchParams){assert.equal(k,'v');assert.match(v,/^[a-z0-9-]+$/);}const relative=u.pathname==='/'?'index.html':['/product-lab','/avatar-lab'].includes(u.pathname)?u.pathname.slice(1)+'.html':u.pathname.slice(1),file=path.resolve(root,relative);assert.ok(file.startsWith(root+'/'));
    const headers={};if(u.pathname==='/product-lab'){headers['Content-Security-Policy']=fs.readFileSync(path.join(root,'_headers'),'utf8').match(/^\/product-lab\*\n\s+Content-Security-Policy:\s*([^\r\n]+)/m)[1];}
    await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream',headers});

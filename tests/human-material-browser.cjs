@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..'),origin='https://human-material.a1fashion
 const quick=process.env.A1_HUMAN_MATERIAL_QUICK==='1';
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp'};
 const policy=fs.readFileSync(path.join(root,'_headers'),'utf8').match(/^\/avatar-lab\*\n\s+Content-Security-Policy:\s*([^\r\n]+)/m)[1];
-const assetNames=new Set(['avatar-lab.html','assets/style.css','assets/avatar-lab.css','assets/i18n.js','assets/preview-experience.js','assets/human-base.js','assets/avatar-geometry.js','assets/avatar-lab.js','assets/placeholder.svg']);
+const assetNames=new Set(['avatar-lab.html','assets/style.css','assets/avatar-lab.css','assets/i18n.js','assets/local-fashion-core.js','assets/preview-experience.js','assets/human-base.js','assets/avatar-geometry.js','assets/avatar-lab.js','assets/placeholder.svg']);
 for(const match of fs.readFileSync(path.join(root,'avatar-lab.html'),'utf8').matchAll(/(?:src|href)="(assets\/[^"?]+)(?:\?[^" ]*)?"/g))assetNames.add(match[1]);
 for(const name of fs.readdirSync(path.join(root,'assets')))if(/^human[-\w]*\.(?:png|jpg|webp|js)$/i.test(name))assetNames.add('assets/'+name);
 const assets=new Map([...assetNames].map(file=>[file,fs.readFileSync(path.join(root,file))]));

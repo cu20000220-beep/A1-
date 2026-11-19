@@ -1,0 +1,25 @@
+{
+  "baselineCommit": "6ce8377",
+  "officialPageCandidates": 10,
+  "officialImageReferences": 10,
+  "realMerchantImageCopies": 0,
+  "actualProductionContact": false,
+  "nativeIpadSafariVerified": false,
+  "unitTests": 388,
+  "isolatedProductionBrowserCases": 14,
+  "sourceHashes": {
+    "assets/local-fashion-core.js": "fd4a9f5a6b2d3c9f3f840f9aa4d9c74f5c365a51ad2d9b89ee7ee1cfbf112744",
+    "assets/public-beta-bootstrap.js": "654bb0a09e4011bfd70a4a25ea1a731b64ba2f334968b9713f5c3065a213ce1d",
+    "assets/preview-experience.js": "e0f6bcdc20f0f3c43cf1f576034a9f1f3284f679a4fe20de327324c8be70a667",
+    "assets/lab-loader.js": "78d1eb059e1a753f3dd1365c34f6a68e8046ee4bf978555c6e6a868c1a00fc1c",
+    "assets/lab-entry.js": "a26eb990fc942e21d3ebb003c54ffff0359e789574bc3161b7190bca374f08ef",
+    "assets/product-lab.js": "17f6a1db00d1c7ad586808838ee47aba70fa865d954c97c697a53b9ac25e511c",
+    "assets/shopping-search.js": "0dfc13e895fa04dc0fa308c51217057a3e3d2be6f3b56b29f2ccfe2f412431e6",
+    "assets/stylist.js": "afb9a31aa8e4234d271861f741c37438298cf239c3bbebe60a1eae7449248047",
+    "assets/catalog-fitting.js": "cd8293e6051eba51928e37a561d31cc165ce203dc343da657cf4a2f77dce4f61",
+    "assets/product-discovery-view.js": "5babc0494cbff07442a9c92de9635f72401e918ce02a42533cc34db061f54ae6",
+    "assets/observed-products.json": "480a3ec8a35b9191aa803be3505ae517ed7595f97276757be1dfe4855ae5d37f",
+    "assets/product-images.json": "c9dae5e6f68891f315208ff77e2dd5f1befac104c52fa2415d23f6d0cbe06150",
+    "scripts/build-site.cjs": "6a2264bfeabf3bcf9cb6acca8297f6854aa65ad5e60739c2a84415655ca007e5"
+  }
+}

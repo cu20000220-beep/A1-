@@ -126,6 +126,19 @@
       "height": null,
       "imageKind": "unverified",
       "checkedAt": 1794975690222
+    },
+    {
+      "id": "29cm-4145774",
+      "productUrl": "https://www.29cm.co.kr/products/4145774",
+      "sourceImageUrl": "https://img.29cm.co.kr/item/202610/11f1cc2aa14eba3e99aee1d8dc6ece0a.jpg?format=webp&width=700",
+      "imageUrl": "https://img.29cm.co.kr/item/202610/11f1cc2aa14eba3e99aee1d8dc6ece0a.jpg?format=webp&width=700",
+      "delivery": "remote-reference",
+      "sha256": null,
+      "bytes": null,
+      "width": null,
+      "height": null,
+      "imageKind": "unverified",
+      "checkedAt": 1794988280535
     }
   ]
 }

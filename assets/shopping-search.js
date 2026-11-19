@@ -1,7 +1,10 @@
 'use strict';
 (()=>{
- const root=document.querySelector('#shopping-search');if(!root||!window.A1Preview)return;
- const I=window.A1I18n,Q=window.A1ShoppingQuery,P=window.A1Preview,C=window.A1ProductCatalog,O=window.A1OfferComparison,$=s=>document.querySelector(s);
+ function initialize(){
+ const preview=Boolean(window.A1Preview),P=window.A1Preview||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null);
+ const I=window.A1I18n,Q=window.A1ShoppingQuery,C=window.A1ProductCatalog,O=window.A1OfferComparison,$=s=>document.querySelector(s);
+ const root=$('#shopping-search');if(!root||!P||!I||!Q||!C||!O||root.dataset.localShoppingInitialized||!window.A1ProductDiscoveryView)return;
+ root.dataset.localShoppingInitialized='true';document.removeEventListener('a1:public-beta-ready',initialize);
  I.register({
  '체형 분석을 참고해 옷 찾기':'Find clothes using my photo references',
  '승인 상품 피드 등록 0개 · 공식페이지 확인 후보는 별도로 표시합니다.':'0 approved feed products · official-page candidates are shown separately.',
@@ -84,7 +87,7 @@
  '검색어를 준비했습니다. 아래 공식 검색 버튼을 직접 눌러주세요.':'Search phrase ready. Click an official search below.',
  '선택한 예산이 판매처 검색에 자동 적용되지는 않습니다.':'Your budget is not automatically applied at the retailer.'
  });
- root.hidden=false;let conditions=null,metrics=null,bodyOriginalQuery=null,catalog={version:1,generatedAt:null,products:[]},catalogState='loading',matches=[],sponsored=[],unavailable=[],comparison=new Set(),offerSelection=null,expiryTimer,disposed=false,controller;
+ let conditions=null,metrics=null,bodyOriginalQuery=null,catalog={version:1,generatedAt:null,products:[]},catalogState='loading',matches=[],sponsored=[],unavailable=[],comparison=new Set(),offerSelection=null,expiryTimer,disposed=false,controller;
  let invalidQuery=false;
  const node=(tag,text)=>{const n=document.createElement(tag);if(text)n.textContent=text;return n;},tx=(s,t)=>I.setText($(s),t);
 
@@ -150,8 +153,8 @@
   if(p.commercial?.affiliate)article.append(node('p',I.t('제휴 링크')+' · '+I.t('제휴 링크를 통한 클릭·구매로 수수료가 발생할 수 있습니다.')+' '+(p.commercial.label||'')));
   for(const [key,url,label]of [['buy',p.productUrl,I.t('판매처에서 이 상품 구매하기')],['source',p.sourceUrl,I.t('자료 출처')]]){if(key==='buy'&&(p.stock!=='in_stock'||!fresh(p)))continue;const a=node('a',label);a.href=url;a.rel='noopener noreferrer';a.referrerPolicy='no-referrer';if(key==='buy'){a.dataset.catalogBuy=p.id;if(p.commercial?.sponsored||p.commercial?.affiliate)a.rel='sponsored noopener noreferrer';}else a.dataset.catalogSource=p.id;article.append(a);}
   if(C.fittingProduct&&C.fittingProduct(catalog,p.id)){const fit=node('button',I.t('선택한 상품으로 사진 미리보기'));fit.type='button';fit.dataset.catalogFit=p.id;fit.addEventListener('click',e=>{if(e.isTrusted)window.A1CatalogFitting?.open(p.id);});article.append(fit);}
-  if(kind==='organic'){const compare=node('button',I.t(comparison.has(p.id)?'비교에서 제외':'비교에 추가'));compare.type='button';compare.dataset.catalogCompare=p.id;compare.setAttribute('aria-pressed',String(comparison.has(p.id)));compare.addEventListener('click',()=>{if(comparison.has(p.id))comparison.delete(p.id);else if(comparison.size<4)comparison.add(p.id);renderCatalog();});article.append(compare);}
-  if(O.identity(p)){const compare=node('button',I.t('판매처별 같은 상품 비교'));compare.type='button';compare.dataset.offerCompare=p.id;compare.addEventListener('click',()=>{offerSelection=p.id;renderOfferComparison();const target=$('#shopping-offer-comparison');if(target){const html=document.documentElement,old=html.style.scrollBehavior;html.style.scrollBehavior='auto';const offset=(document.querySelector('body>header')?.getBoundingClientRect().height||0)+16;window.scrollTo(0,Math.max(0,scrollY+target.getBoundingClientRect().top-offset));target.setAttribute('tabindex','-1');target.focus({preventScroll:true});html.style.scrollBehavior=old;}});article.append(compare);}else article.append(node('p',I.t('동일 상품 식별 정보 미확인')));
+  if(preview&&kind==='organic'){const compare=node('button',I.t(comparison.has(p.id)?'비교에서 제외':'비교에 추가'));compare.type='button';compare.dataset.catalogCompare=p.id;compare.setAttribute('aria-pressed',String(comparison.has(p.id)));compare.addEventListener('click',()=>{if(comparison.has(p.id))comparison.delete(p.id);else if(comparison.size<4)comparison.add(p.id);renderCatalog();});article.append(compare);}
+  if(preview){if(O.identity(p)){const compare=node('button',I.t('판매처별 같은 상품 비교'));compare.type='button';compare.dataset.offerCompare=p.id;compare.addEventListener('click',()=>{offerSelection=p.id;renderOfferComparison();const target=$('#shopping-offer-comparison');if(target){const html=document.documentElement,old=html.style.scrollBehavior;html.style.scrollBehavior='auto';const offset=(document.querySelector('body>header')?.getBoundingClientRect().height||0)+16;window.scrollTo(0,Math.max(0,scrollY+target.getBoundingClientRect().top-offset));target.setAttribute('tabindex','-1');target.focus({preventScroll:true});html.style.scrollBehavior=old;}});article.append(compare);}else article.append(node('p',I.t('동일 상품 식별 정보 미확인')));}
   return article;
  }
  function renderCatalog(){
@@ -203,13 +206,16 @@
  $('#shopping-search-form').addEventListener('submit',e=>{e.preventDefault();search();});$('#shopping-style-button').addEventListener('click',advice);
  const restoreBodyQuery=()=>{if(bodyOriginalQuery!==null){const original=bodyOriginalQuery;bodyOriginalQuery=null;if(!disposed){$('#shopping-query').value=original;search();}}};
  $('#shopping-query').addEventListener('input',()=>{bodyOriginalQuery=null;});
- document.addEventListener('a1:analysis-ready',e=>{if(P.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#shopping-analysis-consent').disabled=false;$('#shopping-analysis-consent').checked=false;restoreBodyQuery();$('#shopping-style-advice').replaceChildren();renderCatalog();const result=document.querySelector('#ai-result .ai-result-copy');if(!$('#shopping-return')){const link=node('a');link.id='shopping-return';link.href='#shopping-analysis-consent';I.setText(link,'체형 분석을 참고해 옷 찾기');result.append(link);}}});
+ document.addEventListener('a1:analysis-ready',e=>{if(P.validMetrics(e.detail?.metrics)){metrics={...e.detail.metrics};$('#shopping-analysis-consent').disabled=false;$('#shopping-analysis-consent').checked=false;restoreBodyQuery();$('#shopping-style-advice').replaceChildren();renderCatalog();const result=document.querySelector('#ai-result .ai-result-copy');if(result&&!$('#shopping-return')){const link=node('a');link.id='shopping-return';link.href='#shopping-analysis-consent';I.setText(link,'체형 분석을 참고해 옷 찾기');result.append(link);}}});
  const clear=()=>{metrics=null;$('#shopping-analysis-consent').checked=false;$('#shopping-analysis-consent').disabled=true;$('#shopping-style-advice').replaceChildren();comparison.clear();offerSelection=null;$('#shopping-size').value='';for(const k of ['chest','waist','hips','inseam'])$('#shopping-measure-'+k).value='';restoreBodyQuery();if(!disposed)renderCatalog();};
  document.addEventListener('a1:analysis-cleared',clear);$('#shopping-analysis-consent').addEventListener('change',()=>{$('#shopping-style-advice').replaceChildren();if(!$('#shopping-analysis-consent').checked)restoreBodyQuery();renderCatalog();});
  document.addEventListener('a1:language-changed',()=>{render();renderCatalog();if($('#shopping-style-advice').children.length)advice();});
- loadCatalog();
+ root.hidden=false;loadCatalog();
  window.addEventListener('pagehide',()=>{disposed=true;discoveryView?.clear();controller?.abort();controller=null;clearTimeout(expiryTimer);clear();conditions=null;invalidQuery=false;catalog={version:1,generatedAt:null,products:[]};catalogState='loading';clearProductUI();$('#shopping-query').value='';$('#shopping-search-results').replaceChildren();$('#shopping-interpreted').replaceChildren();$('#shopping-interpreted').hidden=true;});
  // Safari can restore this document from BFCache. Reopen only public reads;
  // photos, measurements, consent and previous searches stay cleared.
  window.addEventListener('pageshow',event=>{if(event.persisted){disposed=false;loadCatalog();}});
+ }
+ if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',initialize,{once:true});
+ document.addEventListener('a1:public-beta-ready',initialize);initialize();
 })();

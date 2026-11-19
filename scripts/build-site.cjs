@@ -52,6 +52,8 @@ const publicEntries = [
   'assets/offer-comparison.js',
   'assets/approved-products.json',
   'assets/product-discovery.js',
+  'assets/local-fashion-core.js',
+  'assets/public-beta-bootstrap.js',
   'assets/product-images.js',
   'assets/product-images.json',
   'assets/product-discovery-view.js',

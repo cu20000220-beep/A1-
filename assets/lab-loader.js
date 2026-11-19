@@ -1,7 +1,10 @@
 /* Fixed same-origin Pages canonical templates; redirects remain forbidden. */
 'use strict';
 (()=>{
- if(!window.A1Preview)return;
+ function initialize(){
+ const preview=Boolean(window.A1Preview),experience=window.A1Preview||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null);
+ if(!experience||!window.A1I18n||window.A1LabTemplates)return;
+ if(!preview)document.removeEventListener('a1:public-beta-ready',initialize);
  const I=window.A1I18n,config={avatar:{path:'/avatar-lab',root:'#avatar-root',init:'initializeAvatarLab'},natural:{path:'/gltf-proof',root:'#gltf-proof-root'},product:{path:'/product-lab',root:'#lab-root',init:'initializeProductLab'}};
  const messages={
  REQUEST:'화면 요청이 차단되었거나 연결되지 않았습니다. 다시 시도하거나 독립 연구실을 Safari에서 여세요.',
@@ -27,13 +30,13 @@
  '독립 화면에는 사진·분석값을 전달하지 않습니다. 앱 안에서 제한되면 이 링크 주소를 복사해 Safari 주소창에 붙여넣으세요.':'Photos and analysis are not transferred to the standalone page. If the in-app browser restricts access, copy this link into Safari.'
  });
  const error=(code,status)=>Object.assign(new Error('A1-LAB-'+code),{code,status});
- async function load(kind){const item=config[kind];if(!item)throw error('TEMPLATE');const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);try{
+ async function load(kind){const item=config[kind];if(!item||!preview&&kind!=='product')throw error('TEMPLATE');const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);try{
   const r=await fetch(item.path,{credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal});
   if(!r.ok)throw error('HTTP',r.status);if(!/^text\/html(?:;|$)/i.test(r.headers.get('content-type')||''))throw error('MIME');
   const u=new URL(r.url||item.path,location.origin);if(u.origin!==location.origin||u.pathname!==item.path||u.search)throw error('REQUEST');
   const doc=new DOMParser().parseFromString(await r.text(),'text/html'),root=doc.querySelector(item.root);if(!root)throw error('TEMPLATE');return root;
  }catch(e){if(Object.hasOwn(messages,e.code))throw e;throw error(controller.signal.aborted?'TIMEOUT':'REQUEST');}finally{clearTimeout(timer);}}
- function initialize(kind,root){const item=config[kind];if(typeof window[item.init]!=='function')throw error('SCRIPT');
+ function initializeTemplate(kind,root){const item=config[kind];if(!item||!root||!preview&&kind!=='product')throw error('TEMPLATE');if(typeof window[item.init]!=='function')throw error('SCRIPT');
   try{if(root.dataset.loadState!=='ready')window[item.init]();}catch{root.dataset.loadState='init-error';throw error('INIT');}
   if(root.dataset.loadState==='webgl-error')throw error('WEBGL');if(root.dataset.loadState!=='ready')throw error('INIT');
  }
@@ -45,5 +48,11 @@
   const link=document.createElement('a');link.href=config[kind].path;link.referrerPolicy='no-referrer';I.setText(link,'독립 연구실 열기');
   const note=document.createElement('span');I.setText(note,'독립 화면에는 사진·분석값을 전달하지 않습니다. 앱 안에서 제한되면 이 링크 주소를 복사해 Safari 주소창에 붙여넣으세요.');box.append(diagnostic,button,link,note);status.after(box);
  }
- window.A1LabTemplates=Object.freeze({load,initialize,failure,hideFailure});
+ window.A1LabTemplates=Object.freeze({load,initialize:initializeTemplate,failure,hideFailure});
+ }
+ if(!window.A1Preview){
+  if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',initialize,{once:true});
+  document.addEventListener('a1:public-beta-ready',initialize);
+ }
+ initialize();
 })();

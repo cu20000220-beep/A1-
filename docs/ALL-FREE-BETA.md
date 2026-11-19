@@ -1,5 +1,7 @@
 # A1 FASHION 전 기능 무료 베타 — 구현·검증 기록
 
+> 2026-11-19: PR #4의 서버 정책 기반 공개 로컬 기능 연결과 아직 남은 Production 조건은 [PUBLIC-BETA-PRODUCTION-READINESS.md](PUBLIC-BETA-PRODUCTION-READINESS.md)를 참고하세요. 운영 배포 완료를 뜻하지 않습니다.
+
 검토일: 2026-11-08 (한국 시간). 기반: PR #1의 `feature/a1-unified-release` / `a9f27888b2ef12974801da6a89e804068ba78c7c`.
 작업 브랜치: `feature/all-free-beta-preview`. 이 문서는 기존의 구독 잠금형 무료 베타 계획을 대체하는 **서버 설정 기반 정책**입니다.
 

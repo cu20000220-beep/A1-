@@ -1,0 +1,98 @@
+{
+  "realRetailerPixels": false,
+  "realRetailerDownloadVerified": false,
+  "merchantAcceptanceVerified": false,
+  "nativeIpadSafari": false,
+  "analysisMocked": true,
+  "privateRasterFixture": "assets/photos/coat.jpg at exact official CDN URL or temporary local intake output; not a retailer photo",
+  "cases": [
+    {
+      "name": "real-id-private-image-to-same-photo-local-2d",
+      "profile": {
+        "entry": "/",
+        "width": 820,
+        "lang": "ko"
+      },
+      "changedPixels": 101277,
+      "transforms": 5,
+      "separateConsent": true,
+      "noReselection": true,
+      "unknownStockPreserved": true,
+      "privateFixtureOnly": true,
+      "passed": true
+    },
+    {
+      "name": "real-id-private-image-to-same-photo-local-2d",
+      "profile": {
+        "entry": "/fitting-studio",
+        "width": 390,
+        "lang": "en"
+      },
+      "changedPixels": 101277,
+      "transforms": 5,
+      "separateConsent": true,
+      "noReselection": true,
+      "unknownStockPreserved": true,
+      "privateFixtureOnly": true,
+      "passed": true
+    },
+    {
+      "name": "public-product-fragment-before-photo-retains-selection-with-separate-consent",
+      "publicIdFragmentRemoved": true,
+      "privateFixtureOnly": true,
+      "passed": true
+    },
+    {
+      "name": "cors-denial-explained-without-proxy-or-fake-fit",
+      "expectedBrowserCorsError": true,
+      "passed": true
+    },
+    {
+      "name": "offline-intake-to-same-origin-local-2d",
+      "actualTemporaryIntake": true,
+      "localCopySha256": "a17a8d8718998a5b6290b6b2b03472a055a4e2c0dd0331dd6f6f183d94dac8a7",
+      "changedPixels": 101277,
+      "outsideOriginRequests": 0,
+      "separateConsent": true,
+      "noReselection": true,
+      "privateFixtureOnly": true,
+      "passed": true
+    },
+    {
+      "name": "failed-image-disabled-fact-candidate-retained",
+      "passed": true
+    },
+    {
+      "name": "missing-image-manifest-keeps-real-facts-without-images",
+      "passed": true
+    },
+    {
+      "name": "clear-during-observed-image-selection-never-resurrects",
+      "passed": true
+    },
+    {
+      "name": "selected-item-link-rejects-tamper-and-synthetic-click",
+      "actualMerchantResponse": false,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "sourceHashes": {
+    "assets/product-images.js": "6c54d559a4a3082b2812e68be26c917d1b262e288bf0ae2da7c0506934fc39da",
+    "assets/product-images.json": "c9dae5e6f68891f315208ff77e2dd5f1befac104c52fa2415d23f6d0cbe06150",
+    "assets/catalog-fitting.js": "cd8293e6051eba51928e37a561d31cc165ce203dc343da657cf4a2f77dce4f61",
+    "assets/product-discovery-view.js": "5babc0494cbff07442a9c92de9635f72401e918ce02a42533cc34db061f54ae6",
+    "assets/product-discovery-view.css": "87b1fc56bc76247c6661b6a3051bacd29ad30ecb50eac2698d47d05a1472333e",
+    "assets/product-lab.js": "17f6a1db00d1c7ad586808838ee47aba70fa865d954c97c697a53b9ac25e511c",
+    "assets/preview-experience.js": "e0f6bcdc20f0f3c43cf1f576034a9f1f3284f679a4fe20de327324c8be70a667",
+    "assets/fitting-studio-photo.js": "6cf9e4fb7fdbb9116b2fe03fd062bd8216f9ee9a15cf1e358da2799d67900ce9",
+    "index.html": "c1caf90a60803d2c314309c63eafdda9e67d137e86140f7240d5abb4377e4b54",
+    "fitting-studio.html": "f3c103b9841bab37f2ed0ec64111822bb01c99630cddf62c2d68b1d298f64197",
+    "scripts/lib/catalog-public-headers.cjs": "3b302d35f389fc4306a13d0684ae7709c40029bae7211a191634dcd24a0d5410",
+    "scripts/cache-product-image.cjs": "269882ac40515cc8d38e7d49db74ae7fd7b650a33f79ed6c02f9db20dbb53158",
+    "scripts/lib/product-image-store.cjs": "278fbf80b43b8af013d6eb85aed59b88c499026c34171e2b56508b0d189da2be",
+    "scripts/lib/product-image-file.cjs": "f7dd7aa4ad86821e91374cf0decaa3fca5bc0349355cdfc631361b19b02236b7",
+    "scripts/build-site.cjs": "6a2264bfeabf3bcf9cb6acca8297f6854aa65ad5e60739c2a84415655ca007e5",
+    "assets/photos/coat.jpg": "a17a8d8718998a5b6290b6b2b03472a055a4e2c0dd0331dd6f6f183d94dac8a7"
+  }
+}

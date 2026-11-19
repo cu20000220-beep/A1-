@@ -1,8 +1,10 @@
 /* Official-page candidates and operator-authorized local garment images. No private payloads. */
 'use strict';
 (() => {
- const D=window.A1ProductDiscovery,I=window.A1I18n;
- if(!window.A1Preview||!D||!I)return;
+ function initialize(){
+ const experience=window.A1Preview||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null),D=window.A1ProductDiscovery,I=window.A1I18n;
+ if(!experience||!D||!I||window.A1ProductDiscoveryView)return;
+ document.removeEventListener('a1:public-beta-ready',initialize);
  I.register({
   '공식페이지 확인 상품 후보':'Official-page product candidates',
   '공식 상품 페이지에서 확인한 정보와 개별 링크입니다. 등록된 상품사진은 운영자의 이용 승인 기록에 따라 제공하며, 별도 판매처 계약이나 실시간 상품 피드를 확인했다는 뜻은 아닙니다.':'Facts and individual links from official product pages. Registered photos use the operator’s recorded authorization; this does not claim a separately verified retailer agreement or live product feed.',
@@ -160,4 +162,7 @@
  }
  window.addEventListener('pagehide',()=>{loadGeneration++;requestController?.abort();requestController=null;loading=null;snapshot=null;imageController?.abort();imageController=null;imageLoading=null;imageManifest=null;});
  window.A1ProductDiscoveryView=Object.freeze({create});
+ }
+ if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',initialize,{once:true});
+ document.addEventListener('a1:public-beta-ready',initialize);initialize();
 })();

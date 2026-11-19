@@ -8,6 +8,7 @@ function load(host,withQuery=false){
   fetch(){throw new Error('No network');},localStorage:new Proxy({},{get(){throw new Error('No storage');}})};
  window.A1I18n={register(){},t:x=>x,setText(){}};
  if(withQuery){vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../assets/shopping-query.js'),'utf8'),context);window.A1ShoppingQuery=context.A1ShoppingQuery;}
+ vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../assets/local-fashion-core.js'),'utf8'),context);
  vm.runInNewContext(source,context);
  return {api:window.A1Preview,listeners};
 }

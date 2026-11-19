@@ -6,13 +6,14 @@
   const Catalog=window.A1ProductCatalog,Query=window.A1ShoppingQuery,OfferComparison=window.A1OfferComparison;
   const $ = selector => document.querySelector(selector);
   const I = window.A1I18n;
-  if(preview)I.register({'현재 조건에 맞는 승인 피드 상품은 없습니다. 공식페이지 확인 후보는 별도로 표시합니다.':'No approved feed products match these conditions. Official-page candidates are shown separately.'});
+  I.register({'현재 조건에 맞는 승인 피드 상품은 없습니다. 공식페이지 확인 후보는 별도로 표시합니다.':'No approved feed products match these conditions. Official-page candidates are shown separately.',
+    '서버 DEMO 상담 후 공개 상품 자료를 별도로 표시합니다. 실시간 상품 검증이나 AI 착용 결과가 아닙니다.':'Public product observations are shown separately after server DEMO advice. They are not live product verification or AI try-on results.'});
   const t = (source, values) => I.t(source, values);
   const tx = (element, source, values) => I.setText(typeof element === 'string' ? $(element) : element, source, values);
   const form = $('#stylist-form'), chat = $('#stylist-chat');
   const merchants = new Set(['www.coupang.com','search.shopping.naver.com','www.ebay.com','www.ebay.co.uk','www.ebay.de','www.amazon.com','www.amazon.co.jp','www.amazon.co.uk','www.amazon.de','search.rakuten.co.jp','www.zalando.de']);
   const currencies = new Set(['KRW','USD','EUR','GBP','JPY']);
-  const conversations = [], pending = new Set(), discoveryViews = new Set();
+  const conversations = [], pending = new Set(), discoveryViews = new Set(), publicDiscoveryPending = new Map();
   // Preview needs are bounded parser fields in page memory, never raw history
   // concatenated into search terms. Only real control edits replace a prior turn.
   const previewControlEdits = new Set();
@@ -47,6 +48,7 @@
   }
   function clearConversation({resetProfile = false, clearMetrics = true} = {}) {
     for(const view of discoveryViews)view.dispose();discoveryViews.clear();
+    publicDiscoveryPending.clear();
     previewAnswer = null; previewNeeds = null; previewControlEdits.clear();clearTimeout(previewCatalogTimer);previewCatalogTimer=undefined;
     generation++;
     clearTimeout(expiryTimer); expiryTimer = undefined; accessUntil = 0;
@@ -300,7 +302,32 @@
     if (value.fx) block.append(node('p',t('환율 출처: {source} · 적용 시각: {time}',{source:value.fx.source||t('미확인'),time:time(value.fx.asOf)}),'stylist-source'));
     return block;
   }
-  function renderAnswer(result, intent) {
+  // This is a public, static-data supplement to a successful server response.
+  // It never replaces the Production request, membership checks or live reply.
+  // Store only canonical clothing fields while policy bootstrap is pending.
+  function queuePublicDiscovery(bubble,result,request){
+    if(preview||result.mode!=='DEMO'||result.freeBetaMode!==true||!request||!Query||result.needsClarification)return;
+    let conditions;try{conditions=resolvePreviewNeeds({message:request.message,preferences:request.preferences});}catch{return;}
+    publicDiscoveryPending.set(bubble,{conditions:Object.freeze({...conditions}),generation});
+    attachPublicDiscoveries();
+  }
+  function attachPublicDiscoveries(){
+    for(const [bubble,record]of publicDiscoveryPending){
+      if(record.generation!==generation||!bubble.isConnected){publicDiscoveryPending.delete(bubble);continue;}
+      if(window.A1PublicBeta?.mode!=='server-free-beta-local'||!window.A1ProductDiscoveryView?.create)continue;
+      if(bubble.querySelector('[data-stylist-discovery]')){publicDiscoveryPending.delete(bubble);continue;}
+      const supplement=node('section');supplement.dataset.stylistPublicBeta='';
+      const note=node('p');I.setText(note,'서버 DEMO 상담 후 공개 상품 자료를 별도로 표시합니다. 실시간 상품 검증이나 AI 착용 결과가 아닙니다.');
+      const section=node('section');section.dataset.stylistDiscovery='';supplement.append(note,section);bubble.append(supplement);
+      const view=window.A1ProductDiscoveryView.create(section);
+      if(view){discoveryViews.add(view);view.search(record.conditions);}else supplement.remove();
+      publicDiscoveryPending.delete(bubble);
+    }
+  }
+  // Bootstrap listeners initialize the shared view first. A microtask also
+  // handles a policy response that arrives after a completed DEMO conversation.
+  document.addEventListener('a1:public-beta-ready',()=>queueMicrotask(attachPublicDiscoveries));
+  function renderAnswer(result, intent, request) {
     const bubble = node('article',undefined,'stylist-message'); bubble.dataset.i18nIgnore = '';
     bubble.append(node('h3','A1 AI STYLIST'), node('p',result.mode === 'LIVE' ? t('GPT · 검증된 데이터 기반') : t('DEMO · 실제 GPT 호출 없음'),'stylist-answer-mode'));
     if (typeof result.reply === 'string') bubble.append(node('p',result.reply));
@@ -327,6 +354,7 @@
     if (Array.isArray(result.notices)) for (const notice of result.notices.slice(0,6)) if (typeof notice === 'string') bubble.append(node('p',notice,'stylist-source'));
     if (Number.isSafeInteger(result.usage?.remainingUserRequests) && result.usage.remainingUserRequests >= 0) bubble.append(node('p',t('오늘 남은 상담: {count}',{count:result.usage.remainingUserRequests}),'stylist-source'));
     chat.append(bubble); while (chat.children.length > 16) chat.firstElementChild.remove();for(const view of discoveryViews)if(!view.target.isConnected){view.dispose();discoveryViews.delete(view);}if(preview)schedulePreviewCatalogRefresh();
+    queuePublicDiscovery(bubble,result,request);
     bubble.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   }
   form.addEventListener('submit',async event => {
@@ -349,7 +377,7 @@
       $('#stylist-welcome')?.remove();
       const question=node('article',undefined,'stylist-message is-user');question.dataset.i18nIgnore='';question.append(node('h3',t('나의 질문')),node('p',message));chat.append(question);
       if (preview){previewAnswer={request,question:message};if(result.clothingConditions&&!result.needsClarification){previewNeeds={...result.clothingConditions};for(const key of request.previewControlEdits)if(String(form.elements[key].value)===String(request.preferences[key]))previewControlEdits.delete(key);}}
-      renderAnswer(result,request.intent); conversations.push({role:'user',content:message},{role:'assistant',content:typeof result.reply==='string'?result.reply.slice(0,1200):''});while(conversations.length>8)conversations.shift();
+      renderAnswer(result,request.intent,request); conversations.push({role:'user',content:message},{role:'assistant',content:typeof result.reply==='string'?result.reply.slice(0,1200):''});while(conversations.length>8)conversations.shift();
       $('#stylist-message').value='';status(result.needsClarification?'조건을 확인한 뒤 다시 보내주세요. 상품 추천과 판매처 검색은 준비하지 않았습니다.':result.mode==='LIVE'?'검증된 정보로 GPT 상담을 완료했습니다.':'모의 상담을 완료했습니다. 실제 GPT를 호출하지 않았습니다.',result.needsClarification===true);
     } catch(error) {
       if(token===generation){const source=errorMessage(error);if(error.status===401||error.status===403)clearConversation({resetProfile:false,clearMetrics:true});status(source,true);}
