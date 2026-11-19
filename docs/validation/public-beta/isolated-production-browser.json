@@ -1,0 +1,503 @@
+{
+  "actualProductionContact": false,
+  "allBrowserRequestsIntercepted": true,
+  "realRetailerPixels": false,
+  "realRetailerDownloadVerified": false,
+  "realCdnCorsVerified": false,
+  "merchantAcceptanceVerified": false,
+  "nativeIpadSafari": false,
+  "analysisMocked": true,
+  "privateRasterFixture": "dist/assets/photos/coat.jpg served at exact manifest CDN references; not a retailer photograph",
+  "actualPolicyHandler": true,
+  "actualStylistHandler": true,
+  "cases": [
+    {
+      "name": "production-policy-search-photo-metadata-select-consent-same-photo-2d-compare-delete",
+      "profile": {
+        "width": 820,
+        "lang": "ko"
+      },
+      "actualFactCandidates": 2,
+      "changedPixels": 101277,
+      "separateConsent": true,
+      "bodySelections": 1,
+      "globalMemberGrant": false,
+      "privateRasterOnly": true,
+      "passed": true
+    },
+    {
+      "name": "production-policy-search-photo-metadata-select-consent-same-photo-2d-compare-delete",
+      "profile": {
+        "width": 390,
+        "lang": "en"
+      },
+      "actualFactCandidates": 2,
+      "changedPixels": 101277,
+      "separateConsent": true,
+      "bodySelections": 1,
+      "globalMemberGrant": false,
+      "privateRasterOnly": true,
+      "passed": true
+    },
+    {
+      "name": "production-anonymous-actual-server-DEMO-then-separate-public-facts",
+      "frontendDemoFallback": false,
+      "passed": true
+    },
+    {
+      "name": "production-false-policy-fails-closed-despite-cookie-storage-flag-event-tampering",
+      "photoAnalysisSurvives": true,
+      "passed": true
+    },
+    {
+      "name": "production-failed-policy-fails-closed-despite-cookie-storage-flag-event-tampering",
+      "photoAnalysisSurvives": true,
+      "passed": true
+    },
+    {
+      "name": "production-mime-policy-fails-closed-despite-cookie-storage-flag-event-tampering",
+      "photoAnalysisSurvives": true,
+      "passed": true
+    },
+    {
+      "name": "production-timeout-policy-fails-closed-despite-cookie-storage-flag-event-tampering",
+      "photoAnalysisSurvives": true,
+      "passed": true
+    },
+    {
+      "name": "false-server-flag-keeps-production-stylist-membership-protected",
+      "clientFlagsCannotGrant": true,
+      "passed": true
+    },
+    {
+      "name": "unverified-browser-policy-keeps-existing-production-server-DEMO-without-local-supplement",
+      "passed": true
+    },
+    {
+      "name": "late-server-policy-replays-current-analysis-without-photo-reselection-or-consent",
+      "passed": true
+    },
+    {
+      "name": "late-server-policy-attaches-facts-to-completed-real-server-DEMO-once",
+      "passed": true
+    },
+    {
+      "name": "late-policy-never-resurrects-cleared-server-DEMO-or-public-facts",
+      "passed": true
+    },
+    {
+      "name": "late-policy-never-replays-cleared-analysis-or-consent",
+      "passed": true
+    },
+    {
+      "name": "preview-local-search-remains-isolated-with-zero-api-requests",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "providerAuthNetworkCalls": 0,
+  "transportTrials": [
+    {
+      "requestCount": 58,
+      "apiRequests": [
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        },
+        {
+          "path": "/api/global/watchlist",
+          "method": "GET"
+        },
+        {
+          "path": "/api/global/account",
+          "method": "GET"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 54,
+      "apiRequests": [
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        },
+        {
+          "path": "/api/global/watchlist",
+          "method": "GET"
+        },
+        {
+          "path": "/api/global/account",
+          "method": "GET"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 30,
+      "apiRequests": [
+        {
+          "path": "/api/stylist",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/stylist",
+          "method": "POST"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 40,
+      "apiRequests": [
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 40,
+      "apiRequests": [
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 41,
+      "apiRequests": [
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 41,
+      "apiRequests": [
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 26,
+      "apiRequests": [
+        {
+          "path": "/api/stylist",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/stylist",
+          "method": "POST"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 26,
+      "apiRequests": [
+        {
+          "path": "/api/stylist",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/stylist",
+          "method": "POST"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 58,
+      "apiRequests": [
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 30,
+      "apiRequests": [
+        {
+          "path": "/api/stylist",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/stylist",
+          "method": "POST"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 26,
+      "apiRequests": [
+        {
+          "path": "/api/stylist",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/stylist",
+          "method": "POST"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 42,
+      "apiRequests": [
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/policy",
+          "method": "GET"
+        },
+        {
+          "path": "/api/membership",
+          "method": "GET"
+        }
+      ],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    },
+    {
+      "requestCount": 44,
+      "apiRequests": [],
+      "databaseCalls": 0,
+      "forbiddenBindingReads": 0,
+      "routeErrors": [],
+      "pageErrors": [],
+      "cspViolations": []
+    }
+  ],
+  "sourceHashes": {
+    "assets/local-fashion-core.js": "fd4a9f5a6b2d3c9f3f840f9aa4d9c74f5c365a51ad2d9b89ee7ee1cfbf112744",
+    "assets/public-beta-bootstrap.js": "654bb0a09e4011bfd70a4a25ea1a731b64ba2f334968b9713f5c3065a213ce1d",
+    "assets/preview-experience.js": "e0f6bcdc20f0f3c43cf1f576034a9f1f3284f679a4fe20de327324c8be70a667",
+    "assets/shopping-search.js": "0dfc13e895fa04dc0fa308c51217057a3e3d2be6f3b56b29f2ccfe2f412431e6",
+    "assets/product-discovery-view.js": "5babc0494cbff07442a9c92de9635f72401e918ce02a42533cc34db061f54ae6",
+    "assets/catalog-fitting.js": "cd8293e6051eba51928e37a561d31cc165ce203dc343da657cf4a2f77dce4f61",
+    "assets/lab-entry.js": "a26eb990fc942e21d3ebb003c54ffff0359e789574bc3161b7190bca374f08ef",
+    "assets/lab-loader.js": "78d1eb059e1a753f3dd1365c34f6a68e8046ee4bf978555c6e6a868c1a00fc1c",
+    "assets/product-lab.js": "17f6a1db00d1c7ad586808838ee47aba70fa865d954c97c697a53b9ac25e511c",
+    "assets/stylist.js": "afb9a31aa8e4234d271861f741c37438298cf239c3bbebe60a1eae7449248047",
+    "assets/ai-studio.js": "96c97079c5ac32a8392825a4e2f8c8839850fbafe3708b2d52390868ab06f916",
+    "index.html": "c1caf90a60803d2c314309c63eafdda9e67d137e86140f7240d5abb4377e4b54",
+    "stylist.html": "589a85e307a80ecad7a328e5904ebff1c20947dba0f968f30bf9d1acfe791ffb",
+    "product-lab.html": "0009a0a01265b6b51a5d988134d6b4a5b98fb58acf39b69429dffdb7d6a7e9d7",
+    "functions/api/policy.js": "4fbe1627b03c905f9a092b8c9bafd866393c7b0e904aeb38e97a4a06510ab658",
+    "functions/api/stylist.js": "0206ff135f22ed6c9270cef62e63a786183acd4c858bfdac62296a9bbc90a703",
+    "server/free-beta.mjs": "ebad3537819b0d87261351ed4eb715bd2b2b19d6aba324d8286a9f243ed07c3a",
+    "server/ai-stylist.mjs": "363ec11599e39da2efef7fdd653ffe79fd385b960d35ff6e485c1d7c012fe3ef",
+    "scripts/build-site.cjs": "6a2264bfeabf3bcf9cb6acca8297f6854aa65ad5e60739c2a84415655ca007e5",
+    "scripts/lib/catalog-public-headers.cjs": "3b302d35f389fc4306a13d0684ae7709c40029bae7211a191634dcd24a0d5410",
+    "assets/photos/coat.jpg": "a17a8d8718998a5b6290b6b2b03472a055a4e2c0dd0331dd6f6f183d94dac8a7",
+    "assets/approved-products.json": "1beaf56b68133d3567a02991494b5a8b5f42d9728d3d7e2e089d2fe71c66c45d",
+    "catalog/source-approvals.json": "c65b40284dd5851db681e9025d837f28a578e52e9b13e836731c547ec318ef9e",
+    "assets/observed-products.json": "480a3ec8a35b9191aa803be3505ae517ed7595f97276757be1dfe4855ae5d37f",
+    "assets/product-images.json": "c9dae5e6f68891f315208ff77e2dd5f1befac104c52fa2415d23f6d0cbe06150"
+  },
+  "distHashes": {
+    "index.html": "c1caf90a60803d2c314309c63eafdda9e67d137e86140f7240d5abb4377e4b54",
+    "stylist.html": "589a85e307a80ecad7a328e5904ebff1c20947dba0f968f30bf9d1acfe791ffb",
+    "product-lab.html": "0009a0a01265b6b51a5d988134d6b4a5b98fb58acf39b69429dffdb7d6a7e9d7",
+    "assets/local-fashion-core.js": "fd4a9f5a6b2d3c9f3f840f9aa4d9c74f5c365a51ad2d9b89ee7ee1cfbf112744",
+    "assets/public-beta-bootstrap.js": "654bb0a09e4011bfd70a4a25ea1a731b64ba2f334968b9713f5c3065a213ce1d",
+    "_headers": "eff01a8ef1d0e69c01209ee858cb4cc3928a9b4c974f88cb0704ae77049e31b3"
+  }
+}

@@ -1,0 +1,326 @@
+{
+  "inference": "mocked deterministic landmarks; not proof of actual MediaPipe inference",
+  "browser": "Linux Chromium/SwiftShader; not physical iPad Safari",
+  "scope": "full-integration",
+  "cases": [
+    {
+      "profile": {
+        "width": 1280,
+        "height": 900,
+        "touch": false,
+        "lang": "ko"
+      },
+      "inferenceMocked": true,
+      "naturalBones": 73,
+      "noLegacyMannequin": true,
+      "restoredNaturalFromReferenceWithoutPhoto": false,
+      "frames": [
+        {
+          "name": "index-ko-1280-3d-front",
+          "sha256": "59cf1560c38424e8c5895f1b35b3cd995e4d027a605ce90cb67ab2e2853a9228",
+          "colors": 2235,
+          "chromatic": 1707
+        },
+        {
+          "name": "index-ko-1280-3d-side",
+          "sha256": "60b8892c3167ed971a2c285ed77cecdacc555356f40a0b343103193ea3664d9c",
+          "colors": 1728,
+          "chromatic": 1232
+        },
+        {
+          "name": "index-ko-1280-3d-back",
+          "sha256": "297455926b7e0abd836bec75b6768c584cca97a8170bc1978544a5cc1e9bb7d1",
+          "colors": 2235,
+          "chromatic": 1984
+        }
+      ],
+      "ratioReferenceOnly": true,
+      "fit": {
+        "actualChanges": 135111,
+        "transforms": [
+          "lab-local-photo-x",
+          "lab-local-photo-y",
+          "lab-local-photo-scale",
+          "lab-local-photo-rotation",
+          "lab-local-photo-opacity"
+        ],
+        "beforeAfter": true,
+        "photoReselection": false
+      },
+      "shopping": {
+        "searches": [
+          {
+            "retailer": "www.musinsa.com",
+            "url": "https://www.musinsa.com/search/goods?keyword=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "www.29cm.co.kr",
+            "url": "https://www.29cm.co.kr/store/search?keyword=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "search.shopping.naver.com",
+            "url": "https://search.shopping.naver.com/search/all?query=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "www.coupang.com",
+            "url": "https://www.coupang.com/np/search?q=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          }
+        ],
+        "actualRetailerResponseTested": false,
+        "navigationIntercepted": false
+      },
+      "deletion": true,
+      "requests": 49,
+      "errors": [
+        "Failed to read the 'sessionStorage' property from 'Window': Access is denied for this document."
+      ],
+      "csp": []
+    },
+    {
+      "profile": {
+        "width": 820,
+        "height": 1180,
+        "touch": true,
+        "lang": "ko"
+      },
+      "inferenceMocked": true,
+      "naturalBones": 73,
+      "noLegacyMannequin": true,
+      "restoredNaturalFromReferenceWithoutPhoto": false,
+      "frames": [
+        {
+          "name": "index-ko-820-3d-front",
+          "sha256": "d36a897fd1395d819b1cdce86b24e1d68f07de63e147b129a78aa15c1b0fa637",
+          "colors": 2436,
+          "chromatic": 1871
+        },
+        {
+          "name": "index-ko-820-3d-side",
+          "sha256": "51b3e58b649b08120b08350c894deda2a818fcb36f6681d5be91f61860ac9f4d",
+          "colors": 1873,
+          "chromatic": 1340
+        },
+        {
+          "name": "index-ko-820-3d-back",
+          "sha256": "323a0180c0ef7b48e9a65ad4e903c250f0d1739327b29fe1a1996f3c0ea186cb",
+          "colors": 2417,
+          "chromatic": 2159
+        }
+      ],
+      "ratioReferenceOnly": true,
+      "fit": {
+        "actualChanges": 135111,
+        "transforms": [
+          "lab-local-photo-x",
+          "lab-local-photo-y",
+          "lab-local-photo-scale",
+          "lab-local-photo-rotation",
+          "lab-local-photo-opacity"
+        ],
+        "beforeAfter": true,
+        "photoReselection": false
+      },
+      "shopping": {
+        "searches": [
+          {
+            "retailer": "www.musinsa.com",
+            "url": "https://www.musinsa.com/search/goods?keyword=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "www.29cm.co.kr",
+            "url": "https://www.29cm.co.kr/store/search?keyword=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "search.shopping.naver.com",
+            "url": "https://search.shopping.naver.com/search/all?query=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "www.coupang.com",
+            "url": "https://www.coupang.com/np/search?q=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          }
+        ],
+        "actualRetailerResponseTested": false,
+        "navigationIntercepted": false
+      },
+      "deletion": true,
+      "requests": 47,
+      "errors": [],
+      "csp": []
+    },
+    {
+      "profile": {
+        "width": 1180,
+        "height": 820,
+        "touch": true,
+        "lang": "en"
+      },
+      "inferenceMocked": true,
+      "naturalBones": 73,
+      "noLegacyMannequin": true,
+      "restoredNaturalFromReferenceWithoutPhoto": false,
+      "frames": [
+        {
+          "name": "index-en-1180-3d-front",
+          "sha256": "e50d57fb0b9fc93487b50fb4c1690b2067645fa96676ede5a72dc9e59b5846d9",
+          "colors": 1947,
+          "chromatic": 1417
+        },
+        {
+          "name": "index-en-1180-3d-side",
+          "sha256": "672697162b0f7ada80509ec842b45ad20278ba6886e632459f47fbf84e92ae8c",
+          "colors": 1507,
+          "chromatic": 1008
+        },
+        {
+          "name": "index-en-1180-3d-back",
+          "sha256": "05d999a0e8b6c2db636880f5c90f19adf6a917a5fe6047f10a22eac9f1a58dad",
+          "colors": 1981,
+          "chromatic": 1622
+        }
+      ],
+      "ratioReferenceOnly": true,
+      "fit": {
+        "actualChanges": 135111,
+        "transforms": [
+          "lab-local-photo-x",
+          "lab-local-photo-y",
+          "lab-local-photo-scale",
+          "lab-local-photo-rotation",
+          "lab-local-photo-opacity"
+        ],
+        "beforeAfter": true,
+        "photoReselection": false
+      },
+      "shopping": {
+        "searches": [
+          {
+            "retailer": "www.musinsa.com",
+            "url": "https://www.musinsa.com/search/goods?keyword=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "www.29cm.co.kr",
+            "url": "https://www.29cm.co.kr/store/search?keyword=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "search.shopping.naver.com",
+            "url": "https://search.shopping.naver.com/search/all?query=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "www.coupang.com",
+            "url": "https://www.coupang.com/np/search?q=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          }
+        ],
+        "actualRetailerResponseTested": false,
+        "navigationIntercepted": false
+      },
+      "deletion": true,
+      "requests": 47,
+      "errors": [],
+      "csp": []
+    },
+    {
+      "profile": {
+        "width": 390,
+        "height": 1180,
+        "touch": true,
+        "lang": "en",
+        "studio": true
+      },
+      "inferenceMocked": true,
+      "naturalBones": 73,
+      "noLegacyMannequin": true,
+      "restoredNaturalFromReferenceWithoutPhoto": true,
+      "frames": [
+        {
+          "name": "studio-en-390-3d-front",
+          "sha256": "820761656449f6405d1e58e19e1d814ca67cb40e2a0e5972f8e347e1e88f7c06",
+          "colors": 1530,
+          "chromatic": 994
+        },
+        {
+          "name": "studio-en-390-3d-side",
+          "sha256": "b922032d9312520fe686a5a372ea3e39ba4db5575c89ca42da9fa244bb1428b1",
+          "colors": 1121,
+          "chromatic": 711
+        },
+        {
+          "name": "studio-en-390-3d-back",
+          "sha256": "62b5377996be093f9194529f2963537dfdc1d38f9f9ba009894c5954b3b8da41",
+          "colors": 1517,
+          "chromatic": 1169
+        }
+      ],
+      "ratioReferenceOnly": true,
+      "fit": {
+        "actualChanges": 135111,
+        "transforms": [
+          "lab-local-photo-x",
+          "lab-local-photo-y",
+          "lab-local-photo-scale",
+          "lab-local-photo-rotation",
+          "lab-local-photo-opacity"
+        ],
+        "beforeAfter": true,
+        "photoReselection": false
+      },
+      "shopping": {
+        "searches": [
+          {
+            "retailer": "www.musinsa.com",
+            "url": "https://www.musinsa.com/search/goods?keyword=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "www.29cm.co.kr",
+            "url": "https://www.29cm.co.kr/store/search?keyword=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "search.shopping.naver.com",
+            "url": "https://search.shopping.naver.com/search/all?query=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          },
+          {
+            "retailer": "www.coupang.com",
+            "url": "https://www.coupang.com/np/search?q=%EB%82%A8%EC%84%B1+%EA%B2%80%EC%A0%95+%EC%8A%AC%EB%9E%99%EC%8A%A4"
+          }
+        ],
+        "actualRetailerResponseTested": false,
+        "navigationIntercepted": false
+      },
+      "deletion": true,
+      "requests": 44,
+      "errors": [],
+      "csp": []
+    },
+    {
+      "name": "delete-during-template-load",
+      "passed": true
+    },
+    {
+      "name": "revoke-during-template-load",
+      "passed": true
+    },
+    {
+      "name": "delete-during-glb-load",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "sourceHashes": {
+    "tests/photo-fitting-flow-browser.cjs": "a9bce7476b51b16e09ffcfc15ea7a6370d844becd0d937e6341c250e1548856d",
+    "assets/avatar-photo-bridge.js": "9da12c4dbbc88efa3462383169a220b7e367eee40db05bda3825b4d6073dddbb",
+    "assets/lab-entry.js": "44e1cee043f1f71898ca3f63cdfd39be309e664fbf736fffbfb0c0840cb7a427",
+    "assets/lab-loader.js": "f020362eb39f6a9b6d8324bec6db9e2fe038451a9262764bc81a6aa8018c5d1b",
+    "assets/gltf-proof.js": "10d38daed16a21ebf69063069377f0322b6ad7c90e76845cc503962415dbcd40",
+    "assets/natural-avatar-profile.js": "220c2992e478c29cd8e9efa764d43fec76857664c892cb06f62afad182800e53",
+    "assets/natural-avatar/asset-manifest.json": "4b8d8c17f5cc8884d3a49a56eff48ea546c4eb0e13470a09a911cac0ad20d04b",
+    "assets/natural-avatar/sample.glb": "f3626960d185720d76ed1e2a6d0dc3c1a42c59275a2863e96c0d34d11c47dad2",
+    "assets/fitting-studio-3d.js": "a0220558c33df6814bc95f3cc514b6c31af03c03d901763fdd0fffc93ed43c2c",
+    "assets/fitting-studio-photo.js": "a5c5c8bda212acf195b1aa38ec39ce1009534581d2a3c5bf6502cbd5ef2c5a74",
+    "assets/fitting-studio-photo.css": "1883b3c0a0bf81eb828a94257ab2167ac9b9edb3386a6a17eef2f73df47fa72e",
+    "assets/product-lab.js": "1fc1d8c9da437baaf2ff1640a74c0bf5dad5a5e55b83f03b7cd9e7b9a76a4dc4",
+    "assets/ai-studio.js": "96c97079c5ac32a8392825a4e2f8c8839850fbafe3708b2d52390868ab06f916",
+    "index.html": "33c0e6acc6c8b8d594a63e1bb1b2b0fcae2a05eb51758e7368b4e22a400f9d0d",
+    "product-lab.html": "f8d0cd4b54b3b4ecba98da20bc6282805600e669f13f98a4f701c48657c89ed2",
+    "fitting-studio.html": "c2f9b6c2713594bea320f2f13753caa9ee0a1d3e6ad1b4658665f84210440413",
+    "_headers": "9c02fcb213c10e72f58146c4033e8a949bd44f9bebd33bf35238da8a7dd7c145"
+  }
+}

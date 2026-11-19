@@ -1,0 +1,497 @@
+{
+  "sourceHashes": {
+    "gltf-proof.html": "c11543b058f9fde62517a01414a6b61b581ce17f55386ddae090ed0d8552cd9c",
+    "assets/gltf-proof.js": "85757de3c337e51aed25a1a034f8389d0a2cb8320bcb1e93962c88d6a33ef137",
+    "assets/gltf-proof.css": "c0774baf2cbfaae9249b5402649ed4e931d99e819cba856328dc02df64e0dc34",
+    "assets/gltf-proof/avatar.glb": "1224f4f923d71b5c45688592519a56ae2e55128032390f605ff73926203c669e",
+    "assets/gltf-proof/asset-manifest.json": "66cde46c724909a5752905ae4bd051eca116e728ed13292d0716e4a6e5ecb08f"
+  },
+  "reports": [
+    {
+      "profile": {
+        "width": 1280,
+        "height": 900,
+        "touch": false,
+        "lang": "ko"
+      },
+      "initial": {
+        "state": "ready",
+        "disposed": false,
+        "meshes": 4,
+        "skinnedMeshes": 4,
+        "bones": 2,
+        "drawCalls": 2,
+        "triangles": 26820,
+        "renderCount": 5,
+        "garment": "none",
+        "materialMode": "standard",
+        "skinPose": false,
+        "look": "reference",
+        "naturalProfile": false,
+        "viewYaw": 0,
+        "frameSamples": [
+          421.5999999977648,
+          36.69999999925494,
+          0.30000000074505806,
+          0.19999999925494194,
+          0.9000000022351742
+        ],
+        "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+        "memoryGeometries": 5,
+        "memoryTextures": 2
+      },
+      "variants": [
+        {
+          "garment": "LAB-A",
+          "name": "ko-1280-LAB-A",
+          "sha256": "fbc5c68bd15f046a7bceded274fdd562a3458d732736ef8911571d6022baf8b3",
+          "width": 866,
+          "height": 685,
+          "colors": 1602,
+          "triangles": 30636
+        },
+        {
+          "garment": "LAB-B",
+          "name": "ko-1280-LAB-B",
+          "sha256": "228894276423b4d10bb992f1c28ee40bfc2e312d714d6050989a642ac8d2783c",
+          "width": 866,
+          "height": 685,
+          "colors": 1660,
+          "triangles": 30968
+        },
+        {
+          "garment": "LAB-C",
+          "name": "ko-1280-LAB-C",
+          "sha256": "cbfaccb39dc2b3d44c1556b575c3cfafcf91a54008e86bc27f2076f5e164dea4",
+          "width": 866,
+          "height": 685,
+          "colors": 1551,
+          "triangles": 30020
+        },
+        {
+          "garment": "none",
+          "name": "ko-1280-none",
+          "sha256": "d1ed173f039d6e4aeec8367a9e8c78bdd97fda781e92a9ae47e7dd6d228ded8a",
+          "width": 866,
+          "height": 685,
+          "colors": 1326,
+          "triangles": 26820
+        }
+      ],
+      "frames": [
+        {
+          "name": "ko-1280-front",
+          "sha256": "d1ed173f039d6e4aeec8367a9e8c78bdd97fda781e92a9ae47e7dd6d228ded8a",
+          "width": 866,
+          "height": 685,
+          "colors": 1326
+        },
+        {
+          "name": "ko-1280-side",
+          "sha256": "3624ad14ca58b4c3a29125c7bd5f0d966ae68ee3261bc57d3f86185e43ba9422",
+          "width": 866,
+          "height": 685,
+          "colors": 1032
+        },
+        {
+          "name": "ko-1280-back",
+          "sha256": "b8f3a61557bdbb3e09cea3cd4e2439b0195cb49aed9ec99920b86b9f4e0a09dc",
+          "width": 866,
+          "height": 685,
+          "colors": 1232
+        },
+        {
+          "name": "ko-1280-skin-proof",
+          "sha256": "ef65e96583cd291fa096ee89212d941f39c6fe97825c03a18d23a0e4058e754f",
+          "width": 866,
+          "height": 685,
+          "colors": 1656
+        }
+      ],
+      "fullRotationRadians": 6.283185307179583,
+      "cpuRenderSubmissionP50Ms": 0.5,
+      "cpuRenderSubmissionP95Ms": 5.099999997764826,
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 820,
+        "height": 1180,
+        "touch": true,
+        "lang": "ko"
+      },
+      "initial": {
+        "state": "ready",
+        "disposed": false,
+        "meshes": 4,
+        "skinnedMeshes": 4,
+        "bones": 2,
+        "drawCalls": 2,
+        "triangles": 26820,
+        "renderCount": 5,
+        "garment": "none",
+        "materialMode": "standard",
+        "skinPose": false,
+        "look": "reference",
+        "naturalProfile": false,
+        "viewYaw": 0,
+        "frameSamples": [
+          240.69999999925494,
+          0.3999999985098839,
+          0.4000000022351742,
+          0.29999999701976776,
+          0.9000000022351742
+        ],
+        "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+        "memoryGeometries": 5,
+        "memoryTextures": 2
+      },
+      "variants": [
+        {
+          "garment": "LAB-A",
+          "name": "ko-820-LAB-A",
+          "sha256": "80e1eea5f0cc0bd7f0968723f931156a38a6fb4366001131923605bab23bddd4",
+          "width": 782,
+          "height": 721,
+          "colors": 1740,
+          "triangles": 30636
+        },
+        {
+          "garment": "LAB-B",
+          "name": "ko-820-LAB-B",
+          "sha256": "eec019991e16500bee5fc04f08303195c1a7f7f61f7c2dfefcbade13dc4c6ac2",
+          "width": 782,
+          "height": 721,
+          "colors": 1785,
+          "triangles": 30968
+        },
+        {
+          "garment": "LAB-C",
+          "name": "ko-820-LAB-C",
+          "sha256": "b46eb0db6b3cb4f1a69afec1b6708ab5da011cd7e75308947316d46fa0c1837f",
+          "width": 782,
+          "height": 721,
+          "colors": 1685,
+          "triangles": 30020
+        },
+        {
+          "garment": "none",
+          "name": "ko-820-none",
+          "sha256": "d49957a4167e255decd862b55a3e511537730a4c6bac0a7083f7e8ecdf7f2d65",
+          "width": 782,
+          "height": 721,
+          "colors": 1431,
+          "triangles": 26820
+        }
+      ],
+      "frames": [
+        {
+          "name": "ko-820-front",
+          "sha256": "0012c8eeca3a95978f817b5f59d09fc7669437aa6e585189f853d515eb223126",
+          "width": 782,
+          "height": 721,
+          "colors": 1428
+        },
+        {
+          "name": "ko-820-side",
+          "sha256": "6f3529df12228ef02268786e68ec4c55900641cc3ad31c761ef33d3b81c5f380",
+          "width": 782,
+          "height": 721,
+          "colors": 1106
+        },
+        {
+          "name": "ko-820-back",
+          "sha256": "78d0466ca5a0a22b289d248a1f0a14abc87546f86d1f64647bc1c26c82cfc151",
+          "width": 782,
+          "height": 721,
+          "colors": 1276
+        },
+        {
+          "name": "ko-820-skin-proof",
+          "sha256": "9c6d877823e0025a169ca78356d67b8827f26b402993b7ef64bb61e4748e8d20",
+          "width": 782,
+          "height": 721,
+          "colors": 1743
+        }
+      ],
+      "fullRotationRadians": 6.283185307179583,
+      "cpuRenderSubmissionP50Ms": 0.4000000022351742,
+      "cpuRenderSubmissionP95Ms": 5.5,
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 1180,
+        "height": 820,
+        "touch": true,
+        "lang": "en"
+      },
+      "initial": {
+        "state": "ready",
+        "disposed": false,
+        "meshes": 4,
+        "skinnedMeshes": 4,
+        "bones": 2,
+        "drawCalls": 2,
+        "triangles": 26820,
+        "renderCount": 5,
+        "garment": "none",
+        "materialMode": "standard",
+        "skinPose": false,
+        "look": "reference",
+        "naturalProfile": false,
+        "viewYaw": 0,
+        "frameSamples": [
+          145.5,
+          0.5,
+          0.10000000149011612,
+          0.10000000149011612,
+          1.300000000745058
+        ],
+        "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+        "memoryGeometries": 5,
+        "memoryTextures": 2
+      },
+      "variants": [
+        {
+          "garment": "LAB-A",
+          "name": "en-1180-LAB-A",
+          "sha256": "6c1f5e182e9751d0a079fdf2a63905d28bf0bf801b5e530a4ca7f78680400ece",
+          "width": 806,
+          "height": 625,
+          "colors": 1456,
+          "triangles": 30636
+        },
+        {
+          "garment": "LAB-B",
+          "name": "en-1180-LAB-B",
+          "sha256": "e1a792681f5aadff4f75f975a51fe7f5714a19776517f17963261773ddb2dcf3",
+          "width": 806,
+          "height": 625,
+          "colors": 1472,
+          "triangles": 30968
+        },
+        {
+          "garment": "LAB-C",
+          "name": "en-1180-LAB-C",
+          "sha256": "c69be73c650f887e7f3a7309fd7d9dadf6a65977c4492e04f7ce8c7d7ac46803",
+          "width": 806,
+          "height": 625,
+          "colors": 1415,
+          "triangles": 30020
+        },
+        {
+          "garment": "none",
+          "name": "en-1180-none",
+          "sha256": "5ac6c3ef36fe42ede4e60b9eece19ab7f0c9c802fe14f20831c63fd4cf85c3af",
+          "width": 806,
+          "height": 625,
+          "colors": 1212,
+          "triangles": 26820
+        }
+      ],
+      "frames": [
+        {
+          "name": "en-1180-front",
+          "sha256": "5ac6c3ef36fe42ede4e60b9eece19ab7f0c9c802fe14f20831c63fd4cf85c3af",
+          "width": 806,
+          "height": 625,
+          "colors": 1212
+        },
+        {
+          "name": "en-1180-side",
+          "sha256": "b28cfb396e356e5ab792fc0cc27fbfe748662bafe7758007dd0ed5a1a1d2e4a8",
+          "width": 806,
+          "height": 625,
+          "colors": 929
+        },
+        {
+          "name": "en-1180-back",
+          "sha256": "8182c40e296efc296d29591d94e5ce84bdcd1259d12784738137e8806a6629eb",
+          "width": 806,
+          "height": 625,
+          "colors": 1084
+        },
+        {
+          "name": "en-1180-skin-proof",
+          "sha256": "93ed79a724241115eb541c33fae95c30c88e98ec1aeedfc4b97f68e48e4ba6eb",
+          "width": 806,
+          "height": 625,
+          "colors": 1451
+        }
+      ],
+      "fullRotationRadians": 6.283185307179583,
+      "cpuRenderSubmissionP50Ms": 0.3999999985098839,
+      "cpuRenderSubmissionP95Ms": 1.800000000745058,
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "failureMode": "modelBlocked",
+      "status": "전신 모델 파일을 읽지 못했습니다. 연결을 확인한 뒤 다시 불러오기를 누르세요.",
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/placeholder.svg"
+      ],
+      "errors": [],
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_FAILED"
+      ]
+    },
+    {
+      "failureMode": "noWebgl",
+      "status": "WebGL 2를 사용할 수 없습니다. Safari를 업데이트하거나 기존 3D 체험으로 돌아가세요.",
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/placeholder.svg"
+      ],
+      "errors": [],
+      "consoleErrors": []
+    },
+    {
+      "failureMode": "actualWebglContextLoss",
+      "status": "그래픽 컨텍스트가 중단되었습니다. 다른 탭을 닫고 다시 불러오기를 누르세요.",
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/placeholder.svg"
+      ]
+    },
+    {
+      "productionBlocked": true,
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/placeholder.svg"
+      ],
+      "state": "blocked"
+    }
+  ],
+  "environment": {
+    "browser": "Linux Chromium with SwiftShader",
+    "nativeIpadSafari": false,
+    "webkitInstalled": false
+  },
+  "limits": "Existing CC0 body and original example garment conversion. New photorealistic human not obtained. CPU render-submission timings are not GPU frame time, display FPS, or iPad hardware performance. No user photo or body analysis data used."
+}

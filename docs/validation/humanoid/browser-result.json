@@ -1,0 +1,364 @@
+{
+  "sourceHashes": {
+    "gltf-proof.html": "c11543b058f9fde62517a01414a6b61b581ce17f55386ddae090ed0d8552cd9c",
+    "assets/gltf-proof.js": "85757de3c337e51aed25a1a034f8389d0a2cb8320bcb1e93962c88d6a33ef137",
+    "assets/gltf-proof.css": "c0774baf2cbfaae9249b5402649ed4e931d99e819cba856328dc02df64e0dc34",
+    "assets/humanoid-surface.js": "6701889a05dfc9ebf36c37c191bfbf199b34ad0976c7fb89b76e0acf6281c8f7",
+    "assets/gltf-proof/avatar.glb": "1224f4f923d71b5c45688592519a56ae2e55128032390f605ff73926203c669e"
+  },
+  "reports": [
+    {
+      "profile": {
+        "width": 1280,
+        "height": 900,
+        "touch": false,
+        "lang": "ko"
+      },
+      "surface": {
+        "name": "ko-1280-humanoid-front",
+        "sha256": "e7f417a22ea23db0640f3536835e7f9bbd8a31d59fe0ae235e9bb4d4513083f5",
+        "width": 866,
+        "height": 685,
+        "red": 2341,
+        "teal": 6438,
+        "gold": 373
+      },
+      "reference": {
+        "name": "ko-1280-reference-front",
+        "sha256": "db17f8feba13e1cba3a3db34b9ced6998aafcd88097a07b7b9657fb36cf57a3e",
+        "width": 866,
+        "height": 685,
+        "red": 0,
+        "teal": 103,
+        "gold": 73
+      },
+      "views": [
+        {
+          "name": "ko-1280-humanoid-side",
+          "sha256": "fc384bb99d7d52be97e202e209531b60381381fef21cc4d0755e8d786905a339",
+          "width": 866,
+          "height": 685,
+          "red": 1330,
+          "teal": 5187,
+          "gold": 94
+        },
+        {
+          "name": "ko-1280-humanoid-back",
+          "sha256": "3351589c7cd502105a85e2c4cf920bb27d8e4ba5387eab7851776859a68e6669",
+          "width": 866,
+          "height": 685,
+          "red": 793,
+          "teal": 7257,
+          "gold": 106
+        }
+      ],
+      "variants": [
+        {
+          "garment": "LAB-A",
+          "name": "ko-1280-LAB-A",
+          "sha256": "644bb221db19aefbfdb0eb58031c4663bdd6217ac1c1ed9342fc004adb2f10e1",
+          "width": 866,
+          "height": 685,
+          "red": 1143,
+          "teal": 8619,
+          "gold": 107
+        },
+        {
+          "garment": "LAB-B",
+          "name": "ko-1280-LAB-B",
+          "sha256": "30c2c3176bd568e13b2a31e555714ea45fb54316b4d0937eb3249b95cc921906",
+          "width": 866,
+          "height": 685,
+          "red": 7179,
+          "teal": 3388,
+          "gold": 4573
+        },
+        {
+          "garment": "LAB-C",
+          "name": "ko-1280-LAB-C",
+          "sha256": "f3a11600330b6e2796b3504fd39f99f5b9dbb518dc55fbe5046fb70301dba45b",
+          "width": 866,
+          "height": 685,
+          "red": 1475,
+          "teal": 7905,
+          "gold": 265
+        }
+      ],
+      "pose": {
+        "name": "ko-1280-humanoid-pose",
+        "sha256": "eba2f522ab432a17052bffa2f2803381b543999f4e8ffaf09c69647ce61b384f",
+        "width": 866,
+        "height": 685,
+        "red": 2342,
+        "teal": 6357,
+        "gold": 366
+      },
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 820,
+        "height": 1180,
+        "touch": true,
+        "lang": "ko"
+      },
+      "surface": {
+        "name": "ko-820-humanoid-front",
+        "sha256": "6d26211b49153521c4c83bb934b558c3a8d401465542e1a33838a3340db4f9bc",
+        "width": 782,
+        "height": 721,
+        "red": 2612,
+        "teal": 7147,
+        "gold": 351
+      },
+      "reference": {
+        "name": "ko-820-reference-front",
+        "sha256": "c1124a9fc9d4e96d1b1f0687fd1d42f552ff229748cdb194944d5bca59b20830",
+        "width": 782,
+        "height": 721,
+        "red": 0,
+        "teal": 121,
+        "gold": 86
+      },
+      "views": [
+        {
+          "name": "ko-820-humanoid-side",
+          "sha256": "a31515a1f7a5fe3590d2ced2ca19aaf4cfbef3c3e6922af4a641cead38eeae41",
+          "width": 782,
+          "height": 721,
+          "red": 1467,
+          "teal": 5750,
+          "gold": 120
+        },
+        {
+          "name": "ko-820-humanoid-back",
+          "sha256": "f13d06be16db4df9ec0138cba477f38d0d6360272140099a9fd867203504a50d",
+          "width": 782,
+          "height": 721,
+          "red": 871,
+          "teal": 8013,
+          "gold": 143
+        }
+      ],
+      "variants": [
+        {
+          "garment": "LAB-A",
+          "name": "ko-820-LAB-A",
+          "sha256": "c954856833d3e74a2be795198c9e6218a0f537c7106c66d5791890fd359076bf",
+          "width": 782,
+          "height": 721,
+          "red": 1265,
+          "teal": 9546,
+          "gold": 109
+        },
+        {
+          "garment": "LAB-B",
+          "name": "ko-820-LAB-B",
+          "sha256": "5207e44fa30363c437007961dd814e281219bcbb1c67d8c8a0057eaa98f19669",
+          "width": 782,
+          "height": 721,
+          "red": 7929,
+          "teal": 3760,
+          "gold": 5026
+        },
+        {
+          "garment": "LAB-C",
+          "name": "ko-820-LAB-C",
+          "sha256": "c4c0cea91ecfa4b1221f0bec8ac6dc1f4ce0c2f8f88d66d5132f72293d3bc15c",
+          "width": 782,
+          "height": 721,
+          "red": 1662,
+          "teal": 8797,
+          "gold": 234
+        }
+      ],
+      "pose": {
+        "name": "ko-820-humanoid-pose",
+        "sha256": "222667e68fd2c3ff07984ad645a53b5164c10bad183923b6b8bd8e7d203a7968",
+        "width": 782,
+        "height": 721,
+        "red": 2599,
+        "teal": 7068,
+        "gold": 390
+      },
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/placeholder.svg",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "profile": {
+        "width": 1180,
+        "height": 820,
+        "touch": true,
+        "lang": "en"
+      },
+      "surface": {
+        "name": "en-1180-humanoid-front",
+        "sha256": "b6ef0651ecdf3f4bf8ba359d87171d7d12c83f652de1f9d33a86a5fb22f7447d",
+        "width": 806,
+        "height": 625,
+        "red": 1941,
+        "teal": 5369,
+        "gold": 313
+      },
+      "reference": {
+        "name": "en-1180-reference-front",
+        "sha256": "0cb5957297de0f67d7f138631dc21626df44cc1edb7c9742a0830c72990884f5",
+        "width": 806,
+        "height": 625,
+        "red": 0,
+        "teal": 82,
+        "gold": 55
+      },
+      "views": [
+        {
+          "name": "en-1180-humanoid-side",
+          "sha256": "85953fc5635d7013abf47f07e76e4aca147843edafe83f7654a6cb0242947c16",
+          "width": 806,
+          "height": 625,
+          "red": 1094,
+          "teal": 4295,
+          "gold": 87
+        },
+        {
+          "name": "en-1180-humanoid-back",
+          "sha256": "903497d719b0e1ca5f32bf44ff99598d163a33e684286b122698157e87e42179",
+          "width": 806,
+          "height": 625,
+          "red": 661,
+          "teal": 6039,
+          "gold": 99
+        }
+      ],
+      "variants": [
+        {
+          "garment": "LAB-A",
+          "name": "en-1180-LAB-A",
+          "sha256": "efbf2af34d2c190a43222e21805fcc5c6755ffcf3c595de3dd40df0264e9d174",
+          "width": 806,
+          "height": 625,
+          "red": 946,
+          "teal": 7161,
+          "gold": 95
+        },
+        {
+          "garment": "LAB-B",
+          "name": "en-1180-LAB-B",
+          "sha256": "93da1c11664a9801f53e4f282c2b07fd46788d20053ebfa852c06f4491cad8d9",
+          "width": 806,
+          "height": 625,
+          "red": 5941,
+          "teal": 2833,
+          "gold": 3778
+        },
+        {
+          "garment": "LAB-C",
+          "name": "en-1180-LAB-C",
+          "sha256": "abcc5f3180943464a86161cf258a255db4998d1365528af1aa2bf58cd8f3fbf6",
+          "width": 806,
+          "height": 625,
+          "red": 1229,
+          "teal": 6591,
+          "gold": 216
+        }
+      ],
+      "pose": {
+        "name": "en-1180-humanoid-pose",
+        "sha256": "52db4210403e1776660b19e274a357a46f42e7032509198c9ca04149d20bf9b7",
+        "width": 806,
+        "height": 625,
+        "red": 1949,
+        "teal": 5287,
+        "gold": 335
+      },
+      "requests": [
+        "/gltf-proof",
+        "/assets/gltf-proof.css",
+        "/assets/i18n.js",
+        "/assets/gltf-proof.js",
+        "/assets/preview-experience.js",
+        "/assets/vendor/three-0.187.0/build/three.module.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+        "/assets/humanoid-surface.js",
+        "/assets/natural-avatar-profile.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+        "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+        "/assets/vendor/three-0.187.0/build/three.core.js",
+        "/assets/natural-avatar/asset-manifest.json",
+        "/assets/natural-avatar/sample.glb",
+        "/assets/placeholder.svg",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb",
+        "/assets/gltf-proof/asset-manifest.json",
+        "/assets/gltf-proof/avatar.glb"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    }
+  ],
+  "environment": {
+    "browser": "Linux Chromium with SwiftShader",
+    "nativeIpadSafari": false
+  },
+  "scope": "Original procedural SF material on the preserved CC0 mesh. No licensed movie character asset, personal photo, body reconstruction, paid API or exact product fit. Touch emulation is not native iPad testing."
+}

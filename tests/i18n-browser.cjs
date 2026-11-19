@@ -14,7 +14,7 @@ const typedEmail = 'language-customer@example.test';
 const typedPassword = 'Language-fixture-password-2026!';
 let premiumAllowed = false;
 let recommendForMember;
-const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+const mime = {'.json':'application/json', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.wasm': 'application/wasm' };
 
 function apiResponse(path, input, language) {

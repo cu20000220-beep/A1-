@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "kind": "synthetic-editorial-style-images",
+  "createdFor": "A1 FASHION at the user request",
+  "imageMode": "2d-static",
+  "actual3D": false,
+  "actualRetailProducts": false,
+  "userBodyReconstruction": false,
+  "createdWith": "ChatGPT image generation during development; no runtime generation API",
+  "files": [
+    {
+      "path": "hero.png",
+      "bytes": 2194741,
+      "width": 1536,
+      "height": 1024,
+      "sha256": "128fb7c3173617f9e214974ec05ca33e7c76f666885f81a966183758dfe59436"
+    },
+    {
+      "path": "male-sheet.png",
+      "bytes": 1765781,
+      "width": 1024,
+      "height": 1536,
+      "sha256": "ef1672b946e4ab2b3349dbb3bb1324a6ffd5c9ad03d178188dcede4b40ffa899"
+    },
+    {
+      "path": "female-sheet.png",
+      "bytes": 1714177,
+      "width": 1024,
+      "height": 1536,
+      "sha256": "4be49430850f7ebf8aca6c626c7a7697fc28c4d3ccb47df399bdf2318e17e026"
+    }
+  ],
+  "sheets": {
+    "columns": 3,
+    "rows": 3,
+    "cells": [
+      "front",
+      "quarter",
+      "side",
+      "back",
+      "style-1",
+      "style-2",
+      "style-3",
+      "style-4",
+      "style-5"
+    ]
+  }
+}

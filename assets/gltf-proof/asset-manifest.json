@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "purpose": "isolated-gltf-renderer-technical-proof",
+  "model": {
+    "path": "avatar.glb",
+    "bytes": 1322720,
+    "sha256": "1224f4f923d71b5c45688592519a56ae2e55128032390f605ff73926203c669e"
+  },
+  "license": {
+    "id": "CC0-1.0",
+    "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "notice": "LICENSE.txt",
+    "commercialUse": true,
+    "publicWebDelivery": true
+  },
+  "sources": [
+    {
+      "path": "assets/human-base.js",
+      "sha256": "13dff048664eb387e6ad95ed5b91070ca5658f2688d4d28248118f46ad93c88a",
+      "upstream": "https://raw.githubusercontent.com/makehumancommunity/makehuman/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data/3dobjs/base.obj",
+      "upstreamCommit": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+      "upstreamSha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c"
+    },
+    {
+      "path": "assets/avatar-geometry.js",
+      "sha256": "b9b66910adb717bd4ba667dcf08dcf5180c916af98a23605079da38298386957",
+      "role": "Existing A1 connected example garment generator, preserved without modifications"
+    }
+  ],
+  "meshNames": [
+    "Body",
+    "ExampleTshirtA",
+    "ExampleTshirtB",
+    "ExampleTshirtC"
+  ],
+  "boneNames": [
+    "Root",
+    "Spine"
+  ],
+  "bodyHeightMetres": 1.7,
+  "sourceKind": "existing-reviewed-generic-reference",
+  "newModelAcquired": false,
+  "actualRetailProduct": false,
+  "clothPhysics": false,
+  "userPhotoOrMeasurements": false,
+  "qualityVerified": false,
+  "integrationApproved": false,
+  "inspection": {
+    "stats": {
+      "vertices": 19352,
+      "triangles": 37920,
+      "meshes": 4,
+      "nodes": 7,
+      "skins": 1,
+      "joints": 2,
+      "morphTargets": 0,
+      "materials": 4,
+      "images": 0,
+      "geometryBytes": 1317104,
+      "imageBytes": 0,
+      "decodedGeometryBytes": 1699440,
+      "decodedTextureBytes": 0,
+      "drawTriangles": 37920
+    },
+    "features": {
+      "skinning": true,
+      "morphTargets": false,
+      "alphaBlend": false,
+      "alphaMask": false,
+      "externalResources": false
+    },
+    "blockersForOldRenderer": [
+      "runtime_unsupported:skinning",
+      "runtime_unsupported:multi_material"
+    ],
+    "warnings": [],
+    "runtimeProfile": "current-static-webgl"
+  }
+}

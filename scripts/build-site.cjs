@@ -7,6 +7,23 @@ const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist');
 const marker = '.a1-static-output';
 const signature = 'A1 FASHION generated static output\n';
+// Recheck private operator approval/content hashes; never publish raw seller files.
+if(fs.statSync(path.join(root,'assets/approved-products.json')).size>1000000)throw Error('Public snapshot exceeds 1 MB');
+const catalog=require('./lib/product-catalog.cjs').validateSnapshot(
+  JSON.parse(fs.readFileSync(path.join(root,'assets/approved-products.json'),'utf8')),
+  JSON.parse(fs.readFileSync(path.join(root,'catalog/source-approvals.json'),'utf8'))
+);
+// Independent factual product links carry no retailer image/fitting permission.
+const discoveryFile = path.join(root, 'assets/observed-products.json');
+if (fs.statSync(discoveryFile).size > 1000000) throw Error('Product observations exceed 1 MB');
+require('../assets/product-discovery.js').validateSnapshot(JSON.parse(fs.readFileSync(discoveryFile, 'utf8')));
+const observations=JSON.parse(fs.readFileSync(discoveryFile,'utf8'));
+const imagesFile=path.join(root,'assets/product-images.json');
+if(fs.statSync(imagesFile).size>1000000)throw Error('Product images manifest exceeds 1 MB');
+const productImageBytes=fs.readFileSync(imagesFile);
+const productImages=JSON.parse(productImageBytes);
+const imageEntries=require('../assets/product-images.js').validateManifest(productImages,observations);
+const reviewedImageCopies=new Map(require('./lib/product-image-store.cjs').validateLocalCopies(root,imageEntries).map(record=>[record.relative,record.bytes]));
 const files = [];
 
 function collect(relative) {
@@ -29,11 +46,60 @@ function collect(relative) {
 const publicEntries = [
   '_headers',
   'index.html',
+  'assets/shopping-query.js',
+  'assets/product-catalog.js',
+  'assets/catalog-fitting.js',
+  'assets/offer-comparison.js',
+  'assets/approved-products.json',
+  'assets/product-discovery.js',
+  'assets/local-fashion-core.js',
+  'assets/public-beta-bootstrap.js',
+  'assets/product-images.js',
+  'assets/product-images.json',
+  'assets/product-discovery-view.js',
+  'assets/product-discovery-view.css',
+  'assets/observed-products.json',
+  'templates/seller-products.csv',
+  'templates/seller-products.json',
+  'assets/shopping-search.js',
+  'assets/shopping-search.css',
   'credits.html',
   'account.html',
   'privacy.html',
   'global.html',
   'stylist.html',
+  'product-lab.html',
+  'avatar-lab.html',
+  'gltf-proof.html',
+  'fitting-studio.html',
+  'assets/fitting-studio.css',
+  'assets/fitting-studio.js',
+  'assets/fitting-studio-3d.js',
+  'assets/fitting-studio-3d.css',
+  'assets/fitting-studio-photo.js',
+  'assets/fitting-studio-photo.css',
+  'assets/studio',
+  'assets/gltf-proof.js',
+  'assets/gltf-proof.css',
+  'assets/humanoid-surface.js',
+  'assets/natural-avatar-profile.js',
+  'assets/natural-avatar',
+  'assets/gltf-proof',
+  'assets/avatar-geometry.js',
+  'assets/human-base.js',
+  'assets/human-head.js',
+  'assets/human-head-color.jpg',
+  'assets/human-head-normal.jpg',
+  'assets/HUMAN-HEAD-LICENSE.txt',
+  'assets/avatar-lab.js',
+  'assets/avatar-photo-bridge.js',
+  'assets/avatar-lab.css',
+  'assets/product-lab.js',
+  'assets/lab-entry.js',
+  'assets/lab-loader.js',
+  'assets/product-lab.css',
+  'assets/product-matching.js',
+  'assets/lab-garment.svg',
   'assets/stylist.css',
   'assets/stylist.js',
   'assets/i18n-stylist.js',
@@ -64,6 +130,9 @@ const publicEntries = [
   'assets/vendor'
 ];
 for (const entry of publicEntries) collect(entry);
+// Never publish an entire intake directory: unrelated/private files in it are
+// not deployment assets. Copy only the exact validated manifest-bound bytes.
+for(const relative of reviewedImageCopies.keys())files.push(relative);
 if (files.length + 1 > 1000) throw new Error('Deployment exceeds the dashboard upload file limit.');
 
 // Never replace an existing directory unless a previous invocation created it.
@@ -80,6 +149,11 @@ fs.writeFileSync(path.join(output, marker), signature);
 for (const relative of files) {
   const target = path.join(output, relative);
   fs.mkdirSync(path.dirname(target), {recursive:true});
-  fs.copyFileSync(path.join(root, relative), target);
+  if(reviewedImageCopies.has(relative))fs.writeFileSync(target,reviewedImageCopies.get(relative));
+  else if(relative==='assets/product-images.json')fs.writeFileSync(target,productImageBytes);
+  else fs.copyFileSync(path.join(root, relative), target);
 }
+// Keep connect-src/script-src/API isolation intact. Only image origins from the
+// privately validated snapshot can extend the stylist image display policy.
+fs.writeFileSync(path.join(output,'_headers'),require('./lib/catalog-public-headers.cjs').catalogPublicHeaders(fs.readFileSync(path.join(root,'_headers'),'utf8'),catalog.products,{manifest:productImages,observations}));
 console.log(`Built ${files.length} static files in dist/ (no package installation or external requests).`);

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>A1 · 내추럴 3D 피팅룸</title>
+  <link rel="icon" href="assets/placeholder.svg">
+  <link rel="stylesheet" href="assets/gltf-proof.css">
+  <script src="assets/i18n.js" defer></script>
+  <script src="assets/local-fashion-core.js" defer></script><script src="assets/preview-experience.js" defer></script>
+  <script src="assets/gltf-proof.js" type="module"></script>
+</head>
+<body>
+  <header><a href="index.html">A1 FASHION</a><a class="studio-entry" href="fitting-studio.html">실사 스타일 이미지 스튜디오</a><span data-language-switcher></span></header>
+  <p id="gltf-unavailable">이 기술 검증은 격리된 Preview에서만 제공됩니다.</p>
+  <main id="gltf-proof-root" data-load-state="blocked" hidden>
+    <p class="eyebrow">무료 베타 · 내추럴 3D 인체</p>
+    <h1>내추럴 3D 피팅룸</h1>
+    <p class="lead">얼굴·피부·눈·머리카락·의상이 함께 있는 3D 인체 샘플입니다. 전신을 돌려 실제 형상과 표면을 확인해 보세요.</p>
+    <p class="notice">이 샘플은 사용자의 얼굴·체형을 복원한 결과가 아닙니다. 사진·분석값을 읽거나 전송하지 않습니다. 실제 판매 의류의 피팅·사이즈·착용감을 보장하지 않습니다.</p>
+    <div class="workspace">
+      <section class="stage" aria-label="3D 전신 화면">
+        <canvas id="gltf-canvas" width="720" height="900" tabindex="0" aria-label="회전 가능한 예시 3D 전신과 티셔츠"></canvas>
+        <p id="gltf-canvas-state" aria-hidden="true">로컬 전신 파일을 준비하고 있습니다.</p>
+        <p class="gesture">한 손가락으로 회전 · 두 손가락으로 확대·축소</p>
+      </section>
+      <section class="panel" aria-label="렌더링 조작">
+        <label>아바타 모습<select id="gltf-look" disabled><option value="natural">내추럴 인체 샘플</option><option value="reference">기존 인체와 비교</option><option value="humanoid">SF 휴머노이드</option></select></label>
+        <label><span id="gltf-garment-title">샘플 의상</span><select id="gltf-garment" disabled><option value="source">원본 샘플 의상</option><option value="none">기본 아바타 · 티셔츠 없음</option><option value="LAB-A">기본 · 블루</option><option value="LAB-B">여유형 · 테라코타</option><option value="LAB-C">짧은형 · 그린</option></select></label>
+        <p id="natural-avatar-note" class="small">현재 인체 샘플에는 원본 의상 한 벌을 표시합니다. 교체 가능한 실제 의류 모델은 준비 중입니다. 기존 비교 모델에서는 예시 티셔츠 3종을 이용할 수 있습니다.</p>
+        <div class="buttons"><button id="gltf-front" disabled>정면</button><button id="gltf-side" disabled>측면</button><button id="gltf-back" disabled>후면</button></div>
+        <div class="buttons"><button id="gltf-left" disabled>왼쪽 회전</button><button id="gltf-right" disabled>오른쪽 회전</button></div>
+        <div class="buttons"><button id="gltf-zoom-in" disabled>확대</button><button id="gltf-zoom-out" disabled>축소</button></div>
+        <label>재질 비교<select id="gltf-material" disabled><option value="standard">조명·거칠기 적용</option><option value="basic">기본 색상과 비교</option></select></label>
+        <label class="check"><input id="gltf-skin-proof" type="checkbox" disabled>골격 변형 비교</label>
+        <p class="small">골격 변형은 glTF 스키닝 동작 검사입니다. 사용자 체형 복원이나 의류 핏 예측이 아닙니다.</p>
+        <p id="gltf-status" role="status" aria-live="polite">로컬 전신 파일을 준비하고 있습니다.</p>
+        <div class="buttons"><button id="gltf-delete" disabled>임시 3D 화면 지우기</button><button id="gltf-retry" type="button">다시 불러오기</button></div>
+        <p class="small">WebGL 2가 필요합니다. 표시되지 않으면 기존 WebGL 1 체험을 이용할 수 있습니다.</p>
+        <a href="avatar-lab.html">기존 3D 체험으로 돌아가기</a>
+      </section>
+    </div>
+    <footer><p>기본 인체: MetaPerson 공식 샘플 · BSD-3-Clause. 기존 비교 인체: MakeHuman hm08 · CC0. Three.js · MIT.</p><a href="assets/natural-avatar/LICENSE.txt">내추럴 인체 출처와 이용 조건</a> · <a href="assets/gltf-proof/LICENSE.txt">모델 출처와 이용 조건</a> · <a href="assets/vendor/three-0.187.0/LICENSE">렌더러 라이선스</a><nav><a href="index.html#shopping-search">국내 의류 검색</a><a href="stylist.html">무료 규칙 기반 스타일리스트</a></nav></footer>
+  </main>
+</body>
+</html>

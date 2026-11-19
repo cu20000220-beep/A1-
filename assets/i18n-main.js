@@ -1,6 +1,7 @@
 /* Prepared Korean/English public site copy. No translation API is used. */
 'use strict';
 window.A1I18n?.register({
+  "실사 스타일 이미지 스튜디오 ↗": "Photoreal style image studio ↗",
   "기본 쇼핑몰 무료로 둘러보기 ↗": "Explore basic retailer links for free ↗",
   "개인화 추천과 맞춤 판매처 검색은": "Personalized suggestions and tailored retailer searches",
   "국내·해외 맞춤 쇼핑몰 검색": "Tailored searches across local and international retailers",

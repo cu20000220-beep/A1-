@@ -19,7 +19,7 @@ let listGlobalRetailers,demoComparison,renderNotificationTemplate,compareOffers;
 const headerRules=[];
 const result=(res,data,status=200)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'private, no-store'});res.end(JSON.stringify(data));};
 const denied=(res,code,status=403)=>result(res,{ok:false,allowed:false,error:code,message:code},status);
-const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg':'image/jpeg','.svg':'image/svg+xml'};
+const mime={'.json':'application/json','.html':'text/html','.js':'text/javascript','.css':'text/css','.jpg':'image/jpeg','.svg':'image/svg+xml'};
 const responseHeaders=path=>Object.assign({},...headerRules.filter(rule=>rule.path.endsWith('*')?path.startsWith(rule.path.slice(0,-1)):path===rule.path).map(rule=>rule.values));
 const server=createServer(async(req,res)=>{
  try{

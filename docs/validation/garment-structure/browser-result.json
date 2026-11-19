@@ -1,0 +1,103 @@
+{
+  "stage": "after",
+  "sourceHashes": {
+    "avatar-lab.html": "8a498bda690d69cec39adb6a6a8071209ad2787786b6371ad3175df47d2f77a4",
+    "assets/style.css": "56215f55de2ba31bddd43bfa4b47bc4e4287ef538d0e3d1676617b735331bdb5",
+    "assets/avatar-lab.css": "9cb5d057ab409abd6cc0d4554dd0df8904448c0680ca1313c351836a8fb1f700",
+    "assets/i18n.js": "a53f0c0f8937fc9ea5c90ae823b63eb16925c7bd8828dcb26521277fd69aa5fd",
+    "assets/preview-experience.js": "ed8384acbc1b7912cd820fbef41131667e825c3e518321b95eb2d70a4db109e6",
+    "assets/human-base.js": "13dff048664eb387e6ad95ed5b91070ca5658f2688d4d28248118f46ad93c88a",
+    "assets/avatar-geometry.js": "e483069f37f70b6f2453a41fdc337e65d2a201dbf0d2e7eb4e8ff6d25c8f4c1a",
+    "assets/avatar-lab.js": "b1dcb2adf683cf0f95d1897dca306de5df7fb74033e015c9b1efbd9ad2986e0c",
+    "assets/placeholder.svg": "ba019c7bfbc7176422ee963d0da565da9e82e79f2e253e90078993c4629b5b74"
+  },
+  "reports": [
+    {
+      "stage": "after",
+      "lang": "ko",
+      "width": 820,
+      "height": 1180,
+      "renderStats": [
+        {
+          "garment": "LAB-A",
+          "blue": 10038,
+          "colors": 1165,
+          "width": 358,
+          "height": 477
+        },
+        {
+          "garment": "LAB-B",
+          "blue": 12505,
+          "colors": 1128,
+          "width": 358,
+          "height": 477
+        },
+        {
+          "garment": "LAB-C",
+          "blue": 5691,
+          "colors": 1116,
+          "width": 358,
+          "height": 477
+        }
+      ],
+      "calls": [
+        "/avatar-lab",
+        "/assets/style.css",
+        "/assets/avatar-lab.css",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/human-base.js",
+        "/assets/avatar-geometry.js",
+        "/assets/avatar-lab.js",
+        "/assets/placeholder.svg"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    },
+    {
+      "stage": "after",
+      "lang": "en",
+      "width": 390,
+      "height": 844,
+      "renderStats": [
+        {
+          "garment": "LAB-A",
+          "blue": 9964,
+          "colors": 1178,
+          "width": 357,
+          "height": 476
+        },
+        {
+          "garment": "LAB-B",
+          "blue": 12418,
+          "colors": 1129,
+          "width": 357,
+          "height": 476
+        },
+        {
+          "garment": "LAB-C",
+          "blue": 5663,
+          "colors": 1126,
+          "width": 357,
+          "height": 476
+        }
+      ],
+      "calls": [
+        "/avatar-lab",
+        "/assets/style.css",
+        "/assets/avatar-lab.css",
+        "/assets/i18n.js",
+        "/assets/preview-experience.js",
+        "/assets/human-base.js",
+        "/assets/avatar-geometry.js",
+        "/assets/avatar-lab.js",
+        "/assets/placeholder.svg"
+      ],
+      "errors": [],
+      "consoleErrors": [],
+      "violations": []
+    }
+  ],
+  "limits": "Linux Chromium touch simulation. Fictional garment structures only; no real product, cloth-physics or native Safari verification."
+}

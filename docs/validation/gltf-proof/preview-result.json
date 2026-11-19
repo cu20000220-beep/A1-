@@ -1,0 +1,128 @@
+{
+  "origin": "https://161f21fc.a1fashion.pages.dev",
+  "checkedAt": "2026-11-16T03:14:01.806Z",
+  "transport": "Deployed assets fetched through the configured proxy and rendered with original headers; no local substitutions.",
+  "nativeIpadSafari": false,
+  "requests": [
+    {
+      "path": "/gltf-proof",
+      "status": 200,
+      "mime": "text/html; charset=utf-8"
+    },
+    {
+      "path": "/assets/i18n.js",
+      "status": 200,
+      "mime": "application/javascript"
+    },
+    {
+      "path": "/assets/gltf-proof.js",
+      "status": 200,
+      "mime": "application/javascript"
+    },
+    {
+      "path": "/assets/preview-experience.js",
+      "status": 200,
+      "mime": "application/javascript"
+    },
+    {
+      "path": "/assets/gltf-proof.css",
+      "status": 200,
+      "mime": "text/css; charset=utf-8"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js",
+      "status": 200,
+      "mime": "application/javascript"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/examples/jsm/loaders/GLTFLoader.js",
+      "status": 200,
+      "mime": "application/javascript"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/build/three.module.js",
+      "status": 200,
+      "mime": "application/javascript"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/examples/jsm/utils/SkeletonUtils.js",
+      "status": 200,
+      "mime": "application/javascript"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/examples/jsm/utils/BufferGeometryUtils.js",
+      "status": 200,
+      "mime": "application/javascript"
+    },
+    {
+      "path": "/assets/vendor/three-0.187.0/build/three.core.js",
+      "status": 200,
+      "mime": "application/javascript"
+    },
+    {
+      "path": "/assets/placeholder.svg",
+      "status": 200,
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/assets/gltf-proof/asset-manifest.json",
+      "status": 200,
+      "mime": "application/json"
+    },
+    {
+      "path": "/assets/gltf-proof/avatar.glb",
+      "status": 200,
+      "mime": "model/gltf-binary"
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "passed": true,
+  "document": {
+    "status": 200,
+    "mime": "text/html; charset=utf-8",
+    "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
+  },
+  "apiIsolation": {
+    "status": 503,
+    "error": "preview_isolated"
+  },
+  "initial": {
+    "state": "ready",
+    "disposed": false,
+    "meshes": 4,
+    "skinnedMeshes": 4,
+    "bones": 2,
+    "drawCalls": 3,
+    "triangles": 30636,
+    "renderCount": 4,
+    "garment": "LAB-A",
+    "materialMode": "standard",
+    "skinPose": false,
+    "viewYaw": 0,
+    "frameSamples": [
+      144.5,
+      0.9000000000232831,
+      0.9000000000232831,
+      0.8000000000465661
+    ],
+    "timingScope": "CPU render submission milliseconds; not GPU frame time or FPS",
+    "memoryGeometries": 5,
+    "memoryTextures": 2
+  },
+  "frames": [
+    {
+      "view": "front",
+      "sha256": "aa2f1a0d9e0b4382a31451a9d97d3d226dd36588460cbc42e78acab64a9c3d55"
+    },
+    {
+      "view": "side",
+      "sha256": "10e64ca68450c1c8ffd29cebb6a3aa206ee69804e90735d8e06b5a40b7d5436c"
+    },
+    {
+      "view": "back",
+      "sha256": "3c6dc319f78c64a6fa67926c9a631e9a8b7c08b65298e22c4847ac8f1fa63e9d"
+    }
+  ],
+  "garmentChanges": true
+}

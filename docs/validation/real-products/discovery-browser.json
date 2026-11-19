@@ -1,0 +1,65 @@
+{
+  "merchantAcceptanceVerified": false,
+  "nativeSafari": false,
+  "cases": [
+    {
+      "profile": {
+        "width": 820,
+        "lang": "ko"
+      },
+      "privateFixtures": true,
+      "mainAndStylist": true,
+      "noImages": true,
+      "noPaidAPI": true,
+      "guardedDirectNavigation": true
+    },
+    {
+      "profile": {
+        "width": 390,
+        "lang": "en"
+      },
+      "privateFixtures": true,
+      "mainAndStylist": true,
+      "noImages": true,
+      "noPaidAPI": true,
+      "guardedDirectNavigation": true
+    },
+    {
+      "name": "persisted-page-return-reopens-public-search-only",
+      "simulatedLifecycle": true,
+      "nativeSafari": false,
+      "passed": true
+    },
+    {
+      "name": "persisted-return-ignores-late-abort-resistant-read",
+      "simulatedLifecycle": true,
+      "nativeSafari": false,
+      "passed": true
+    },
+    {
+      "mode": "empty",
+      "passed": true
+    },
+    {
+      "mode": "error",
+      "passed": true
+    },
+    {
+      "name": "clear-during-metadata-load",
+      "passed": true
+    },
+    {
+      "name": "actual-published-official-observations",
+      "count": 10,
+      "priceInventoryAndRightsLimitsPreserved": true
+    }
+  ],
+  "passed": true,
+  "sourceHashes": {
+    "assets/product-discovery-view.js": "11aacc4e4c43049d836cf48e488902bf02d13a44e768e460b6e8014b0104c25e",
+    "assets/product-discovery-view.css": "87b1fc56bc76247c6661b6a3051bacd29ad30ecb50eac2698d47d05a1472333e",
+    "assets/shopping-search.js": "82cd7a6c19595055652d7751f98979c398bf4a8672b79b5df1fc88e2c72e7514",
+    "assets/stylist.js": "36eb74b279b0e010ea5cc20d5befb98f1513e14a5c76f1a920af2ff597b63d03",
+    "assets/product-discovery.js": "260b4403295335a1a5e2e1cb1708105b1f66242d8d283e2e4136f4375e3d7a4e"
+  }
+}
