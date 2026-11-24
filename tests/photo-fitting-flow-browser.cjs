@@ -358,10 +358,10 @@ async function verifyStudioProportions(browser) {
     const baseline = await stable3DHash(page), results = [];
     const profiles = [
       ['wider-shoulders', { shoulderWidthCm: 54, hipWidthCm: 36 }, 'shoulderHip', 'musinsa-4644434'],
-      ['wider-hips', { shoulderWidthCm: 34, hipWidthCm: 41 }, 'shoulderHip', '29cm-4145774'],
       ['longer-legs', { torsoCm: 40, legCm: 84 }, 'legTorso', 'musinsa-2124425'],
       ['longer-arms', { armCm: 66, legCm: 80 }, 'armLeg', '29cm-3423465'],
-      ['shorter-arms', { armCm: 45, legCm: 80 }, 'armLeg', 'musinsa-996498']
+      ['shorter-arms', { armCm: 45, legCm: 80 }, 'armLeg', 'musinsa-996498'],
+      ['wider-hips', { shoulderWidthCm: 34, hipWidthCm: 41 }, 'shoulderHip', '29cm-4145774']
     ];
     for (const [name, inputs, axis, expectedFirst] of profiles) {
       await measures.locator('#avatar-proportion-reset').click();

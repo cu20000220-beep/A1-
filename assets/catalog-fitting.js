@@ -2,10 +2,10 @@
 'use strict';
 (()=>{
  function initialize(){
- const experience=window.A1Preview||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null);
+ const experience=window.A1Preview||(window.A1PublicLocal?.mode==='server-public-local'?window.A1PublicLocal:null)||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null);
  const C=window.A1ProductCatalog,I=window.A1I18n;
  if(!experience||!C||!I||!window.A1LabTemplates||window.A1CatalogFitting)return;
- document.removeEventListener('a1:public-beta-ready',initialize);
+ document.removeEventListener('a1:public-local-ready',initialize);document.removeEventListener('a1:public-beta-ready',initialize);
  let selected=null,selectedObservation=null,selectedImages=null,revision=0,controller,timer;
  I.register({
   '선택한 상품으로 사진 미리보기':'Preview this product on my photo',
@@ -73,5 +73,5 @@
  if(id||observedId){history.replaceState(null,'',location.pathname+location.search);const resume=()=>observedId?openObserved(observedId):open(id);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',resume,{once:true});else resume();}
  }
  if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',initialize,{once:true});
- document.addEventListener('a1:public-beta-ready',initialize);initialize();
+ document.addEventListener('a1:public-local-ready',initialize);document.addEventListener('a1:public-beta-ready',initialize);initialize();
 })();

@@ -18,7 +18,7 @@
     '실제 3D 인체 샘플': 'Actual 3D human sample',
     '실제 3D 인체 샘플을 준비하고 있습니다.': 'Preparing the actual 3D human sample.',
     '기본 3D 인체를 불러옵니다. 사진 분석에서 동의하면 이 기기에서 추정한 비율을 3D 체형에 적용할 수 있습니다.': 'Start with a sample 3D body. With consent in photo analysis, estimated proportions can shape the avatar on this device.',
-    '3D 샘플은 격리된 Preview에서 제공됩니다.': 'The 3D sample is available in an isolated Preview.',
+    '3D 피팅은 연결이 확인되면 열립니다.': '3D fitting opens once access is confirmed.',
     '3D 뷰어 파일을 읽지 못했습니다. 페이지를 새로고침하거나 기존 3D 화면에서 열어주세요.': 'The 3D viewer files could not load. Reload this page or open the existing 3D viewer.',
     '실제 3D 인체를 회전하고 확대해보세요.': 'Rotate and zoom the actual 3D human.',
     '3D 인체를 읽지 못했습니다. 아래 다시 불러오기를 사용하거나 기존 3D 화면에서 열어주세요.': 'The 3D human could not load. Use Reload below or open the existing 3D viewer.',
@@ -27,8 +27,11 @@
     '기존 3D 화면에서 열기': 'Open the existing 3D viewer'
   });
 
-  const preview = /^[a-z0-9-]+\.a1fashion\.pages\.dev$/.test(location.hostname.toLowerCase());
+  const preview = Boolean(window.A1Preview && /^[a-z0-9-]+\.a1fashion\.pages\.dev$/.test(location.hostname.toLowerCase()));
+  const canOpen = () => preview || (location.origin === 'https://a1fashion.pages.dev'
+    && window.A1PublicLocal?.mode === 'server-public-local');
   const buttons = [...modes.querySelectorAll('[data-studio-mode]')];
+  const threeButton = buttons.find(item => item.dataset.studioMode === 'three');
   let mode = 'images', loaded = false, loading = null, importFailed = false, observer = null;
   let revealAfterLoad = false;
   const viewer = () => mount.querySelector('#gltf-proof-root');
@@ -86,7 +89,7 @@
 
   async function choose(next, initialLook) {
     if (!['images', 'three'].includes(next)) return;
-    if (next === 'three' && !preview) return;
+    if (next === 'three' && !canOpen()) return;
     mode = next; publishMode();
     if (mode === 'images') {
       revealAfterLoad = false;
@@ -112,10 +115,14 @@
     }
   }
 
-  if (!preview) {
-    const button = buttons.find(item => item.dataset.studioMode === 'three');
-    if (button) { button.disabled = true; button.title = I.t('3D 샘플은 격리된 Preview에서 제공됩니다.'); }
+  function showAvailability() {
+    if (!threeButton) return;
+    const available = canOpen();
+    threeButton.disabled = !available;
+    threeButton.title = available ? '' : I.t('3D 피팅은 연결이 확인되면 열립니다.');
   }
+  document.addEventListener('a1:public-local-ready', showAvailability);
+  document.addEventListener('a1:language-changed', showAvailability);
   if (!panel.querySelector('[data-studio-3d-fallback]')) {
     const fallback = document.createElement('a'); fallback.href = 'gltf-proof.html';
     fallback.dataset.studio3dFallback = ''; fallback.className = 'studio-3d-fallback';
@@ -151,10 +158,11 @@
     else if (e.target.matches('#gltf-garment,#gltf-material,#gltf-skin-proof')) requestAnimationFrame(revealCanvas);
   });
   window.addEventListener('pageshow', e => {
-    if (e.persisted && mode === 'three' && loaded && viewerState() === 'disposed') event('a1:gltf-resume');
+    if (e.persisted && mode === 'three' && canOpen() && loaded && viewerState() === 'disposed') event('a1:gltf-resume');
   });
   Object.defineProperty(window, 'A1FittingStudio3D', { value: Object.freeze({ snapshot() {
     return { mode, loaded, loading: Boolean(loading) || viewerState() === 'loading', state: viewerState(), actual3D: mode === 'three' && loaded && viewerState() === 'ready' };
   }, open({look} = {}) { return choose('three', look); }, close() { return choose('images'); } }), writable: false, configurable: false });
+  showAvailability();
   publishMode();
 })();

@@ -55,6 +55,22 @@ async function fixture() {
   return { env, sql, call, get providerCalls() { return providerCalls; } };
 }
 
+test('public on-device fashion stays enabled independently of the server beta flag', async () => {
+  const { onRequest } = await import('../functions/api/policy.js');
+  for (const flag of [undefined, 'false', 'true']) {
+    const env = { A1_FREE_BETA_MODE: flag };
+    for (const key of ['MEMBERSHIP_DB', 'OPENAI_API_KEY', 'FIREBASE_WEB_API_KEY']) {
+      Object.defineProperty(env, key, { get() { throw new Error('public policy must not read ' + key); } });
+    }
+    const response = await onRequest({ request: new Request(origin + '/api/policy'), env });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
+    assert.deepEqual(await response.json(), {
+      localFashionEnabled: true, freeBetaMode: flag === 'true', billingEnabled: false, accountRequiredForSaving: true
+    });
+  }
+});
+
 test('only exact server true enables beta; client headers/cookies and malformed flags cannot unlock paid APIs', async () => {
   const { isFreeBetaMode } = await import('../server/free-beta.mjs');
   for (const flag of [undefined, false, true, 'false', 'TRUE', '1', ' true ']) assert.equal(isFreeBetaMode({ A1_FREE_BETA_MODE: flag }), false);

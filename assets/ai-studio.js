@@ -19,7 +19,11 @@
   let fileParams = {};
 
   window.A1PhotoProportions = Object.freeze({ proportions: () => analysis?.photoProportions || null });
-  window.A1I18n?.register({'사진 속 팔 / 다리 기준점 길이': 'Arm / leg landmark lengths in the photo'});
+  window.A1I18n?.register({
+    '사진 속 팔 / 다리 기준점 길이': 'Arm / leg landmark lengths in the photo',
+    '3D 아바타와 의류 추천에 사진상 체형 비율을 사용할 수 있습니다.': 'You can use estimated proportions for the 3D avatar and clothing recommendations.',
+    '무료 체형 분석을 완료했습니다. 같은 화면에서 가상 피팅과 맞춤 의류 추천을 이용할 수 있습니다.': 'Free analysis is complete. Try on garments and get tailored clothing recommendations on this page.'
+  });
 
   function t(source, params = {}) {
     return window.A1I18n?.t(source, params) ?? source.replace(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => Object.hasOwn(params, key) ? String(params[key]) : match);
@@ -52,18 +56,25 @@
       $('#ai-metrics').append(dt, dd);
     }
     // Retain the original analysis data; only its visible copy changes language.
-    $('#ai-notes').textContent = analysis.notes.map(note => t(note)).join(' ');
+    $('#ai-notes').textContent = analysis.notes.map(note => t(window.A1PublicLocal && note === '의류 추천과 판매처 연결은 구독 이용권 확인 후 별도로 제공합니다.'
+      ? '3D 아바타와 의류 추천에 사진상 체형 비율을 사용할 수 있습니다.' : note)).join(' ');
   }
 
   function status(message, error = false) {
     statusSource = message;
     statusError = error;
-    text($('#ai-status'), freeBeta && message === '무료 분석을 완료했습니다. 결과는 구독 없이 볼 수 있으며, 스타일 추천은 구독 확인 후 이용합니다.' ? '무료 분석을 완료했습니다. 무료 베타 스타일 예시도 이용할 수 있습니다.' : message);
+    const completed = message === '무료 분석을 완료했습니다. 결과는 구독 없이 볼 수 있으며, 스타일 추천은 구독 확인 후 이용합니다.';
+    const completion = window.A1PublicLocal
+      ? '무료 체형 분석을 완료했습니다. 같은 화면에서 가상 피팅과 맞춤 의류 추천을 이용할 수 있습니다.'
+      : freeBeta ? '무료 분석을 완료했습니다. 무료 베타 스타일 예시도 이용할 수 있습니다.' : message;
+    text($('#ai-status'), completed ? completion : message);
     $('#ai-status').classList.toggle('is-error', error);
   }
 
   function controls() {
     $('#ai-analyze').disabled = busy || !photograph;
+    const fit = $('#ai-analyze-fit');
+    if (fit) fit.disabled = $('#ai-analyze').disabled;
     text($('#ai-analyze'), busy ? 'AI 분석 중…' : analysis ? '무료 분석 완료' : '무료로 사진 분석하기');
     $('#ai-photo').disabled = busy;
     $('#ai-clear').disabled = !photograph && !analysis && !busy && !pendingPhoto;

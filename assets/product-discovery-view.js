@@ -2,9 +2,9 @@
 'use strict';
 (() => {
  function initialize(){
- const experience=window.A1Preview||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null),D=window.A1ProductDiscovery,I=window.A1I18n;
+ const experience=window.A1Preview||(window.A1PublicLocal?.mode==='server-public-local'?window.A1PublicLocal:null)||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null),D=window.A1ProductDiscovery,I=window.A1I18n;
  if(!experience||!D||!I||window.A1ProductDiscoveryView)return;
- document.removeEventListener('a1:public-beta-ready',initialize);
+ document.removeEventListener('a1:public-local-ready',initialize);document.removeEventListener('a1:public-beta-ready',initialize);
  I.register({
   '의류 추천 후보':'Clothing recommendations',
   '공식 상품 페이지를 바탕으로 추천합니다. 현재 가격과 재고는 판매처에서 확인하세요.':'Recommendations are based on official product pages. Check current prices and stock at the retailer.',
@@ -23,6 +23,7 @@
   '추천 후보 {count}개 · 가격 확인 필요 {unknown}개':'Recommendations ({count}) · prices to check ({unknown})',
   '현재 조건에 맞는 상품이 없습니다. 조건을 바꾸거나 판매처 검색을 이용하세요.':'No products match these conditions. Adjust your filters or use the retailer searches.',
   '추천 상품 정보가 없습니다. 판매처 검색에서 옷을 찾을 수 있습니다.':'Recommendation data is unavailable. Try the retailer searches.',
+  '현재 조건에서 신체 비율과 연결할 수 있는 상품 특성이 확인되지 않았습니다. 찾는 옷이나 용도를 바꿔 물어보세요.':'No confirmed garment feature matches these proportions and filters. Try asking about a different garment or occasion.',
   '가격 미확인 · 예산 충족 여부 미확정':'Price unknown · budget match unconfirmed',
   '상품 정보를 불러오지 못했습니다. 다시 시도하거나 판매처 검색을 이용하세요.':'Product information could not load. Try again or use the retailer searches.',
   '상품 정보 다시 불러오기':'Reload product information',
@@ -126,10 +127,10 @@
   })();imageLoading=pending;
   try{return await pending;}finally{clearTimeout(timer);if(imageController===active)imageController=null;if(imageLoading===pending)imageLoading=null;}
  }
- function create(target,{showImages=true,sampleScope}={}){
+ function create(target,{showImages=true,sampleScope,requireProportionEvidence=false}={}){
   if(!target||target.dataset.discoveryView)return null;
   target.dataset.discoveryView='true';target.classList.add('product-discovery-view');
-  let revision=0,disposed=false,last=null,lastProfile=null;
+  let revision=0,disposed=false,last=null,lastProfile=null,reported=null;
   const heading=node('h3'),notice=node('p'),status=node('p'),imageStatus=node('p'),grid=node('div'),unknown=node('section'),retry=node('button');
   I.setText(heading,'의류 추천 후보');
   I.setText(notice,'공식 상품 페이지를 바탕으로 추천합니다. 현재 가격과 재고는 판매처에서 확인하세요.');
@@ -227,33 +228,41 @@
    if(disposed)return false;const token=++revision;last=conditions?{...conditions}:null;
    if(!last){clear();return false;}
    lastProfile=validProfile(profile);
+   reported=null;
    target.hidden=false;target.dataset.state='loading';target.dataset.imageState='idle';
    delete target.dataset.count;delete target.dataset.snapshotCount;delete target.dataset.imageCount;
    imageStatus.textContent='';grid.replaceChildren();unknown.replaceChildren();unknown.hidden=true;retry.hidden=true;I.setText(status,'상품 정보를 불러오는 중입니다.');
    if(last.currency&&last.currency!=='KRW'){target.dataset.state='unsupported';I.setText(status,'추천 상품의 가격은 원화로 확인했습니다. KRW를 선택하거나 판매처 검색을 이용하세요.');return false;}
    try{
     const data=await load(refresh);if(disposed||token!==revision||!target.isConnected)return false;
-    const result=D.search(data,last,{profile:lastProfile});target.dataset.state='ready';target.dataset.count=String(result.candidates.length);target.dataset.snapshotCount=String(result.snapshotCount);
+    const result=D.search(data,last,{profile:lastProfile});
+    const relevant=rows=>requireProportionEvidence&&lastProfile?rows.filter(row=>row.proportionReasons?.length):rows;
+    const candidates=relevant(result.candidates),budgetUnconfirmed=relevant(result.budgetUnconfirmed);
+    reported=Object.freeze({
+     state:'ready',count:candidates.length,unconfirmed:budgetUnconfirmed.length,
+     products:Object.freeze(candidates.slice(0,3).map(row=>Object.freeze({name:row.product.name,proportionReasons:row.proportionReasons||[]})))
+    });
+    target.dataset.state='ready';target.dataset.count=String(candidates.length);target.dataset.snapshotCount=String(result.snapshotCount);
     if(!result.snapshotCount)I.setText(status,'추천 상품 정보가 없습니다. 판매처 검색에서 옷을 찾을 수 있습니다.');
-    else if(!result.candidates.length&&!result.budgetUnconfirmed.length)I.setText(status,'현재 조건에 맞는 상품이 없습니다. 조건을 바꾸거나 판매처 검색을 이용하세요.');
-    else I.setText(status,result.budgetUnconfirmed.length?'추천 후보 {count}개 · 가격 확인 필요 {unknown}개':'추천 후보 {count}개',{count:result.candidates.length,unknown:result.budgetUnconfirmed.length});
-    for(const row of result.candidates)grid.append(card(row,token));
-    unknown.hidden=!result.budgetUnconfirmed.length;
-    if(result.budgetUnconfirmed.length){unknown.append(node('h4',I.t('가격 미확인 · 예산 충족 여부 미확정')));const list=node('div');list.className='product-discovery-grid';for(const row of result.budgetUnconfirmed)list.append(card(row,token));unknown.append(list);}
-    if(showImages&&(result.candidates.length||result.budgetUnconfirmed.length))decorateImages(data,token,refresh);
+    else if(!candidates.length&&!budgetUnconfirmed.length)I.setText(status,requireProportionEvidence&&lastProfile?'현재 조건에서 신체 비율과 연결할 수 있는 상품 특성이 확인되지 않았습니다. 찾는 옷이나 용도를 바꿔 물어보세요.':'현재 조건에 맞는 상품이 없습니다. 조건을 바꾸거나 판매처 검색을 이용하세요.');
+    else I.setText(status,budgetUnconfirmed.length?'추천 후보 {count}개 · 가격 확인 필요 {unknown}개':'추천 후보 {count}개',{count:candidates.length,unknown:budgetUnconfirmed.length});
+    for(const row of candidates)grid.append(card(row,token));
+    unknown.hidden=!budgetUnconfirmed.length;
+    if(budgetUnconfirmed.length){unknown.append(node('h4',I.t('가격 미확인 · 예산 충족 여부 미확정')));const list=node('div');list.className='product-discovery-grid';for(const row of budgetUnconfirmed)list.append(card(row,token));unknown.append(list);}
+    if(showImages&&(candidates.length||budgetUnconfirmed.length))decorateImages(data,token,refresh);
     return true;
    }catch{if(disposed||token!==revision)return false;target.dataset.state='error';grid.replaceChildren();unknown.replaceChildren();I.setText(status,'상품 정보를 불러오지 못했습니다. 다시 시도하거나 판매처 검색을 이용하세요.');retry.hidden=false;return false;}
   }
-  function clear(){revision++;last=lastProfile=null;target.hidden=true;target.dataset.state='cleared';delete target.dataset.count;delete target.dataset.snapshotCount;grid.replaceChildren();unknown.replaceChildren();status.textContent='';imageStatus.textContent='';delete target.dataset.imageState;delete target.dataset.imageCount;retry.hidden=true;}
+  function clear(){revision++;last=lastProfile=reported=null;target.hidden=true;target.dataset.state='cleared';delete target.dataset.count;delete target.dataset.snapshotCount;grid.replaceChildren();unknown.replaceChildren();status.textContent='';imageStatus.textContent='';delete target.dataset.imageState;delete target.dataset.imageCount;retry.hidden=true;}
   function dispose(){clear();disposed=true;document.removeEventListener('a1:language-changed',language);window.removeEventListener('pagehide',clear);}
   function language(){if(last&&!disposed)search(last,{profile:lastProfile});}
   retry.addEventListener('click',()=>{if(last)search(last,{refresh:true,profile:lastProfile});});document.addEventListener('a1:language-changed',language);
   window.addEventListener('pagehide',clear);
-  return Object.freeze({target,search,clear,dispose});
+  return Object.freeze({target,search,clear,dispose,summary(){return reported||{state:target.dataset.state,count:0,unconfirmed:0};}});
  }
  window.addEventListener('pagehide',()=>{loadGeneration++;requestController?.abort();requestController=null;loading=null;snapshot=null;imageController?.abort();imageController=null;imageLoading=null;imageManifest=null;});
  window.A1ProductDiscoveryView=Object.freeze({create,proportionText});
  }
  if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',initialize,{once:true});
- document.addEventListener('a1:public-beta-ready',initialize);initialize();
+ document.addEventListener('a1:public-local-ready',initialize);document.addEventListener('a1:public-beta-ready',initialize);initialize();
 })();

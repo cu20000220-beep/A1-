@@ -23,7 +23,7 @@
   function apply() {
     set('#premium>.section-heading .eyebrow', 'style');
     set('#ai-shopping .small-note,.global-results-heading', 'search');
-    set('.ai-intro', 'analysis');
+    if (!document.querySelector('#ai-analyze-fit')) set('.ai-intro', 'analysis');
     set('.global-results-heading+.global-note', 'scope');
     set('[data-panel=watchlist]>.global-note', 'saving');
     set('[data-panel=comparison] .eyebrow,[data-panel=alerts]>.eyebrow', 'beta');

@@ -11,7 +11,7 @@ import { createNovaTopPalette, lightNovaStage } from './nova-avatar-studio.js';
 const root = document.querySelector('#gltf-proof-root');
 const I = window.A1I18n;
 const pairs = {
-  '이 기술 검증은 격리된 Preview에서만 제공됩니다.': 'This technical proof is available only in an isolated Preview.',
+  '3D 피팅은 연결이 확인되면 열립니다.': '3D fitting opens once access is confirmed.',
   '무료 베타 · 독립 렌더링 검사': 'Free beta · Independent rendering proof',
   '무료 베타 · SF 아바타 스타일': 'Free beta · Sci-fi avatar style',
   '무료 베타 · 내추럴 3D 인체': 'Free beta · Natural 3D human',
@@ -25,17 +25,22 @@ const pairs = {
   '내추럴 비교 인체는 MetaPerson 공식 샘플(BSD-3-Clause)입니다. 기존 비교 인체는 MakeHuman hm08(CC0)이며, 렌더러는 Three.js(MIT)입니다.': 'The natural comparison body is the official MetaPerson sample (BSD-3-Clause). The original comparison body is MakeHuman hm08 (CC0), rendered with Three.js (MIT).',
   '내추럴 인체 출처와 이용 조건': 'Natural human source and license',
   '3D 예시 상의': 'Sample 3D tops',
+  '3D 예시 의상': 'Sample 3D garments',
   '실사형 스튜디오 아바타': 'Studio 3D avatar',
   '상의 핏 자세히 보기': 'Inspect top fit',
   '전신 보기로 돌아가기': 'Return to full body',
   '상의 · 네이비': 'Top · Navy',
   '상의 · 테라코타': 'Top · Terracotta',
   '여유핏 상의': 'Relaxed top',
-  '법선을 보정하고 자세·조명과 체형·예시 상의를 조정했습니다.': 'Normals repaired; posing, lighting, body proportions and sample clothing adjusted.',
+  '와이드핏 바지': 'Wide-leg trousers',
+  '여유핏 바지': 'Relaxed trousers',
+  '일자핏 바지': 'Straight-leg trousers',
+  '법선을 보정하고 자세·조명과 체형·예시 의상을 조정했습니다.': 'Normals repaired, with adjusted posing, lighting, body proportions and sample clothing.',
   '기본 티셔츠 · 네이비': 'Regular tee · Navy',
   '기본 티셔츠 · 테라코타': 'Regular tee · Terracotta',
   '여유 있는 티셔츠 · 화이트': 'Relaxed tee · White',
   '예시 상의의 색상과 여유분을 바꿔 입혀볼 수 있습니다.': 'Try sample tops with different colors and silhouettes.',
+  '예시 상의와 바지의 실루엣을 비교해보세요.': 'Compare the silhouettes of sample tops and trousers.',
   '사진의 비율을 반영한 3D 아바타입니다. 회전해서 예시 의상의 핏을 비교하세요.': 'The 3D avatar reflects your photo proportions. Rotate it to compare the sample fits.',
   '선택한 신체 비율을 반영한 가상 모델입니다. 회전해서 예시 의상의 핏을 비교하세요.': 'The virtual model uses the selected body proportions. Rotate it to compare sample garments.',
   '3D에 비율을 적용하지 못해 기본 아바타를 표시합니다.': 'The proportions could not be applied. The default avatar is displayed.',
@@ -66,14 +71,24 @@ const pairs = {
   '전신 자료: MakeHuman hm08 · CC0. 의류: 기존 A1 연결형 예시 메시. Three.js · MIT.': 'Body: MakeHuman hm08 · CC0. Garments: existing A1 connected example meshes. Three.js · MIT.',
   '모델 출처와 이용 조건': 'Model sources and license', '렌더러 라이선스': 'Renderer license', '국내 의류 검색': 'Korean clothing search', '무료 규칙 기반 스타일리스트': 'Free rule-based stylist'
 };
-I.register(pairs);
+I?.register(pairs);
 
-if (window.A1Preview && /^[a-z0-9-]+\.a1fashion\.pages\.dev$/.test(location.hostname.toLowerCase())) {
+const preview = Boolean(window.A1Preview && /^[a-z0-9-]+\.a1fashion\.pages\.dev$/.test(location.hostname.toLowerCase()));
+const canOpen = () => preview || (location.origin === 'https://a1fashion.pages.dev'
+  && window.A1PublicLocal?.mode === 'server-public-local');
+function openProof() {
+  if (!root || !I || !canOpen() || window.A1GltfProof) return;
+  document.removeEventListener('a1:public-local-ready', openProof);
+  // Keep the standalone technical baseline on Preview. The public 3D
+  // entry and the embedded fitting screen begin with the same Nova model.
+  if (!preview) root.querySelector('#gltf-look').value = 'nova';
   root.hidden = false;
   const unavailable = document.querySelector('#gltf-unavailable');
   if (unavailable) unavailable.hidden = true;
   startProof();
 }
+if (canOpen()) openProof();
+else document.addEventListener('a1:public-local-ready', openProof);
 
 function startProof() {
   const $ = selector => document.querySelector(selector);
@@ -81,11 +96,17 @@ function startProof() {
   let requestedFit=null, requestedProfile=null, requestedSample='source';
   let fitted=null, topVertices=null, novaPalette=null, portrait=false, fullView=null;
   const naturalStyles={navy:'기본 티셔츠 · 네이비',terracotta:'기본 티셔츠 · 테라코타',relaxed:'여유 있는 티셔츠 · 화이트'};
+  const bottomStyles={
+    'wide-trousers':{fit:'wide',label:'와이드핏 바지'},
+    'relaxed-trousers':{fit:'relaxed',label:'여유핏 바지'},
+    'straight-trousers':{fit:'straight',label:'일자핏 바지'}
+  };
   const garmentSelect=$('#gltf-garment'), naturalNote=$('#natural-avatar-note');
   const naturalNotice=root.querySelector('.notice');
   const defaultNotice='기본 체형의 3D 피팅 예시입니다. 정확한 의류 사이즈와 착용감은 판매처에서 확인하세요.';
   const defaultGarmentNote='현재 인체 샘플에는 원본 의상 한 벌을 표시합니다. 교체 가능한 실제 의류 모델은 준비 중입니다. 기존 비교 모델에서는 예시 티셔츠 3종을 이용할 수 있습니다.';
-  for(const [id,label] of Object.entries(naturalStyles)){
+  const stylesOptions=[...Object.entries(naturalStyles),...Object.entries(bottomStyles).map(([id,{label}])=>[id,label])];
+  for(const [id,label] of stylesOptions){
     const option=document.createElement('option');option.value=id;I.setText(option,label);garmentSelect.append(option);
   }
   let state = 'loading', generation = 0, renderCount = 0, disposed = false;
@@ -100,7 +121,7 @@ function startProof() {
   license.href='https://creativecommons.org/licenses/by/4.0/';license.textContent='CC BY 4.0';
   creator.referrerPolicy=license.referrerPolicy='no-referrer';
   const modifications=document.createElement('span');
-  I.setText(modifications,'법선을 보정하고 자세·조명과 체형·예시 상의를 조정했습니다.');
+  I.setText(modifications,'법선을 보정하고 자세·조명과 체형·예시 의상을 조정했습니다.');
   credit.append(creator,' · ',license,' · ',modifications);root.querySelector('footer')?.prepend(credit);
   const controlsElements = [...root.querySelectorAll('button:not(#gltf-retry),select,input')];
   const textured = () => look === 'natural' || look === 'nova';
@@ -110,6 +131,7 @@ function startProof() {
   function setState(value) { state = value; root.dataset.loadState = value; $('#gltf-canvas-state').hidden = value === 'ready'; controlsElements.forEach(el => { el.disabled = value !== 'ready'; }); }
   function capabilities() {
     const natural = textured(), styles = Boolean(natural && fitted && topVertices);
+    const nova = look==='nova';
     portraitButton.hidden=credit.hidden=look!=='nova';
     portraitButton.disabled=state!=='ready';
     const novaStyleLabels = {navy:'상의 · 네이비',terracotta:'상의 · 테라코타',relaxed:'여유핏 상의'};
@@ -119,13 +141,15 @@ function startProof() {
     garmentSelect.disabled = state !== 'ready' || natural && !styles;
     $('#gltf-skin-proof').disabled = state !== 'ready' || Boolean(fitted);
     naturalNote.hidden = !natural;
-    I.setText(naturalNote, styles ? '예시 상의의 색상과 여유분을 바꿔 입혀볼 수 있습니다.' : defaultGarmentNote);
-    I.setText($('#gltf-garment-title'), styles ? '3D 예시 상의' : natural ? '샘플 의상' : '예시 티셔츠');
+    I.setText(naturalNote, styles ? nova ? '예시 상의와 바지의 실루엣을 비교해보세요.' :
+      '예시 상의의 색상과 여유분을 바꿔 입혀볼 수 있습니다.' : defaultGarmentNote);
+    I.setText($('#gltf-garment-title'), styles ? nova ? '3D 예시 의상' : '3D 예시 상의' : natural ? '샘플 의상' : '예시 티셔츠');
     naturalNotice.hidden = Boolean(fitted);
     if (!fitted) I.setText(naturalNotice, defaultNotice);
     for (const option of garmentSelect.options) {
       const style = Object.hasOwn(naturalStyles, option.value);
-      option.hidden = style ? !styles : natural ? option.value !== 'source' : option.value === 'source';
+      const bottom = Object.hasOwn(bottomStyles, option.value);
+      option.hidden = bottom ? !styles || !nova : style ? !styles : natural ? option.value !== 'source' : option.value === 'source';
     }
   }
   function render() {
@@ -218,13 +242,15 @@ function startProof() {
     }
     try {
       if (!topVertices) topVertices = nova ? new Uint8Array(outfit.geometry.getAttribute('position').count).fill(1) : identifyNaturalTop(outfit.geometry);
-      const choice = topVertices && Object.hasOwn(naturalStyles, garmentSelect.value) ? garmentSelect.value : 'source';
+      const selected = garmentSelect.value;
+      const bottomFit = nova && Object.hasOwn(bottomStyles, selected) ? bottomStyles[selected].fit : undefined;
+      const choice = (topVertices && Object.hasOwn(naturalStyles, selected)) || bottomFit ? selected : 'source';
       color(choice === 'relaxed' ? 'source' : choice);
       if (skinPose) {
         skinPose=false; $('#gltf-skin-proof').checked=false;
         naturalRig.spine.quaternion.copy(naturalRig.spineNeutralQuaternion);
       }
-      fitted = createNaturalFit(model, requestedFit, {topVertices, relaxed:choice === 'relaxed',profile});
+      fitted = createNaturalFit(model, requestedFit, {topVertices, relaxed:choice === 'relaxed',profile,bottomFit});
       if (!fitted) throw Error('photo_fit_unavailable');
       for (const {source} of fitted.parts) source.visible=false;
       scene.add(fitted.group);
@@ -252,7 +278,8 @@ function startProof() {
       const checked=profile&&window.A1ProportionProfile?.validate(profile);
       if(checked&&Object.keys(checked).length)nextProfile=checked;
     } catch { /* Invalid or incomplete input keeps the available photo reference. */ }
-    const nextSample=next||nextProfile ? (Object.hasOwn(naturalStyles,sample)||sample==='source' ? sample : requestedSample) : 'source';
+    const knownSample=sample==='source'||Object.hasOwn(naturalStyles,sample)||Object.hasOwn(bottomStyles,sample);
+    const nextSample=next||nextProfile ? (knownSample ? sample : requestedSample) : 'source';
     if (next?.shoulderHipRatio===requestedFit?.shoulderHipRatio && next?.legTorsoRatio===requestedFit?.legTorsoRatio &&
         JSON.stringify(nextProfile)===JSON.stringify(requestedProfile) && nextSample===requestedSample) return;
     requestedFit=next;
@@ -307,6 +334,7 @@ function startProof() {
   });
   function zoom(factor) { camera.position.sub(controls.target).multiplyScalar(factor).clampLength(controls.minDistance, controls.maxDistance).add(controls.target); controls.update(); render(); }
   async function initialize() {
+    if (!canOpen()) return;
     const token = ++generation; clean(); disposed = false; setState('loading');
     look = ['nova','natural','reference','humanoid'].includes($('#gltf-look').value) ? $('#gltf-look').value : 'natural';
     frameSamples = []; renderCount = 0; skinPose = false; garment = textured() ? requestedSample : 'none'; materialMode = 'standard';

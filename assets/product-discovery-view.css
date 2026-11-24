@@ -328,3 +328,20 @@
     height: 310px;
   }
 }
+.shopping-conversation {
+  margin: 18px 0;
+  padding: 16px;
+  background: #f6f8f2;
+  border: 1px solid #c7cebc;
+  border-radius: 10px;
+}
+.shopping-conversation[hidden] { display: none; }
+.shopping-conversation h3 { margin: 0 0 6px; font-size: 18px; }
+.shopping-conversation p { margin: 6px 0; line-height: 1.6; }
+.shopping-conversation-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.shopping-conversation-form label { flex-basis: 100%; }
+.shopping-conversation-form input { flex: 1 1 220px; width: 100%; min-width: 0; padding: 10px; font: inherit; border: 1px solid #9aa68e; }
+.shopping-conversation-form button { min-height: 44px; padding: 9px 12px; border: 1px solid #66816a; background: #fff; }
+.shopping-conversation-form button[hidden] { display: none; }
+.shopping-conversation-form button[type=submit] { background: #28472f; color: #fff; }
+.shopping-conversation-reply { margin-top: 8px; padding: 10px 12px; border-radius: 6px; background: #e9f0e7; overflow-wrap: anywhere; }

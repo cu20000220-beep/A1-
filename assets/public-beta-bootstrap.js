@@ -1,14 +1,17 @@
-/* Server-confirmed, on-device beta helpers. Never account or API authorization. */
+/* Server-confirmed on-device fashion helpers. Never account or API authorization. */
 'use strict';
 (() => {
   if(location.hostname!=='a1fashion.pages.dev'||location.origin!=='https://a1fashion.pages.dev')return;
   const factory=window.A1LocalFashionCore,I=window.A1I18n;
   if(!factory||!I)return;
-  if(Object.hasOwn(window,'A1PublicBeta')){console.warn('[A1-PUBLIC-BETA] Local beta name is already reserved.');return;}
-  let published,ended=false,pending=true,early=null,generation=0;
-  // Reserve the name before awaiting policy. A client flag or event cannot
+  if(Object.hasOwn(window,'A1PublicLocal')||Object.hasOwn(window,'A1PublicBeta')){console.warn('[A1-PUBLIC-BETA] Local fashion name is already reserved.');return;}
+  let publishedLocal,publishedBeta,ended=false,pending=true,early=null,generation=0;
+  // Reserve both names before awaiting policy. A client flag or event cannot
   // install the local experience while the server response is still pending.
-  try{Object.defineProperty(window,'A1PublicBeta',{get:()=>published,configurable:false});}catch{console.warn('[A1-PUBLIC-BETA] Local beta name could not be reserved.');return;}
+  try{Object.defineProperties(window,{
+    A1PublicLocal:{get:()=>publishedLocal,configurable:false},
+    A1PublicBeta:{get:()=>publishedBeta,configurable:false}
+  });}catch{console.warn('[A1-PUBLIC-BETA] Local fashion names could not be reserved.');return;}
   const controller=new AbortController(),policyUrl='https://a1fashion.pages.dev/api/policy';
   const core=factory.create({I,scope:'public-beta'});
   let domReady=document.readyState==='complete';
@@ -31,7 +34,7 @@
   document.addEventListener('a1:analysis-ready',remember);
   for(const name of ['a1:analysis-cleared','a1:analysis-revoked','a1:auth-changed'])document.addEventListener(name,discard);
   window.addEventListener('storage',event=>{if(event.key==='a1-fashion:auth-event')discard();});
-  window.addEventListener('pagehide',()=>{ended=true;published=undefined;discard();stopRemembering();controller.abort();clearTimeout(deadline);});
+  window.addEventListener('pagehide',()=>{ended=true;publishedLocal=publishedBeta=undefined;discard();stopRemembering();controller.abort();clearTimeout(deadline);});
   // A restored document must receive fresh server policy. Photos and ratios
   // have already been cleared by the existing pagehide handlers.
   window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
@@ -43,8 +46,9 @@
         ||(response.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase()!=='application/json')return;
       const policy=await response.json();
       if(ended||controller.signal.aborted||!policy||Array.isArray(policy)
-        ||Object.keys(policy).sort().join(',')!=='accountRequiredForSaving,billingEnabled,freeBetaMode'
-        ||policy.freeBetaMode!==true||policy.billingEnabled!==false||policy.accountRequiredForSaving!==true)return;
+        ||Object.keys(policy).sort().join(',')!=='accountRequiredForSaving,billingEnabled,freeBetaMode,localFashionEnabled'
+        ||policy.localFashionEnabled!==true||typeof policy.freeBetaMode!=='boolean'
+        ||policy.billingEnabled!==false||policy.accountRequiredForSaving!==true)return;
       // Even a cached-fast policy response must wait for all deferred
       // consumers to finish registering their readiness listeners.
       if(!domReady)await new Promise(resolve=>{
@@ -55,8 +59,10 @@
       });
       if(ended||controller.signal.aborted)return;
       pending=false;
-      published=Object.freeze({...core,mode:'server-free-beta-local'});
-      document.dispatchEvent(new CustomEvent('a1:public-beta-ready'));
+      publishedLocal=Object.freeze({...core,mode:'server-public-local'});
+      if(policy.freeBetaMode)publishedBeta=Object.freeze({...core,mode:'server-free-beta-local'});
+      document.dispatchEvent(new CustomEvent('a1:public-local-ready'));
+      if(publishedBeta)document.dispatchEvent(new CustomEvent('a1:public-beta-ready'));
       stopRemembering();
       const value=early;
       early=null;
@@ -65,7 +71,7 @@
       // Readiness listeners have synchronously installed the consumers. Only
       // these two validated numbers are replayed; no photo or stored payload.
       document.dispatchEvent(new CustomEvent('a1:analysis-ready',{detail:Object.freeze({metrics:value.metrics})}));
-    }catch{/* Missing, invalid or unavailable policy keeps the local beta closed. */}
+    }catch{/* Missing, invalid or unavailable policy keeps the local experience closed. */}
     finally{clearTimeout(deadline);document.removeEventListener('DOMContentLoaded',domLoaded);stopRemembering();discard();}
   })();
 })();

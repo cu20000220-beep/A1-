@@ -16,12 +16,15 @@ const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.glb':'model/gltf-binary','.wasm':'application/wasm'};
 const tracked=['assets/approved-products.json','catalog/source-approvals.json','assets/observed-products.json','assets/product-images.json'];
 const sources=['assets/local-fashion-core.js','assets/public-beta-bootstrap.js','assets/preview-experience.js','assets/shopping-search.js','assets/product-discovery-view.js','assets/catalog-fitting.js','assets/lab-entry.js','assets/lab-loader.js','assets/product-lab.js','assets/stylist.js','assets/ai-studio.js','index.html','stylist.html','product-lab.html','functions/api/policy.js','functions/api/stylist.js','server/free-beta.mjs','server/ai-stylist.mjs','scripts/build-site.cjs','scripts/lib/catalog-public-headers.cjs','assets/photos/coat.jpg',...tracked];
-function mockPose(){
- const create=URL.createObjectURL.bind(URL),revoke=URL.revokeObjectURL.bind(URL);window.__betaUrls=new Set();window.__betaSelections=0;window.__betaReady=0;window.__betaFetches=[];window.__betaPolicyResponses=[];
+sources.push('fitting-studio.html','gltf-proof.html','assets/avatar-photo-bridge.js','assets/fitting-studio-3d.js','assets/gltf-proof.js','assets/natural-avatar-fit.js','assets/nova-avatar/avatar.glb','assets/proportion-controls.js','assets/proportion-recommendations.js','assets/shopping-conversation.js');
+function instrumentPage({realPose}){
+ const create=URL.createObjectURL.bind(URL),revoke=URL.revokeObjectURL.bind(URL);window.__betaUrls=new Set();window.__betaSelections=0;window.__betaReady=0;window.__localReady=0;window.__betaFetches=[];window.__betaPolicyResponses=[];
  URL.createObjectURL=blob=>{const url=create(blob);__betaUrls.add(url);return url;};URL.revokeObjectURL=url=>{__betaUrls.delete(url);revoke(url);};
- document.addEventListener('change',event=>{if(event.target.id==='ai-photo')__betaSelections++;});document.addEventListener('a1:public-beta-ready',()=>__betaReady++);
+ document.addEventListener('change',event=>{if(event.target.id==='ai-photo')__betaSelections++;});
+ document.addEventListener('a1:public-beta-ready',()=>{if(window.A1PublicBeta)__betaReady++;});
+ document.addEventListener('a1:public-local-ready',()=>{if(window.A1PublicLocal)__localReady++;});
  const nativeFetch=window.fetch;window.fetch=(input,options={})=>{const record={path:new URL(typeof input==='string'?input:input.url,location.href).pathname,method:options.method||'GET',credentials:options.credentials,cache:options.cache,redirect:options.redirect,mode:options.mode};__betaFetches.push(record);return nativeFetch(input,options).then(response=>{if(record.path==='/api/policy')__betaPolicyResponses.push({credentials:options.credentials,status:response.status,type:response.headers.get('Content-Type')});return response;});};
- window.Pose=class{setOptions(){}onResults(fn){this.result=fn;}async initialize(){}async reset(){}async close(){}async send(){const p=Array.from({length:33},()=>({x:.5,y:.5,visibility:.99}));for(const[index,[x,y]]of Object.entries({11:[.3,.2],12:[.7,.2],23:[.36,.45],24:[.64,.45],25:[.36,.65],26:[.64,.65],27:[.36,.9],28:[.64,.9]}))p[index]={x,y,visibility:.99};this.result({poseLandmarks:p});}};
+ if(!realPose)window.Pose=class{setOptions(){}onResults(fn){this.result=fn;}async initialize(){}async reset(){}async close(){}async send(){const p=Array.from({length:33},()=>({x:.5,y:.5,visibility:.99}));for(const[index,[x,y]]of Object.entries({11:[.3,.2],12:[.7,.2],23:[.36,.45],24:[.64,.45],25:[.36,.65],26:[.64,.65],27:[.36,.9],28:[.64,.9]}))p[index]={x,y,visibility:.99};this.result({poseLandmarks:p});}};
 }
 function staticHeaders(pathname){
  const headers={};let active=false;
@@ -38,7 +41,7 @@ function environment(flag,stats){
  }else env.MEMBERSHIP_DB={prepare(){stats.databaseCalls++;throw Error('PRIVATE database trap');}};
  return env;
 }
-async function prepare(browser,handlers,{width=820,lang='ko',entry='/',host=origin,policyMode='true',serverFlag=policyMode==='false'?'false':'true',tamper=false,late=false}={}){
+async function prepare(browser,handlers,{width=820,lang='ko',entry='/',host=origin,policyMode='true',serverFlag=policyMode==='false'?'false':'true',tamper=false,late=false,realPose=false}={}){
  const context=await browser.newContext({viewport:{width,height:1180},hasTouch:true,isMobile:true,locale:lang==='ko'?'ko-KR':'en-US',serviceWorkers:'block'});
  const calls=[],errors=[],routeErrors=[],violations=[],apiResponses=[],stats={databaseCalls:0,forbiddenBindingReads:0};
  const env=environment(serverFlag,stats),privateEnv=environment('false',stats);privateEnv.A1_FREE_BETA_MODE=serverFlag;
@@ -74,12 +77,12 @@ async function prepare(browser,handlers,{width=820,lang='ko',entry='/',host=orig
    }
    assert.equal(request.method(),'GET');for(const[key,value]of url.searchParams){assert.equal(key,'v');assert.match(value,/^[a-z0-9-]+$/i);}
    if(url.pathname.endsWith('.html')){await route.fulfill({status:308,headers:{Location:url.pathname.slice(0,-5)},body:''});return;}
-   const relative=url.pathname==='/'?'index.html':/^\/(?:stylist|product-lab|fitting-studio|global|account)$/.test(url.pathname)?url.pathname.slice(1)+'.html':url.pathname.slice(1),file=path.resolve(dist,relative);
+   const relative=url.pathname==='/'?'index.html':/^\/(?:stylist|product-lab|fitting-studio|gltf-proof|global|account)$/.test(url.pathname)?url.pathname.slice(1)+'.html':url.pathname.slice(1),file=path.resolve(dist,relative);
    assert.ok(file.startsWith(dist+path.sep));if(relative==='favicon.ico'&&!fs.existsSync(file)){await route.fulfill({status:204,body:''});return;}
    assert.ok(fs.existsSync(file),'built static resource exists: '+relative);await route.fulfill({contentType:mime[path.extname(file)]||'application/octet-stream',body:fs.readFileSync(file),headers:staticHeaders(url.pathname)});
   }catch(error){routeErrors.push(error.message);await route.abort('blockedbyclient').catch(()=>{});}
  });
- await context.addInitScript(mockPose);
+ await context.addInitScript(instrumentPage,{realPose});
  if(tamper)await context.addInitScript(()=>{window.A1_FREE_BETA_MODE=true;window.freeBetaMode=true;localStorage.setItem('A1_FREE_BETA_MODE','true');localStorage.setItem('plan','PREMIUM');});
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.exposeFunction('recordBetaCsp',v=>violations.push(v));await page.addInitScript(()=>document.addEventListener('securitypolicyviolation',e=>window.recordBetaCsp(e.effectiveDirective)));
  const trial={page,context,calls,errors,routeErrors,violations,apiResponses,stats,seen,release,host};trials.push(trial);
@@ -89,7 +92,12 @@ async function prepare(browser,handlers,{width=820,lang='ko',entry='/',host=orig
  return trial;
 }
 async function assertNoPreview(page){assert.equal(await page.evaluate(()=>typeof A1Preview),'undefined');}
-async function ready(page){await page.waitForFunction(()=>window.A1PublicBeta?.mode==='server-free-beta-local');await assertNoPreview(page);assert.equal(await page.evaluate(()=>__betaReady),1);assert.equal(await page.evaluate(()=>Object.isFrozen(A1PublicBeta)),true);}
+async function ready(page,{free=true}={}){
+ await page.waitForFunction(()=>window.A1PublicLocal?.mode==='server-public-local');await assertNoPreview(page);
+ assert.equal(await page.evaluate(()=>__localReady),1);assert.equal(await page.evaluate(()=>Object.isFrozen(A1PublicLocal)),true);
+ if(free){assert.equal(await page.evaluate(()=>A1PublicBeta?.mode),'server-free-beta-local');assert.equal(await page.evaluate(()=>__betaReady),1);assert.equal(await page.evaluate(()=>Object.isFrozen(A1PublicBeta)),true);}
+ else{assert.equal(await page.evaluate(()=>typeof A1PublicBeta),'undefined');assert.equal(await page.evaluate(()=>__betaReady),0);}
+}
 async function search(page){await page.locator('#shopping-query').fill(query);await page.locator('#shopping-search-form button').click();await page.waitForFunction(()=>document.querySelector('#shopping-discovery')?.dataset.state==='ready');assert.equal(await page.locator('#shopping-discovery [data-discovery-id]').count(),2);}
 async function analyze(page){await page.locator('#ai-photo').setInputFiles(path.join(dist,'assets/photos/man.jpg'));await page.locator('#ai-analyze').click();await page.waitForFunction(()=>!document.querySelector('#ai-result').hidden);}
 function card(page){return page.locator('#shopping-discovery [data-discovery-id="'+id+'"]');}
@@ -99,11 +107,12 @@ async function select(page){const button=card(page).locator('[data-discovery-fit
  await page.locator('#lab-garment-outline-apply').click();
 }
 async function assertLocalGuards(page){
- assert.equal(await page.locator('#lab-open-compare').isDisabled(),true);assert.equal(await page.locator('#lab-open-avatar').isDisabled(),true);
+ assert.equal(await page.locator('#lab-open-compare').isDisabled(),true);assert.equal(await page.locator('#lab-open-avatar').isDisabled(),false);
+ assert.equal(await page.locator('#avatar-reference-consent').isChecked(),false);
  for(const selector of['#lab-fixtures','#lab-show-all','#lab-reload-image','#lab-fit-flow','#lab-fit-result'])assert.equal(await page.locator(selector).isVisible(),false,selector+' is unavailable in Production');
  await page.evaluate(()=>{document.querySelector('#lab-fixtures').click();document.querySelector('#lab-show-all').click();document.querySelector('#lab-fit').click();});
  assert.equal(await page.locator('[data-lab-product],[data-lab-select],[data-avatar-garment],[data-lab-catalog-compare],[data-lab-offer-compare]').count(),0);assert.equal(await page.locator('#lab-fit-result').isVisible(),false);assert.equal(await page.locator('#lab-comparison').isVisible(),false);
- assert.equal(await page.evaluate(()=>Object.keys(A1PublicBeta).some(key=>/member|entitle|authorize|plan|subscription/i.test(key))),false);
+ for(const surface of ['A1PublicLocal','A1PublicBeta'])assert.equal(await page.evaluate(name=>Object.keys(window[name]).some(key=>/member|entitle|authorize|plan|subscription/i.test(key)),surface),false);
  assert.equal(await page.locator('#avatar-root,#gltf-proof-root').count(),0);
 }
 function networkClean(trial){
@@ -112,7 +121,113 @@ function networkClean(trial){
 }
 async function sendStylist(page){await page.locator('#stylist-message').fill(query);await page.locator('#stylist-send').click();await page.waitForFunction(()=>!document.querySelector('#stylist-send').disabled);}
 async function anonymousPrivateRequest(page,resource='watchlist'){return page.evaluate(async resource=>{const r=await fetch('/api/global/'+resource,{credentials:'same-origin',headers:{'X-A1-Free-Beta-Mode':'true','X-Plan':'PREMIUM'}});return{status:r.status,data:await r.json()};},resource);}
-async function assertFailClosed(trial){await assertNoPreview(trial.page);assert.equal(await trial.page.evaluate(()=>typeof A1PublicBeta),'undefined');assert.equal(await trial.page.locator('#shopping-search').isVisible(),false);assert.equal(await trial.page.locator('#lab-entry').count(),0);assert.equal(await trial.page.evaluate(()=>__betaReady),0);}
+async function assertFailClosed(trial){await assertNoPreview(trial.page);assert.equal(await trial.page.evaluate(()=>typeof A1PublicBeta),'undefined');assert.equal(await trial.page.evaluate(()=>typeof A1PublicLocal),'undefined');assert.equal(await trial.page.locator('#shopping-search').isVisible(),false);assert.equal(await trial.page.locator('#lab-entry').count(),0);assert.deepEqual(await trial.page.evaluate(()=>[__localReady,__betaReady]),[0,0]);}
+
+async function verifyPhotoToAvatar(trial){
+ const {page}=trial;
+ await ready(page,{free:false});
+ await page.waitForSelector('#shopping-search:visible');
+ const analysisConsent=page.locator('#avatar-reference-consent'),avatar=page.locator('#gltf-proof-root');
+ assert.equal(await analysisConsent.isChecked(),false);
+ assert.equal(await avatar.count(),0);
+ await page.locator('#ai-photo').setInputFiles(path.join(dist,'assets/photos/man.jpg'));
+ await page.locator('#ai-analyze-fit').click();
+ await page.waitForFunction(()=>{
+  const frame=window.A1GltfProof?.snapshot();
+  return frame?.state==='ready'&&frame.look==='nova'&&frame.bodyFitted&&frame.renderCount>0;
+ },null,{timeout:30000});
+ assert.equal(await analysisConsent.isChecked(),true);
+ assert.equal(await avatar.isVisible(),true);
+ assert.equal(await page.evaluate(()=>__betaSelections),1);
+ const results=page.locator('#avatar-recommendation-results'),cards=results.locator('[data-discovery-id]'),canvas=avatar.locator('#gltf-canvas');
+ await page.waitForSelector('#avatar-recommendation-results[data-state="ready"]:visible');
+ assert.equal(await cards.first().getAttribute('data-discovery-id'),'musinsa-4644434','reported shoulder ratio drives the first result');
+ assert.match(await cards.first().locator('[data-proportion-reasons]').innerText(),/어깨와 골반|여유핏/);
+ assert.equal(await cards.first().locator('[data-discovery-buy]').getAttribute('href'),'https://www.musinsa.com/products/4644434');
+ const fittedFrame=sha(await canvas.screenshot());
+ await cards.first().locator('[data-avatar-sample="musinsa-4644434"]').click();
+ await page.waitForFunction(()=>{const frame=window.A1GltfProof?.snapshot();return frame?.bodyFitted&&frame.garment==='relaxed-trousers';});
+ const trouserFrame=sha(await canvas.screenshot());
+ assert.notEqual(trouserFrame,fittedFrame,'the recommended trouser silhouette renders on the fitted body');
+
+ const measurements=avatar.locator('#avatar-proportion-input');
+ await measurements.locator('summary').click();
+ await measurements.locator('[data-proportion-field=shoulderWidthCm]').fill('34');
+ await measurements.locator('[data-proportion-field=hipWidthCm]').fill('41');
+ await measurements.locator('#avatar-proportion-apply').click();
+ const cardigan='29cm-4145774';
+ await page.waitForFunction(id=>document.querySelector('#avatar-recommendation-results [data-discovery-id]')?.dataset.discoveryId===id,cardigan);
+ assert.match(await cards.first().locator('[data-proportion-reasons]').innerText(),/어깨와 골반|카디건/);
+ const measuredFrame=sha(await canvas.screenshot());
+ assert.notEqual(measuredFrame,trouserFrame,'correcting the profile updates the actual body render');
+
+ await cards.first().locator('[data-avatar-sample="'+cardigan+'"]').click();
+ await page.waitForFunction(()=>{const frame=window.A1GltfProof?.snapshot();return frame?.bodyFitted&&frame.garment==='navy';});
+ assert.match(await page.locator('#avatar-selected-recommendation').innerText(),/가디건/);
+ assert.match(await page.locator('#avatar-selected-recommendation').innerText(),/3D 예시 의상/);
+ assert.notEqual(sha(await canvas.screenshot()),measuredFrame,'selecting an admissible sample changes its visible garment');
+ await canvas.screenshot({path:path.join(out,'PRIVATE-production-personalized-3d.png')});
+
+ await measurements.locator('#avatar-proportion-reset').click();
+ await page.waitForFunction(()=>document.querySelector('#avatar-recommendation-results [data-discovery-id]')?.dataset.discoveryId==='musinsa-4644434');
+ const input=avatar.locator('#avatar-conversation-input'),send=avatar.locator('#avatar-conversation-send'),replies=avatar.locator('#avatar-conversation-replies');
+ const apiBefore=trial.calls.filter(call=>new URL(call.url).pathname.startsWith('/api/')).length;
+ await input.fill('검정 슬랙스');await send.click();
+ await page.waitForFunction(()=>{const ids=[...document.querySelectorAll('#avatar-recommendation-results [data-discovery-id]')].map(card=>card.dataset.discoveryId);return ids.length===2&&ids.includes('musinsa-1168906')&&ids.includes('musinsa-4644434');});
+ await replies.getByText(/검정.*슬랙스/).first().waitFor();
+ await input.fill('와이드핏으로');await send.click();
+ await page.waitForFunction(id=>{const cards=document.querySelectorAll('#avatar-recommendation-results [data-discovery-id]');return cards.length===1&&cards[0].dataset.discoveryId===id;},id);
+ await replies.getByText(/와이드/).first().waitFor();
+ await avatar.locator('#avatar-conversation').screenshot({path:path.join(out,'PRIVATE-production-local-style-chat.png')});
+ await input.fill('흰색으로');await send.click();
+ await replies.getByText(/현재 확인된 상품 중 이 조건과 맞는 후보가 없습니다/).waitFor();
+ assert.equal(await cards.count(),0,'the dialogue returns an empty result rather than unrelated garments');
+ assert.equal(trial.calls.filter(call=>new URL(call.url).pathname.startsWith('/api/')).length,apiBefore,'the immediate dialogue performs no API requests');
+ assert.equal(await page.evaluate(()=>window.A1GltfProof.snapshot().bodyFitted),true);
+ assert.deepEqual(await page.evaluate(()=>Object.keys(sessionStorage)),[]);
+ assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),['a1-fashion:language']);
+
+ await page.locator('#ai-clear').click();
+ assert.equal(await avatar.isVisible(),false);
+ assert.equal(await results.isVisible(),false);
+ assert.equal(await analysisConsent.isChecked(),false);
+ assert.equal(await page.evaluate(()=>window.A1GltfProof.snapshot().bodyFitted),false);
+ networkClean(trial);
+}
+
+async function verifyOfficialStudio(trial){
+ const {page}=trial;
+ await ready(page,{free:false});
+ const open=page.locator('[data-studio-mode=three]');
+ assert.equal(await open.isDisabled(),false);
+ await open.click();
+ await page.waitForFunction(()=>{const frame=window.A1GltfProof?.snapshot();return frame?.state==='ready'&&frame.look==='nova'&&frame.triangles>0;},null,{timeout:30000});
+ assert.ok(trial.calls.some(call=>new URL(call.url).pathname==='/assets/nova-avatar/avatar.glb'));
+ assert.equal(trial.calls.some(call=>new URL(call.url).pathname==='/assets/natural-avatar/sample.glb'),false);
+ networkClean(trial);
+}
+
+async function verifyRealInference(trial){
+ const {page}=trial;
+ await ready(page,{free:false});
+ const vendor=()=>trial.calls.filter(call=>new URL(call.url).pathname.startsWith('/assets/vendor/mediapipe/'));
+ assert.equal(vendor().length,0);
+ await page.locator('#ai-photo').setInputFiles(path.join(dist,'assets/photos/man.jpg'));
+ await page.locator('#ai-analyze-fit').click();
+ await page.waitForFunction(()=>{
+  const frame=window.A1GltfProof?.snapshot();
+  return frame?.state==='ready'&&frame.look==='nova'&&frame.bodyFitted&&frame.bodyFitAxes.length>0&&frame.renderCount>0;
+ },null,{timeout:90000});
+ assert.ok(vendor().some(call=>new URL(call.url).pathname.endsWith('/pose_landmark_lite.tflite')));
+ assert.ok(vendor().some(call=>new URL(call.url).pathname.endsWith('.wasm')));
+ await page.waitForSelector('#avatar-recommendation-results[data-state="ready"]:visible');
+ assert.ok(await page.locator('#avatar-recommendation-results [data-discovery-id]').count()>0);
+ await page.locator('#gltf-canvas').screenshot({path:path.join(out,'PRIVATE-production-real-inference-3d.png')});
+ await page.locator('#ai-clear').click();
+ assert.equal(await page.locator('#gltf-proof-root').isVisible(),false);
+ assert.equal(await page.evaluate(()=>__betaUrls.size),0);
+ networkClean(trial);
+}
 (async()=>{
  for(const file of sources)assert.ok(fs.existsSync(path.join(root,file)),'final source exists: '+file);
  for(const file of sources.filter(file=>!file.startsWith('functions/')&&!file.startsWith('server/')&&!file.startsWith('scripts/')&&!file.startsWith('catalog/')))assert.equal(sha(fs.readFileSync(path.join(dist,file))),sha(fs.readFileSync(path.join(root,file))),'run build-site before testing: '+file);
@@ -122,7 +237,7 @@ async function assertFailClosed(trial){await assertNoPreview(trial.page);assert.
  const handlers={policy:await import(pathToFileURL(path.join(root,'functions/api/policy.js'))),stylist:await import(pathToFileURL(path.join(root,'functions/api/stylist.js'))),membership:await import(pathToFileURL(path.join(root,'functions/api/membership.js'))),global:await import(pathToFileURL(path.join(root,'functions/api/global/_shared.js')))};
  let providerCalls=0;const originalFetch=globalThis.fetch;globalThis.fetch=async()=>{providerCalls++;throw Error('PRIVATE provider/auth/network trap');};
  const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
- const report={actualProductionContact:false,allBrowserRequestsIntercepted:true,realRetailerPixels:false,realRetailerDownloadVerified:false,realCdnCorsVerified:false,merchantAcceptanceVerified:false,nativeIpadSafari:false,analysisMocked:true,privateRasterFixture:'dist/assets/photos/coat.jpg served at exact manifest CDN references; not a retailer photograph',actualPolicyHandler:true,actualStylistHandler:true,cases:[]};
+ const report={actualProductionContact:false,allBrowserRequestsIntercepted:true,realRetailerPixels:false,realRetailerDownloadVerified:false,realCdnCorsVerified:false,merchantAcceptanceVerified:false,nativeIpadSafari:false,analysisModes:['deterministic fixture','bundled local MediaPipe'],privateRasterFixture:'dist/assets/photos/coat.jpg served at exact manifest CDN references; not a retailer photograph',actualPolicyHandler:true,actualStylistHandler:true,cases:[]};
  try{
   for(const profile of[{width:820,lang:'ko'},{width:390,lang:'en'}]){
    const trial=await prepare(browser,handlers,profile),{page}=trial;await ready(page);await search(page);
@@ -141,20 +256,32 @@ async function assertFailClosed(trial){await assertNoPreview(trial.page);assert.
    networkClean(trial);report.cases.push({name:'production-policy-search-photo-metadata-select-consent-same-photo-2d-compare-delete',profile,actualFactCandidates:2,changedPixels,separateConsent:true,bodySelections:1,globalMemberGrant:false,privateRasterOnly:true,passed:true});await trial.context.close();
   }
   {const trial=await prepare(browser,handlers,{entry:'/stylist'}),{page}=trial;await ready(page);await sendStylist(page);await page.waitForFunction(()=>document.querySelector('[data-stylist-public-beta] [data-stylist-discovery]')?.dataset.state==='ready');assert.equal(await page.locator('[data-stylist-discovery] [data-discovery-id]').count(),2);const post=trial.apiResponses.find(row=>row.path==='/api/stylist'&&row.method==='POST');assert.equal(post.status,200);assert.equal(post.data.mode,'DEMO');assert.equal(post.data.freeBetaMode,true);assert.deepEqual(post.data.products,[]);assert.equal(post.data.usage,null);assert.equal(post.data.comparison,null);assert.deepEqual(post.data.discounts,[]);assert.equal(await page.locator('.stylist-product').count(),0);await page.locator('#stylist-clear').click();assert.equal(await page.locator('[data-stylist-discovery]').count(),0);networkClean(trial);report.cases.push({name:'production-anonymous-actual-server-DEMO-then-separate-public-facts',frontendDemoFallback:false,passed:true});await trial.context.close();}
-  for(const policyMode of['false','failed','mime','timeout']){
+  {const trial=await prepare(browser,handlers,{policyMode:'false',width:960});
+   await verifyPhotoToAvatar(trial);
+   report.cases.push({name:'production-local-photo-automatic-personalized-nova-evidence-ranked-outfit-and-instant-dialogue',serverFreeBeta:false,realGeometry:true,privatePoseFixture:true,manualProportionsRerank:true,sampleOutfit:true,localFollowUps:true,passed:true});
+   await trial.context.close();}
+  {const trial=await prepare(browser,handlers,{policyMode:'false',width:960,realPose:true});
+   await verifyRealInference(trial);
+   report.cases.push({name:'production-local-real-mediapipe-inference-automatically-renders-personalized-nova-and-clothes',realInference:true,realGeometry:true,passed:true});
+   await trial.context.close();}
+  {const trial=await prepare(browser,handlers,{entry:'/fitting-studio',policyMode:'false'});
+   await verifyOfficialStudio(trial);
+   report.cases.push({name:'production-studio-loads-real-default-nova-after-trusted-local-capability',serverFreeBeta:false,passed:true});
+   await trial.context.close();}
+  for(const policyMode of['failed','mime','timeout']){
    const trial=await prepare(browser,handlers,{policyMode,tamper:true}),{page}=trial;await trial.seen;
-   await page.evaluate(()=>document.dispatchEvent(new CustomEvent('a1:policy-ready',{detail:{freeBetaMode:true,plan:'PREMIUM',allowed:true}})));
+   await page.evaluate(()=>{document.dispatchEvent(new CustomEvent('a1:policy-ready',{detail:{freeBetaMode:true,plan:'PREMIUM',allowed:true}}));document.dispatchEvent(new CustomEvent('a1:public-local-ready'));});
    if(policyMode==='timeout'){await page.waitForTimeout(5250);trial.release();await page.waitForLoadState('networkidle');}
    await assertFailClosed(trial);await analyze(page);assert.equal(await page.locator('#ai-result').isVisible(),true);assert.equal(await page.locator('#lab-entry').count(),0);
    networkClean(trial);report.cases.push({name:'production-'+policyMode+'-policy-fails-closed-despite-cookie-storage-flag-event-tampering',photoAnalysisSurvives:true,passed:true});await trial.context.close();
   }
-  {const trial=await prepare(browser,handlers,{entry:'/stylist',policyMode:'false',serverFlag:'false',tamper:true}),{page}=trial;await sendStylist(page);const post=trial.apiResponses.find(row=>row.path==='/api/stylist'&&row.method==='POST');assert.equal(post.status,401);assert.equal(post.data.error,'authentication_required');assert.equal(await page.locator('.stylist-message').count(),0);assert.equal(await page.locator('[data-stylist-discovery]').count(),0);await assertNoPreview(page);assert.equal(await page.evaluate(()=>typeof A1PublicBeta),'undefined');networkClean(trial);report.cases.push({name:'false-server-flag-keeps-production-stylist-membership-protected',clientFlagsCannotGrant:true,passed:true});await trial.context.close();}
+  {const trial=await prepare(browser,handlers,{entry:'/stylist',policyMode:'false',serverFlag:'false',tamper:true}),{page}=trial;await ready(page,{free:false});await sendStylist(page);const post=trial.apiResponses.find(row=>row.path==='/api/stylist'&&row.method==='POST');assert.equal(post.status,401);assert.equal(post.data.error,'authentication_required');assert.equal(await page.locator('.stylist-message').count(),0);assert.equal(await page.locator('[data-stylist-discovery]').count(),0);await assertNoPreview(page);assert.equal(await page.evaluate(()=>typeof A1PublicBeta),'undefined');networkClean(trial);report.cases.push({name:'false-server-flag-keeps-production-stylist-membership-protected',localFashionEnabled:true,clientFlagsCannotGrant:true,passed:true});await trial.context.close();}
   {const trial=await prepare(browser,handlers,{entry:'/stylist',policyMode:'mime',serverFlag:'true'}),{page}=trial;await sendStylist(page);const post=trial.apiResponses.find(row=>row.path==='/api/stylist'&&row.method==='POST');assert.equal(post.status,200);assert.equal(post.data.mode,'DEMO');assert.equal(await page.locator('.stylist-answer-mode').count(),1);assert.equal(await page.locator('[data-stylist-discovery]').count(),0);assert.equal(await page.evaluate(()=>typeof A1PublicBeta),'undefined');networkClean(trial);report.cases.push({name:'unverified-browser-policy-keeps-existing-production-server-DEMO-without-local-supplement',passed:true});await trial.context.close();}
   {const trial=await prepare(browser,handlers,{late:true}),{page}=trial;await trial.seen;await analyze(page);assert.equal(await page.locator('#lab-entry').count(),0);trial.release();await ready(page);await page.waitForSelector('#lab-entry:not([hidden])');assert.equal(await page.locator('#shopping-analysis-consent').isDisabled(),false);assert.equal(await page.evaluate(()=>__betaSelections),1);await search(page);await select(page);assert.equal(await page.locator('#lab-local-photo-consent').isChecked(),false);await page.locator('#ai-clear').click();networkClean(trial);report.cases.push({name:'late-server-policy-replays-current-analysis-without-photo-reselection-or-consent',passed:true});await trial.context.close();}
   {const trial=await prepare(browser,handlers,{entry:'/stylist',late:true}),{page}=trial;await trial.seen;await sendStylist(page);assert.equal(trial.apiResponses.find(row=>row.method==='POST')?.status,200);assert.equal(await page.locator('[data-stylist-discovery]').count(),0);trial.release();await ready(page);await page.waitForFunction(()=>document.querySelector('[data-stylist-discovery]')?.dataset.state==='ready');assert.equal(await page.locator('[data-stylist-discovery] [data-discovery-id]').count(),2);assert.equal(trial.calls.filter(row=>row.method==='POST').length,1);networkClean(trial);report.cases.push({name:'late-server-policy-attaches-facts-to-completed-real-server-DEMO-once',passed:true});await trial.context.close();}
   {const trial=await prepare(browser,handlers,{entry:'/stylist',late:true}),{page}=trial;await trial.seen;await sendStylist(page);await page.locator('#stylist-clear').click();trial.release();await ready(page);await page.waitForLoadState('networkidle');assert.equal(await page.locator('.stylist-message,[data-stylist-discovery]').count(),0);assert.equal(trial.calls.filter(row=>new URL(row.url).pathname==='/assets/observed-products.json').length,0);networkClean(trial);report.cases.push({name:'late-policy-never-resurrects-cleared-server-DEMO-or-public-facts',passed:true});await trial.context.close();}
   {const trial=await prepare(browser,handlers,{late:true}),{page}=trial;await trial.seen;await analyze(page);await page.locator('#ai-clear').click();trial.release();await ready(page);await page.waitForLoadState('networkidle');assert.equal(await page.locator('#lab-entry').isVisible(),false);assert.equal(await page.locator('#shopping-analysis-consent').isDisabled(),true);assert.equal(await page.locator('#ai-result').isVisible(),false);assert.equal(await page.evaluate(()=>__betaUrls.size),0);networkClean(trial);report.cases.push({name:'late-policy-never-replays-cleared-analysis-or-consent',passed:true});await trial.context.close();}
-  {const trial=await prepare(browser,handlers,{host:previewOrigin}),{page}=trial;await page.waitForFunction(()=>!!window.A1Preview);assert.equal(await page.evaluate(()=>typeof A1PublicBeta),'undefined');await search(page);assert.equal(trial.calls.filter(row=>new URL(row.url).pathname.startsWith('/api/')).length,0);networkClean(trial);report.cases.push({name:'preview-local-search-remains-isolated-with-zero-api-requests',passed:true});await trial.context.close();}
+  {const trial=await prepare(browser,handlers,{host:previewOrigin}),{page}=trial;await page.waitForFunction(()=>!!window.A1Preview);assert.equal(await page.evaluate(()=>typeof A1PublicBeta),'undefined');assert.equal(await page.evaluate(()=>typeof A1PublicLocal),'undefined');await search(page);assert.equal(trial.calls.filter(row=>new URL(row.url).pathname.startsWith('/api/')).length,0);networkClean(trial);report.cases.push({name:'preview-local-search-remains-isolated-with-zero-api-requests',passed:true});await trial.context.close();}
   assert.equal(providerCalls,0);for(const[file,hash]of Object.entries(before))assert.equal(sha(fs.readFileSync(path.join(root,file))),hash,'source data unchanged: '+file);
   for(const[file,hash]of Object.entries(sourceHashes))assert.equal(sha(fs.readFileSync(path.join(root,file))),hash,'tested source unchanged: '+file);
   for(const[file,hash]of Object.entries(distHashes))assert.equal(sha(fs.readFileSync(path.join(dist,file))),hash,'tested dist unchanged: '+file);report.passed=true;

@@ -2,6 +2,11 @@ import { Group, Matrix4, Mesh, Vector3 } from './vendor/three-0.187.0/build/thre
 import { novaTopEaseWeights } from './nova-garment-fit.js';
 
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+const novaBottomSilhouettes = Object.freeze({
+  straight: { upperLeg: .006, lowerLeg: .023 },
+  relaxed: { upperLeg: .032, lowerLeg: .009 },
+  wide: { upperLeg: .041, lowerLeg: .048 }
+});
 
 function smoothStep(low, high, value) {
   const t = clamp((value - low) / (high - low), 0, 1);
@@ -73,8 +78,10 @@ function fitFrame(model, parentInverse, scales) {
   };
   const [left, right] = [joint('LeftArm'), joint('RightArm')];
   const shoulder = left.clone().lerp(right, .5);
-  const hip = joint('LeftUpLeg').lerp(joint('RightUpLeg'), .5);
-  const ankle = joint('LeftFoot').lerp(joint('RightFoot'), .5);
+  const hips = [joint('LeftUpLeg'), joint('RightUpLeg')];
+  const ankles = [joint('LeftFoot'), joint('RightFoot')];
+  const hip = hips[0].clone().lerp(hips[1], .5);
+  const ankle = ankles[0].clone().lerp(ankles[1], .5);
   const halfWidth = Math.abs(left.x - right.x) / 2;
   const torsoHeight = shoulder.y - hip.y;
   if (!(halfWidth > .02 && torsoHeight > .05 && hip.y - ankle.y > .05)) throw Error('natural_fit_frame_invalid');
@@ -85,7 +92,7 @@ function fitFrame(model, parentInverse, scales) {
     if (!(length > .05)) throw Error('natural_fit_arm_frame_invalid');
     return { start, axis: axis.multiplyScalar(1 / length), length };
   }) : [];
-  return { shoulder, hip, ankle, halfWidth, torsoHeight, arms };
+  return { shoulder, hip, ankle, hips, ankles, halfWidth, torsoHeight, arms };
 }
 
 function makeDeformation(frame, scales, legShift) {
@@ -125,6 +132,31 @@ function makeDeformation(frame, scales, legShift) {
       target.x += Math.tanh(offsetX / (halfWidth * .55)) * weighting * .012;
       target.z += Math.tanh((z - centreZ) / .06) * weighting * .018;
     }
+    return target;
+  };
+}
+
+function makeNovaBottomDeformation(frame, silhouette, deform) {
+  const { hip, ankle, hips, ankles } = frame;
+  const { upperLeg, lowerLeg } = silhouette;
+  return (point, target, ease, armWeights) => {
+    const { x, y, z } = point;
+    deform(point, target, ease, armWeights);
+    const fraction = (y - ankle.y) / (hip.y - ankle.y);
+    // Preserve the stock waistband and cuffs. Spread the fabric smoothly
+    // between their seams, using the same posed leg centres as the avatar.
+    const weighting = smoothStep(.05, .27, fraction) * (1 - smoothStep(.68, .94, fraction));
+    if (weighting === 0) return target;
+    const offset = x - hip.x;
+    const side = x >= hip.x ? 0 : 1;
+    const centreX = ankles[side].x + (hips[side].x - ankles[side].x) * fraction;
+    const centreZ = ankles[side].z + (hips[side].z - ankles[side].z) * fraction;
+    const taper = smoothStep(.31, .69, fraction);
+    const allowance = (lowerLeg + (upperLeg - lowerLeg) * taper) * weighting;
+    const medial = smoothStep(0, .05, Math.abs(offset));
+    const spreadX = allowance * clamp((x - centreX) / .07, -1, 1) * medial;
+    target.x += clamp(spreadX, -Math.abs(offset) * .65, Math.abs(offset) * .65);
+    target.z += allowance * .5 * clamp((z - centreZ) / .08, -1, 1) * medial;
     return target;
   };
 }
@@ -190,7 +222,7 @@ function bakeGeometry(mesh, parentInverse, deform, useEase, useArmWeights) {
   }
 }
 
-export function createNaturalFit(model, metrics, { topVertices, relaxed = false, profile } = {}) {
+export function createNaturalFit(model, metrics, { topVertices, relaxed = false, profile, bottomFit } = {}) {
   const scales = fitScales(metrics, profile);
   const parentInverse = new Matrix4();
   if (model.parent) {
@@ -210,6 +242,8 @@ export function createNaturalFit(model, metrics, { topVertices, relaxed = false,
   const outfitSources = outfitNames.map(name => model.getObjectByName(name));
   if (![sourceBody, ...outfitSources].every(source => source?.isSkinnedMesh)) throw Error('natural_fit_mesh_invalid');
   const topSource = outfitSources[0];
+  const bottomSource = !combinedOutfit && Object.hasOwn(novaBottomSilhouettes, bottomFit) ? outfitSources[1] : null;
+  const deformBottom = bottomSource ? makeNovaBottomDeformation(frame, novaBottomSilhouettes[bottomFit], deform) : deform;
   const count = topSource.geometry.getAttribute('position').count;
   const top = topVertices instanceof Uint8Array && topVertices.length === count
     ? topVertices
@@ -231,7 +265,8 @@ export function createNaturalFit(model, metrics, { topVertices, relaxed = false,
   };
   try {
     for (const source of [sourceBody, ...outfitSources]) {
-      const geometry = bakeGeometry(source, parentInverse, deform, source === topSource ? useEase : () => 0, useArmWeights);
+      const geometry = bakeGeometry(source, parentInverse, source === bottomSource ? deformBottom : deform,
+        source === topSource ? useEase : () => 0, useArmWeights);
       const mesh = new Mesh(geometry, source.material);
       mesh.name = source === sourceBody ? 'PhotoProportionedBody' :
         source === topSource ? 'PhotoProportionedOutfit' : 'PhotoProportioned_' + source.name;
@@ -250,6 +285,7 @@ export function createNaturalFit(model, metrics, { topVertices, relaxed = false,
     profile: Object.freeze({
       ...scales,
       ...(scales.appliedAxes ? { legScale: 1 + legShift / legSpan, torsoScale: 1 - legShift / frame.torsoHeight } : {}),
+      ...(bottomSource ? { bottomFit } : {}),
       relaxed: eased
     }),
     dispose

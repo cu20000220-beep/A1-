@@ -49,6 +49,8 @@
   }else if(legs>=1.90){
    suggest('legTorso','length','longline_top');
    suggest('legTorso','silhouette','straight_line');
+  }else if(Number.isFinite(legs)){
+   suggest('legTorso','silhouette','straight_line');
   }
   // A recorded waist/hip ratio is a cue to compare different waistband
   // constructions, irrespective of size. It is not evidence of garment rise.

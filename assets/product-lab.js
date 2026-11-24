@@ -1,7 +1,7 @@
 'use strict';
 function initializeProductLab(){
  const root=document.querySelector('#lab-root');
- const preview=Boolean(window.A1Preview),experience=window.A1Preview||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null);
+ const preview=Boolean(window.A1Preview),experience=window.A1Preview||(window.A1PublicLocal?.mode==='server-public-local'?window.A1PublicLocal:null)||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null);
  const I=window.A1I18n,M=window.A1ProductMatching,$=s=>document.querySelector(s);
  if(!root||!experience||!I||!M||!window.A1ShoppingQuery||!window.A1ProductCatalog||!window.A1ProductDiscoveryView||root.dataset.initialized)return;
  root.dataset.initialized='true';root.dataset.loadState='initializing';
@@ -672,3 +672,4 @@ initializeProductLab();
 if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',initializeProductLab,{once:true});
 document.addEventListener('a1:lab-mounted',initializeProductLab);
 document.addEventListener('a1:public-beta-ready',initializeProductLab);
+document.addEventListener('a1:public-local-ready',initializeProductLab);

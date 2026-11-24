@@ -1,14 +1,18 @@
 /* One-document natural GLB + existing photo fitting. Never serialize personal data. */
 'use strict';
 (() => {
- if (!window.A1Preview) return;
+ function initialize() {
+ if (!window.A1Preview && window.A1PublicLocal?.mode !== 'server-public-local') return;
  const button = document.querySelector('#lab-open-avatar'), result = document.querySelector('#ai-result');
  if (!button || !result || button.dataset.naturalBridge) return;
+ document.removeEventListener('a1:public-local-ready',initialize);
  button.dataset.naturalBridge = 'true';
  const I = window.A1I18n, T = window.A1LabTemplates;
  I.register({
   '내 체형으로 3D 피팅하기': 'Try clothes on my 3D avatar',
-  '이 탭에서 선택하는 사진의 체형 비율을 기기 내 3D 의류 피팅에 사용하는 데 동의합니다.': 'I agree to use body proportions from photos selected in this tab for on-device 3D clothing fitting.',
+  '사진상 체형 비율을 이 기기에서 3D 아바타와 의류 추천에 사용합니다. 분석 후 두 화면을 자동으로 엽니다.': 'Use estimated body proportions on this device to shape the 3D avatar and recommend clothes. Open both after analysis.',
+  '내 3D 아바타 만들고 옷 추천 받기': 'Create my 3D avatar and recommend clothes',
+  '전신 사진을 선택하고 내 3D 아바타 만들고 옷 추천 받기를 누르세요. 이 기기에서 체형을 분석한 뒤 가상 피팅과 맞춤 추천을 엽니다.': 'Choose a full-body photo, then select Create my 3D avatar and recommend clothes. Your device analyzes your proportions and opens fitting and tailored recommendations.',
   '내 체형으로 3D 피팅을 하려면 분석 양식에서 동의해주세요.': 'Consent in the analysis form to use your body proportions for 3D fitting.',
   '기본 체형으로 3D 피팅 보기': 'View 3D fitting on a default body',
   '3D 피팅에 적용한 체형 비율': 'Body proportions used for 3D fitting',
@@ -16,10 +20,12 @@
   '이 기기에서 입력 치수와 사진상 비율을 아바타에 적용합니다.': 'Use entered measurements and photo proportions on this device to shape the avatar.',
   '체형 맞춤 의류 추천 보기': 'See clothing recommendations for my proportions',
   '선택한 추천 상품 {name}': 'Selected recommendation · {name}',
-  '{feature}를 비교하는 3D 예시 의상입니다. 실제 상품을 입히려면 판매처의 3D 의상과 이용 허락이 필요합니다.': 'This sample 3D garment lets you compare {feature}. Fitting the exact product requires an authorized 3D garment from the retailer.',
+  '3D 예시 의상에서 {feature} 특성을 비교합니다. 판매처의 실제 상품 3D 착장은 이용 허락이 있는 의상 모델이 필요합니다.': 'Compare the listed feature, {feature}, on a sample 3D garment. Fitting the exact product requires an authorized retailer 3D model.',
   '네이비 색상': 'navy color',
   '긴소매 길이': 'long sleeves',
   '여유로운 핏': 'a relaxed fit',
+  '와이드핏': 'wide fit',
+  '일자 실루엣': 'straight silhouette',
   '내 사진으로 피팅하기 · 로컬 2D': 'Fit on my photo · local 2D',
   '사진 선택·분석으로 돌아가기': 'Return to photo selection and analysis',
   '이 스타일을 국내 쇼핑몰에서 검색': 'Search this style at Korean retailers',
@@ -36,15 +42,24 @@
  I.setText(button, '내 체형으로 3D 피팅하기');
  const label = document.createElement('label'); label.className = 'avatar-reference-consent';
  const consent = document.createElement('input'); consent.type = 'checkbox'; consent.id = 'avatar-reference-consent';
- const copy = document.createElement('span'); I.setText(copy, '이 탭에서 선택하는 사진의 체형 비율을 기기 내 3D 의류 피팅에 사용하는 데 동의합니다.');
- label.append(consent, copy); document.querySelector('#ai-analyze').before(label);
+ const copy = document.createElement('span'); copy.id='avatar-consent-description';
+ I.setText(copy, '사진상 체형 비율을 이 기기에서 3D 아바타와 의류 추천에 사용합니다. 분석 후 두 화면을 자동으로 엽니다.');
+ const analyze = document.querySelector('#ai-analyze');
+ I.setText(analyze.closest('#ai-studio').querySelector('.ai-intro'),'전신 사진을 선택하고 내 3D 아바타 만들고 옷 추천 받기를 누르세요. 이 기기에서 체형을 분석한 뒤 가상 피팅과 맞춤 추천을 엽니다.');
+ const combined = document.createElement('button'); combined.id='ai-analyze-fit'; combined.className='dark-button';
+ combined.type='button'; combined.disabled=analyze.disabled; combined.setAttribute('aria-describedby',copy.id);
+ I.setText(combined,'내 3D 아바타 만들고 옷 추천 받기');
+ combined.addEventListener('click',()=>{consent.checked=true; analyze.form.requestSubmit(analyze);});
+ label.append(consent, copy); analyze.before(label,combined);
+ button.setAttribute('aria-describedby',copy.id);
  const status = document.createElement('p'); status.id = 'avatar-bridge-status'; status.setAttribute('role', 'status'); button.after(status);
  const fallback = document.createElement('button'); fallback.id = 'avatar-open-default'; fallback.type = 'button'; fallback.className = 'dark-button';
  I.setText(fallback, '기본 체형으로 3D 피팅 보기'); document.querySelector('#ai-form').append(fallback);
  const defaultStatus = document.createElement('p'); defaultStatus.id = 'avatar-default-status'; defaultStatus.setAttribute('role', 'status'); fallback.after(defaultStatus);
  let metrics = null, photoProfile = null, pending = null, revision = 0, navigation = 0, activeRequest = null, viewerObserver = null;
- let studioMeasurements, studioConsent, recommendations, recommendedButton, selectedNote;
+ let studioMeasurements, studioConsent, recommendations, recommendedButton, selectedNote, conversation, chatTarget;
  const clothingConditions = window.A1ShoppingQuery?.parse('의류');
+ let avatarConditions = clothingConditions;
  const valid = value => value && Object.keys(value).sort().join(',') === 'legTorsoRatio,shoulderHipRatio'
   && Number.isFinite(value.shoulderHipRatio) && value.shoulderHipRatio >= .45 && value.shoulderHipRatio <= 2.5
   && Number.isFinite(value.legTorsoRatio) && value.legTorsoRatio >= .6 && value.legTorsoRatio <= 3.5;
@@ -79,8 +94,15 @@
   if (!selection) return;
   const title = document.createElement('strong'), note = document.createElement('p');
   I.setText(title, '선택한 추천 상품 {name}', {name:selection.name});
-  I.setText(note, '{feature}를 비교하는 3D 예시 의상입니다. 실제 상품을 입히려면 판매처의 3D 의상과 이용 허락이 필요합니다.', {feature:I.t(selection.feature)});
+  I.setText(note, '3D 예시 의상에서 {feature} 특성을 비교합니다. 판매처의 실제 상품 3D 착장은 이용 허락이 있는 의상 모델이 필요합니다.', {feature:I.t(selection.feature)});
   selectedNote.append(title,note);
+ }
+ async function recommend(filters = avatarConditions) {
+  const profile=studioMeasurements?.current();
+  if(!recommendations||!profile)return {state:'empty',count:0,unconfirmed:0};
+  avatarConditions=filters;
+  await recommendations.search(filters,{profile});
+  return recommendations.summary();
  }
  function applyStudioFit(sample) {
   const profile = studioMeasurements?.current() || null;
@@ -89,13 +111,16 @@
   if (!profile) selectedRecommendation(null);
   const usable = Boolean(profile || legacy);
   if (recommendedButton) recommendedButton.hidden = !usable;
-  if (recommendations?.target.dataset.state && !recommendations.target.hidden) {
-   if (profile) recommendations.search(clothingConditions, {profile}); else recommendations.clear();
-  }
+  if (chatTarget) chatTarget.hidden=!profile||!conversation;
+  if (profile) void recommend();
+  else recommendations?.clear();
  }
  function clearStudioInputs() {
   studioMeasurements?.clear();
   recommendations?.clear();
+  conversation?.clear();
+  if(chatTarget)chatTarget.hidden=true;
+  avatarConditions=clothingConditions;
   if (recommendedButton) recommendedButton.hidden = true;
   selectedRecommendation(null);
   clearReference();
@@ -149,7 +174,7 @@
    manual.append(manualLabel); root.querySelector('.panel').prepend(manual);
    studioConsent.addEventListener('change', () => {
     if (!studioConsent.checked) {
-     studioMeasurements.clear();
+     clearStudioInputs();
      activeRequest = null;
      consent.checked = false;
     }
@@ -157,14 +182,17 @@
    });
   }
   const target = document.createElement('section'); target.id = 'avatar-recommendation-results';
-  recommendations = window.A1ProductDiscoveryView?.create(target, {showImages:false, sampleScope:'avatar'});
+  recommendations = window.A1ProductDiscoveryView?.create(target, {sampleScope:'avatar',requireProportionEvidence:true});
   if (recommendations) {
+   chatTarget=document.createElement('section');chatTarget.id='avatar-conversation';chatTarget.hidden=true;
+   conversation=window.A1ShoppingConversation?.create(chatTarget,{
+    prefix:'avatar',getConditions:()=>avatarConditions,getProfile:()=>studioMeasurements?.current(),
+    search:recommend,resultId:target.id
+   });
    recommendedButton = document.createElement('button'); recommendedButton.type = 'button'; recommendedButton.id = 'avatar-recommended-clothes'; recommendedButton.hidden = true;
-   I.setText(recommendedButton, '체형 맞춤 의류 추천 보기'); flow.append(recommendedButton); flow.after(target);
+   I.setText(recommendedButton, '체형 맞춤 의류 추천 보기'); flow.append(recommendedButton); flow.after(chatTarget,target);
    recommendedButton.addEventListener('click', () => {
-    const profile = studioMeasurements?.current();
-    if (!profile) return;
-    recommendations.search(clothingConditions, {profile}); reveal(target);
+    if (studioMeasurements?.current()) reveal(chatTarget.hidden?target:chatTarget);
    });
   }
  }
@@ -232,11 +260,19 @@
    reveal(root.querySelector('.workspace'));
   } catch (error) { if (token === navigation && current === revision) T.failure('natural',target,error,() => open(useReference)); }
  }
- button.addEventListener('click', () => open(true)); fallback.addEventListener('click', () => open(false));
+ button.addEventListener('click', () => {
+  if (metrics && !result.hidden) consent.checked=true;
+  open(true);
+ });
+ fallback.addEventListener('click', () => open(false));
  // A fictional garment has no mesh for this GLB. Keep its 2D path available,
  // but do not reinterpret it as a compatible 3D garment.
  document.addEventListener('click', event => { const link = event.target.closest('[data-avatar-garment]'); if (!link) return; event.preventDefault(); open(Boolean(consent.checked && metrics)); });
  function sampleFor(product) {
+  if (product?.category==='bottoms') {
+   const feature={wide:'와이드핏',relaxed:'여유로운 핏',straight:'일자 실루엣'}[product.fit];
+   return feature ? {sample:product.fit+'-trousers',feature} : null;
+  }
   if (product?.category !== 'tops') return null;
   if (product.color === 'navy') return { sample:'navy', feature:'네이비 색상' };
   if (product.fit === 'relaxed') return { sample:'relaxed', feature:'여유로운 핏' };
@@ -280,4 +316,7 @@
  document.addEventListener('a1:analysis-cleared', clear); window.addEventListener('pagehide', clear);
  window.addEventListener('a1:gltf-suspend', () => { navigation++; activeRequest = null; clearStudioInputs(); });
  document.addEventListener('a1:language-changed', () => selectedRecommendation(activeRequest?.selection));
+ }
+ document.addEventListener('a1:public-local-ready',initialize);
+ initialize();
 })();

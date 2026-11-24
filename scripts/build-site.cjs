@@ -45,6 +45,7 @@ const publicEntries = [
   '_headers',
   'index.html',
   'assets/shopping-query.js',
+  'assets/shopping-conversation.js',
   'assets/product-catalog.js',
   'assets/catalog-fitting.js',
   'assets/offer-comparison.js',

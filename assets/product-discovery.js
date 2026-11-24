@@ -136,10 +136,11 @@
    if(product.stock==='unknown')warnings.push('stock_unconfirmed');
    if(product.price===null)warnings.push('price_unconfirmed');else{warnings.push('price_not_live');if(p.budget!==null)reasons.push('observed_price_within_budget');}
    if(now-product.checkedAt>24*3600000)warnings.push('observation_stale');
-   const matches=proportions?.evidence(product,profile).filter(reason=>p.fit==='any'||reason.attribute!=='fit')||[];
+   const matches=proportions?.evidence(product,profile)||[];
    const row=Object.freeze({product,reasons:Object.freeze(reasons),warnings:Object.freeze(warnings),canFit:false,
     ...(matches.length?{proportionReasons:Object.freeze(matches)}:{})});
-   (p.budget!==null&&product.price===null?budgetUnconfirmed:candidates).push({row,confirmed,purpose:suitability,style,proportionCount:matches.length});
+   const proportionCount=matches.filter(reason=>p.fit==='any'||reason.attribute!=='fit').length;
+   (p.budget!==null&&product.price===null?budgetUnconfirmed:candidates).push({row,confirmed,purpose:suitability,style,proportionCount});
   }
   return Object.freeze({candidates:Object.freeze(candidates.sort(rank).map(item=>item.row)),budgetUnconfirmed:Object.freeze(budgetUnconfirmed.sort(rank).map(item=>item.row)),excluded:Object.freeze(excluded),snapshotCount:products.length});
  }

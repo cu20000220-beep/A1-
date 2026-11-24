@@ -2,9 +2,9 @@
 'use strict';
 (()=>{
  function initialize(){
- const preview=Boolean(window.A1Preview),experience=window.A1Preview||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null);
+ const preview=Boolean(window.A1Preview),experience=window.A1Preview||(window.A1PublicLocal?.mode==='server-public-local'?window.A1PublicLocal:null)||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null);
  if(!experience||!window.A1I18n||window.A1LabTemplates)return;
- if(!preview)document.removeEventListener('a1:public-beta-ready',initialize);
+ if(!preview){document.removeEventListener('a1:public-local-ready',initialize);document.removeEventListener('a1:public-beta-ready',initialize);}
  const I=window.A1I18n,config={avatar:{path:'/avatar-lab',root:'#avatar-root',init:'initializeAvatarLab'},natural:{path:'/gltf-proof',root:'#gltf-proof-root'},product:{path:'/product-lab',root:'#lab-root',init:'initializeProductLab'}};
  const messages={
  REQUEST:'화면 요청이 차단되었거나 연결되지 않았습니다. 다시 시도하거나 독립 연구실을 Safari에서 여세요.',
@@ -30,7 +30,7 @@
  '독립 화면에는 사진·분석값을 전달하지 않습니다. 앱 안에서 제한되면 이 링크 주소를 복사해 Safari 주소창에 붙여넣으세요.':'Photos and analysis are not transferred to the standalone page. If the in-app browser restricts access, copy this link into Safari.'
  });
  const error=(code,status)=>Object.assign(new Error('A1-LAB-'+code),{code,status});
- async function load(kind){const item=config[kind];if(!item||!preview&&kind!=='product')throw error('TEMPLATE');const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);try{
+ async function load(kind){const item=Object.hasOwn(config,kind)&&config[kind];if(!item||!preview&&kind==='avatar')throw error('TEMPLATE');const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);try{
   const r=await fetch(item.path,{credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal});
   if(!r.ok)throw error('HTTP',r.status);if(!/^text\/html(?:;|$)/i.test(r.headers.get('content-type')||''))throw error('MIME');
   const u=new URL(r.url||item.path,location.origin);if(u.origin!==location.origin||u.pathname!==item.path||u.search)throw error('REQUEST');
@@ -52,7 +52,7 @@
  }
  if(!window.A1Preview){
   if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',initialize,{once:true});
-  document.addEventListener('a1:public-beta-ready',initialize);
+  document.addEventListener('a1:public-local-ready',initialize);document.addEventListener('a1:public-beta-ready',initialize);
  }
  initialize();
 })();

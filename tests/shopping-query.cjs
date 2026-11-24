@@ -70,3 +70,54 @@ test('category-only searches preserve that category in official search and body-
  for (const idea of Q.bodySuggestions(top, { metrics, consent: true })) assert.equal(idea.conditions.category, 'tops');
  assert.throws(() => Q.term({ ...top, category: 'secret-17-1234' }));
 });
+
+const Chat = require('../assets/shopping-conversation.js');
+
+test('local style chat follows explicit changes while retaining earlier filters', () => {
+ const first = { ...Chat.refine('여성 출근용 셔츠 8만원 이하'), size: 'M' };
+ const second = Chat.refine('흰색으로', first);
+ assert.deepEqual(second, { ...first, color: 'white' });
+ assert.deepEqual(Chat.refine('검정 말고 네이비', second), { ...second, color: 'navy' });
+ assert.deepEqual(Chat.refine('white instead of black', second), second);
+ assert.equal(Chat.refine('일자핏으로', second).fit, 'straight');
+ assert.equal(Chat.refine('하의로', second).type, 'clothing');
+ assert.deepEqual(Chat.refine('제 체형에 맞는 옷 추천해주세요', second), second);
+ assert.deepEqual(Chat.refine('추천 이유 알려줘', second), second);
+ assert.equal(Chat.refine('office shirts up to ₩80,000').budget, 80000);
+ assert.equal(Chat.refine('office shirts under ₩80,000').budget, 79999);
+ assert.equal(Chat.refine('예산 제한 없어요', second).budget, null);
+ assert.deepEqual(Chat.refine('처음부터', second), { ...Q.parse('의류'), size: '' });
+});
+
+test('local style chat asks for supported explicit conditions before recommending', () => {
+ for (const [message, error] of [
+  ['부동산 추천해주세요', /unknown_clothing_request/],
+  ['핑크 셔츠', /unsupported_color/],
+  ['셔츠 3만원부터 5만원', /unsupported_budget/],
+  ['shirts over ₩80,000', /unsupported_budget/],
+  ['shirts under $60', /unsupported_budget/],
+  ['흰색 말고', /unsupported_exclusion/],
+  ['검정 말고 흰색 mail@example.test', /private_query/],
+  ['셔츠 a1://PRIVATE<script>', /private_query/]
+ ]) assert.throws(() => Chat.refine(message), error);
+ const fulfilled = Chat.refine('검정 슬랙스 PRIVATE_09 키170');
+ assert.equal(Q.term(fulfilled), '검정 슬랙스');
+ assert.doesNotMatch(JSON.stringify(fulfilled), /PRIVATE|170/);
+});
+
+test('a chat follow-up narrows real snapshot results and preserves retailer evidence', () => {
+ const Discovery = require('../assets/product-discovery.js');
+ const Profile = require('../assets/proportion-profile.js');
+ const data = require('../assets/observed-products.json');
+ const profile = Profile.build({shoulderHipRatio:1.4,legTorsoRatio:1.35});
+ const options = { now: data.observedAt + 1000, profile };
+ const first = Chat.refine('검정 슬랙스');
+ const candidates = Discovery.search(data, first, options).candidates;
+ assert.ok(candidates.length > 1);
+ assert.ok(candidates.some(row => row.proportionReasons?.some(reason => reason.feature === 'wide_fit')));
+ const wide = Chat.refine('와이드핏으로', first);
+ const refined = Discovery.search(data, wide, options).candidates;
+ assert.ok(refined.length > 0 && refined.length < candidates.length);
+ assert.ok(refined.every(row => row.product.fit === 'wide'));
+ assert.deepEqual(Discovery.search(data, Chat.refine('네이비로', wide), options).candidates, []);
+});

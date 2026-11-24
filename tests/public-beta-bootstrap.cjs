@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 const read=name=>fs.readFileSync(path.resolve(__dirname,'../assets/'+name),'utf8');
 const coreSource=read('local-fashion-core.js'),bootstrapSource=read('public-beta-bootstrap.js');
-const validPolicy={freeBetaMode:true,billingEnabled:false,accountRequiredForSaving:true};
+const validPolicy={localFashionEnabled:true,freeBetaMode:true,billingEnabled:false,accountRequiredForSaving:true};
 const metrics={shoulderHipRatio:1.2,legTorsoRatio:1.8};
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 class Events{
@@ -51,29 +51,46 @@ test('shared core creates the same frozen local helpers without granting rights 
  }
  assert.throws(()=>factory.create({I:f.window.A1I18n,scope:'member'}));
  assert.equal(f.calls.length,1);assert.equal(f.window.A1PublicBeta,undefined);
+ assert.equal(f.window.A1PublicLocal.mode,'server-public-local');
 });
-test('only the strict server policy publishes immutable local beta once, using a fixed credential-free GET',async()=>{
+test('only the strict server policy publishes immutable local fashion and beta once, using a fixed credential-free GET',async()=>{
  const pending=deferred(),f=load({fetchImpl:()=>pending.promise,globals:{A1_FREE_BETA_MODE:true,freeBetaMode:true}});
- assert.equal(f.window.A1PublicBeta,undefined);
- f.emit('a1:policy-ready',{freeBetaMode:true});f.emit('a1:public-beta-ready',{freeBetaMode:true});
+ assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.window.A1PublicLocal,undefined);
+ f.emit('a1:policy-ready',{freeBetaMode:true});f.emit('a1:public-beta-ready',{freeBetaMode:true});f.emit('a1:public-local-ready',{localFashionEnabled:true});
  assert.equal(f.window.A1PublicBeta,undefined);assert.throws(()=>{f.window.A1PublicBeta={mode:'server-free-beta-local'};},TypeError);
+ assert.equal(f.window.A1PublicLocal,undefined);assert.throws(()=>{f.window.A1PublicLocal={mode:'server-public-local'};},TypeError);
  const call=f.calls[0];assert.equal(call.url,'/api/policy');
  for(const [key,value]of Object.entries({method:'GET',credentials:'omit',cache:'no-store',redirect:'error',mode:'same-origin'}))assert.equal(call.options[key],value);
  assert.equal(call.options.headers.Accept,'application/json');assert.equal(call.options.signal.aborted,false);
  const before=f.document.events.length;pending.resolve(response());await flush();
  const api=f.window.A1PublicBeta;assert.equal(api.mode,'server-free-beta-local');assert.equal(Object.isFrozen(api),true);assert.equal(f.window.A1Preview,undefined);
- assert.equal(f.document.events.slice(before).filter(event=>event.type==='a1:public-beta-ready').length,1);
- const descriptor=Object.getOwnPropertyDescriptor(f.window,'A1PublicBeta');assert.equal(descriptor.configurable,false);assert.equal(descriptor.set,undefined);
+ const local=f.window.A1PublicLocal;assert.equal(local.mode,'server-public-local');assert.equal(Object.isFrozen(local),true);
+ assert.deepEqual(f.document.events.slice(before).map(event=>event.type),['a1:public-local-ready','a1:public-beta-ready']);
+ for(const key of ['A1PublicBeta','A1PublicLocal']){
+  const descriptor=Object.getOwnPropertyDescriptor(f.window,key);assert.equal(descriptor.configurable,false);assert.equal(descriptor.set,undefined);
+ }
  assert.throws(()=>{api.mode='member';},TypeError);assert.throws(()=>{delete f.window.A1PublicBeta;},TypeError);
  f.runAgain();await flush();assert.equal(f.calls.length,1);assert.equal(f.timers.size,0);
 });
-test('false, malformed, extended and client-only policies fail closed',async()=>{
- for(const policy of [null,[],{},false,{...validPolicy,freeBetaMode:false},{...validPolicy,freeBetaMode:'true'},
-  {...validPolicy,billingEnabled:true},{...validPolicy,accountRequiredForSaving:false},{...validPolicy,plan:'PREMIUM'},
-  {freeBetaMode:true,billingEnabled:false}]){
+test('a valid public policy with free beta off publishes only local fashion and replays analysis once',async()=>{
+ const pending=deferred(),f=load({fetchImpl:()=>pending.promise}),received=[];
+ f.document.addEventListener('a1:public-local-ready',()=>f.document.addEventListener('a1:analysis-ready',event=>received.push(event.detail)));
+ f.emit('a1:analysis-ready',{metrics,photo:'PRIVATE-PHOTO'});
+ pending.resolve(response({...validPolicy,freeBetaMode:false}));await flush();
+ assert.equal(f.window.A1PublicLocal.mode,'server-public-local');assert.equal(f.window.A1PublicBeta,undefined);
+ assert.equal(f.document.events.filter(event=>event.type==='a1:public-local-ready').length,1);
+ assert.equal(f.document.events.filter(event=>event.type==='a1:public-beta-ready').length,0);
+ assert.equal(received.length,1);assert.equal(JSON.stringify(received[0]),JSON.stringify({metrics}));
+});
+test('disabled, malformed, extended and client-only policies fail closed',async()=>{
+ const {localFashionEnabled,...oldPolicy}=validPolicy;
+ for(const policy of [null,[],{},false,oldPolicy,{...validPolicy,localFashionEnabled:false},{...validPolicy,localFashionEnabled:'true'},
+  {...validPolicy,freeBetaMode:'true'},{...validPolicy,billingEnabled:true},{...validPolicy,accountRequiredForSaving:false},
+  {...validPolicy,plan:'PREMIUM'},{freeBetaMode:true,billingEnabled:false}]){
   const f=load({fetchImpl:async()=>response(policy),globals:{A1_FREE_BETA_MODE:'true'}});
   f.emit('a1:policy-ready',{freeBetaMode:true});f.emit('a1:analysis-ready',{metrics});await flush();
-  assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.document.events.filter(event=>event.type==='a1:public-beta-ready').length,0);assert.equal(f.timers.size,0);
+  assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.window.A1PublicLocal,undefined);
+  assert.equal(f.document.events.filter(event=>['a1:public-local-ready','a1:public-beta-ready'].includes(event.type)).length,0);assert.equal(f.timers.size,0);
  }
 });
 test('network, JSON, MIME, status, redirect and response URL failures cannot publish local beta',async()=>{
@@ -83,26 +100,30 @@ test('network, JSON, MIME, status, redirect and response URL failures cannot pub
   async()=>response(validPolicy,{headers:{get:()=> 'application/jsonp'}}),
   async()=>response(validPolicy,{status:201}),async()=>response(validPolicy,{ok:false}),async()=>response(validPolicy,{redirected:true}),
   ...['','https://attacker.test/api/policy','https://a1fashion.pages.dev/api/policy?enabled=true','https://a1fashion.pages.dev/api/policy/','https://preview.a1fashion.pages.dev/api/policy'].map(url=>async()=>response(validPolicy,{url}))];
- for(const fetchImpl of failures){const f=load({fetchImpl});await flush();assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.document.events.filter(event=>event.type==='a1:public-beta-ready').length,0);}
+ for(const fetchImpl of failures){const f=load({fetchImpl});await flush();assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.window.A1PublicLocal,undefined);assert.equal(f.document.events.length,0);}
 });
 test('Preview, unknown hosts and missing dependencies issue no bootstrap GET',async()=>{
  for(const host of ['preview.a1fashion.pages.dev','34004414.a1fashion.pages.dev','localhost','a1fashion.pages.dev.attacker.test','a.b.a1fashion.pages.dev','a1fashion.pages.dev.']){
-  const f=load({host});await flush();assert.equal(f.calls.length,0);assert.equal(f.window.A1PublicBeta,undefined);
+  const f=load({host});await flush();assert.equal(f.calls.length,0);assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.window.A1PublicLocal,undefined);
  }
  for(const options of [{origin:'http://a1fashion.pages.dev'},{withCore:false}]){const f=load(options);await flush();assert.equal(f.calls.length,0);assert.equal(f.window.A1PublicBeta,undefined);}
- const f=load({globals:{A1PublicBeta:Object.freeze({mode:'client-fake'})}});await flush();assert.equal(f.calls.length,0);assert.equal(f.warnings.length,1);assert.equal(f.document.events.length,0);
+ for(const key of ['A1PublicBeta','A1PublicLocal']){
+  const f=load({globals:{[key]:Object.freeze({mode:'client-fake'})}});await flush();assert.equal(f.calls.length,0);assert.equal(f.warnings.length,1);assert.equal(f.document.events.length,0);
+ }
 });
 test('policy timeout aborts and ignores late success',async()=>{
  const pending=deferred(),f=load({fetchImpl:()=>pending.promise});f.emit('a1:analysis-ready',{metrics});
  const deadline=[...f.timers.values()][0];assert.equal(deadline.delay,5000);deadline.callback();
  assert.equal(f.calls[0].options.signal.aborted,true);pending.resolve(response());await flush();
- assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.document.events.filter(event=>event.type==='a1:public-beta-ready').length,0);assert.equal(f.timers.size,0);
+ assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.window.A1PublicLocal,undefined);
+ assert.equal(f.document.events.filter(event=>['a1:public-local-ready','a1:public-beta-ready'].includes(event.type)).length,0);assert.equal(f.timers.size,0);
 });
 test('current early metrics replay after ready listeners initialize, with no other event data',async()=>{
  const pending=deferred(),f=load({fetchImpl:()=>pending.promise}),received=[],order=[];
- f.document.addEventListener('a1:public-beta-ready',()=>{order.push('ready');f.document.addEventListener('a1:analysis-ready',event=>{order.push('analysis');received.push(event.detail);});});
+ f.document.addEventListener('a1:public-local-ready',()=>order.push('local'));
+ f.document.addEventListener('a1:public-beta-ready',()=>{order.push('beta');f.document.addEventListener('a1:analysis-ready',event=>{order.push('analysis');received.push(event.detail);});});
  f.emit('a1:analysis-ready',{metrics,photo:'PRIVATE-PHOTO',rawText:'PRIVATE-TEXT'});pending.resolve(response());await flush();
- assert.deepEqual(order,['ready','analysis']);assert.equal(received.length,1);assert.deepEqual(Object.keys(received[0]),['metrics']);assert.deepEqual(Object.keys(received[0].metrics).sort(),Object.keys(metrics).sort());
+ assert.deepEqual(order,['local','beta','analysis']);assert.equal(received.length,1);assert.deepEqual(Object.keys(received[0]),['metrics']);assert.deepEqual(Object.keys(received[0].metrics).sort(),Object.keys(metrics).sort());
  assert.equal(JSON.stringify(received[0].metrics),JSON.stringify(metrics));assert.equal(Object.isFrozen(received[0]),true);assert.equal(Object.isFrozen(received[0].metrics),true);
  assert.doesNotMatch(JSON.stringify(received),/PRIVATE|photo|rawText/);
 });
@@ -145,9 +166,9 @@ test('a newer analysis or clear during ready listeners prevents stale replay',as
 test('pagehide aborts pending policy, revokes exposure and BFCache restoration reloads for fresh policy',async()=>{
  for(const earlySuccess of [false,true]){
   const pending=deferred(),f=load({fetchImpl:()=>pending.promise});f.emit('a1:analysis-ready',{metrics});
-  if(earlySuccess){pending.resolve(response());await flush();assert.ok(f.window.A1PublicBeta);}
-  f.page('pagehide');assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.calls[0].options.signal.aborted,true);assert.equal(f.timers.size,0);
-  if(!earlySuccess){pending.resolve(response());await flush();assert.equal(f.document.events.filter(event=>event.type==='a1:public-beta-ready').length,0);}
-  f.page('pageshow',{persisted:true});assert.equal(f.reloads,1);assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.calls.length,1);
+  if(earlySuccess){pending.resolve(response());await flush();assert.ok(f.window.A1PublicBeta);assert.ok(f.window.A1PublicLocal);}
+  f.page('pagehide');assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.window.A1PublicLocal,undefined);assert.equal(f.calls[0].options.signal.aborted,true);assert.equal(f.timers.size,0);
+  if(!earlySuccess){pending.resolve(response());await flush();assert.equal(f.document.events.filter(event=>['a1:public-local-ready','a1:public-beta-ready'].includes(event.type)).length,0);}
+  f.page('pageshow',{persisted:true});assert.equal(f.reloads,1);assert.equal(f.window.A1PublicBeta,undefined);assert.equal(f.window.A1PublicLocal,undefined);assert.equal(f.calls.length,1);
  }
 });

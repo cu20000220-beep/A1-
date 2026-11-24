@@ -4,6 +4,8 @@ export function isFreeBetaMode(env) {
 }
 
 export function publicBetaPolicy(env) {
-  return { freeBetaMode: isFreeBetaMode(env), billingEnabled: false,
-    accountRequiredForSaving: true };
+  // Public catalog previews and on-device fitting are available under either
+  // membership policy. Only freeBetaMode governs the existing server services.
+  return { localFashionEnabled: true, freeBetaMode: isFreeBetaMode(env),
+    billingEnabled: false, accountRequiredForSaving: true };
 }

@@ -78,6 +78,7 @@ let runtime;
   runtime = new Miniflare(convertV4MiniflareOptions ? convertV4MiniflareOptions(options) : options);
   const stats = async () => (await runtime.dispatchFetch('https://a1fashion.pages.dev/__local_test_stats')).json();
   const paths = [
+    ['/api/policy', 'GET'],
     ['/api/auth/config', 'GET'], ['/api/auth/session', 'GET'], ['/api/auth/signup', 'POST'],
     ['/api/auth/login', 'POST'], ['/api/auth/reset-password', 'POST'], ['/api/auth/delete-account', 'POST'],
     ['/api/membership', 'GET'], ['/api/recommendations', 'POST'], ['/api/global/account', 'GET'],
@@ -113,6 +114,13 @@ let runtime;
   }
   assert.equal((await stats()).environmentReads, 0, 'Static rendering must not inspect production credentials');
   assert.equal((await stats()).assetCalls, 2);
+
+  const publicLocal = await runtime.dispatchFetch('https://a1fashion.pages.dev/api/policy');
+  assert.equal(publicLocal.status, 200);
+  assert.deepEqual(await publicLocal.json(), { freeBetaMode: false, billingEnabled: false,
+    accountRequiredForSaving: true, localFashionEnabled: true });
+  assert.equal(outbound.length, 0, 'Public local policy never contacts Firebase or an AI provider');
+  assert.equal((await stats()).databaseReads, 0);
 
   const production = await runtime.dispatchFetch('https://a1fashion.pages.dev/api/auth/config');
   assert.equal(production.status, 200);

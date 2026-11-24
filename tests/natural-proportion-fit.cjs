@@ -179,3 +179,43 @@ test('arm ratio changes hands and stock sleeve geometry together without moving 
     long.dispose();
   }
 });
+
+test('Nova trouser samples change only the leg silhouette and keep the original fabric and seams', () => {
+  const profile = P.build({shoulderHipRatio: 1.52, legTorsoRatio: 1.98});
+  const original = fit(model, null, {profile});
+  const previews = Object.fromEntries(['straight', 'relaxed', 'wide'].map(bottomFit => [
+    bottomFit, fit(model, null, {profile, bottomFit})
+  ]));
+  try {
+    const ankle = jointY('LeftFoot');
+    const hip = jointY('LeftUpLeg');
+    const stock = part(original, 'outfit_bottom');
+    const widths = {};
+    for (const [bottomFit, preview] of Object.entries(previews)) {
+      assert.equal(preview.profile.bottomFit, bottomFit);
+      assert.deepEqual(preview.profile.appliedAxes, original.profile.appliedAxes);
+      for (const name of ['AvatarBody', 'outfit_top', 'outfit_shoes']) {
+        assert.deepEqual(part(preview, name).array, part(original, name).array);
+      }
+      const { source, mesh } = preview.parts.find(pair => pair.source.name === 'outfit_bottom');
+      assert.equal(mesh.material, source.material);
+      assert.deepEqual(mesh.geometry.getAttribute('uv').array, source.geometry.getAttribute('uv').array);
+      const positions = part(preview, 'outfit_bottom');
+      assert.equal(maxDisplacement(stock, positions, 1), 0);
+      for (const axis of [0, 2]) {
+        assert.equal(maxDisplacement(stock, positions, axis, y => y <= ankle + .035 || y >= hip), 0);
+        assert.ok(maxDisplacement(stock, positions, axis) > .008);
+        assert.ok(maxDisplacement(stock, positions, axis) <= .05);
+      }
+      for (let i = 0; i < stock.count; i++) {
+        if (Math.abs(stock.getX(i)) > .001) assert.equal(Math.sign(positions.getX(i)), Math.sign(stock.getX(i)));
+      }
+      widths[bottomFit] = [bandWidth(positions, .34, .03), bandWidth(positions, .63, .025)];
+    }
+    assert.ok(widths.wide[0] > widths.straight[0] && widths.straight[0] > widths.relaxed[0]);
+    assert.ok(widths.wide[1] > widths.relaxed[1] && widths.relaxed[1] > widths.straight[1]);
+  } finally {
+    original.dispose();
+    Object.values(previews).forEach(preview => preview.dispose());
+  }
+});

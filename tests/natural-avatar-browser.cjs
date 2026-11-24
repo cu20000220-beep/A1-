@@ -50,7 +50,7 @@ async function ready(page, look) {
   }, look, { timeout: 45000 });
 }
 
-async function prepare(browser, profile, { production = false, blocked = false } = {}) {
+async function prepare(browser, profile, { production = false, localFashionEnabled = false, blocked = false } = {}) {
   const base = production ? 'https://a1fashion.pages.dev' : origin;
   const context = await browser.newContext({ viewport: { width: profile.width, height: profile.height },
     hasTouch: profile.touch, isMobile: profile.touch, deviceScaleFactor: 1, locale: profile.lang === 'ko' ? 'ko-KR' : 'en-US' });
@@ -62,6 +62,14 @@ async function prepare(browser, profile, { production = false, blocked = false }
     const req = route.request(), url = new URL(req.url());
     assert.equal(url.origin, base, 'no photo, body value or credential can leave the isolated static origin');
     assert.equal(req.method(), 'GET');
+    if (production && url.pathname === '/api/policy') {
+      assert.equal(url.search, '');
+      assert.equal(req.postData(), null);
+      assert.equal(await req.headerValue('cookie'), null);
+      requests.push(url.pathname);
+      await route.fulfill({ json: { freeBetaMode: false, billingEnabled: false, accountRequiredForSaving: true, localFashionEnabled } });
+      return;
+    }
     assert.ok(!url.pathname.startsWith('/api/'), 'no backend, paid AI, member or database request');
     if (url.protocol === 'blob:') { await route.continue(); return; }
     for (const [key, value] of url.searchParams) { assert.equal(key, 'v'); assert.match(value, /^[a-z0-9-]+$/i); }
@@ -181,10 +189,31 @@ async function touchAndPinch(page) {
       console.log(`Natural avatar ${prefix}: real textured body/head, 73 bones, front/side/back, reference/garment boundaries, controls, cleanup and privacy passed.`);
       await context.close();
     }
-    const production = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' }, { production: true });
-    assert.ok(!production.requests.includes('/assets/natural-avatar/sample.glb'));
-    assert.notEqual(await production.page.locator('#gltf-proof-root').getAttribute('data-load-state'), 'ready');
+    const publicProfile = { width: 820, height: 1180, touch: true, lang: 'ko' };
+    const production = await prepare(browser, publicProfile, { production: true });
+    assert.deepEqual(production.requests.filter(p => p.startsWith('/api/')), ['/api/policy']);
+    assert.ok(!production.requests.some(p => p.endsWith('.glb')));
+    assert.equal(await production.page.locator('#gltf-proof-root').getAttribute('data-load-state'), 'blocked');
     assert.deepEqual(production.errors, []); reports.push({ productionBlocked: true, requests: production.requests }); await production.context.close();
+    const publicLocal = await prepare(browser, publicProfile, { production: true, localFashionEnabled: true });
+    await ready(publicLocal.page, 'nova');
+    assert.equal(await publicLocal.page.evaluate(() => window.A1PublicBeta), undefined, 'free beta remains independently disabled');
+    assert.deepEqual(publicLocal.requests.filter(p => p.startsWith('/api/')), ['/api/policy']);
+    assert.deepEqual(publicLocal.requests.filter(p => p.endsWith('.glb')), ['/assets/nova-avatar/avatar.glb']);
+    await publicLocal.page.locator('#gltf-front').click();
+    const trousers = [];
+    for (const sample of ['source', 'wide-trousers', 'relaxed-trousers', 'straight-trousers']) {
+      await publicLocal.page.evaluate(selected => window.A1GltfProof.setBodyFit(
+        { shoulderHipRatio: 1.22, legTorsoRatio: 1.67 }, { sample: selected }), sample);
+      const rendered = await snapshot(publicLocal.page);
+      assert.equal(rendered.bodyFitted, true);
+      assert.equal(rendered.garment, sample);
+      assert.equal(await publicLocal.page.locator('#gltf-garment').inputValue(), sample);
+      trousers.push(await capture(publicLocal.page, 'official-nova-' + sample));
+    }
+    assert.equal(new Set(trousers.map(frame => frame.sha256)).size, trousers.length, 'trouser choices alter the fitted avatar’s actual WebGL pixels');
+    assert.deepEqual(publicLocal.errors, []); assert.deepEqual(publicLocal.violations, []);
+    reports.push({ publicLocalNova: true, trousers, requests: publicLocal.requests }); await publicLocal.context.close();
     const blocked = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' }, { blocked: true });
     await blocked.page.waitForFunction(() => document.querySelector('#gltf-proof-root').dataset.loadState === 'error');
     assert.match(await blocked.page.locator('#gltf-status').innerText(), /모델|model|load/i);
@@ -193,7 +222,7 @@ async function touchAndPinch(page) {
     assert.deepEqual(blocked.errors, []); assert.deepEqual(blocked.violations, []);
     reports.push({ failureMode: 'naturalModelBlocked', requests: blocked.requests, status: await blocked.page.locator('#gltf-status').innerText() });
     await blocked.context.close();
-    const sources = ['gltf-proof.html', 'assets/gltf-proof.js', 'assets/gltf-proof.css', 'assets/natural-avatar/sample.glb', 'assets/natural-avatar/asset-manifest.json'];
+    const sources = ['gltf-proof.html', 'assets/gltf-proof.js', 'assets/gltf-proof.css', 'assets/public-beta-bootstrap.js', 'assets/nova-avatar/avatar.glb', 'assets/natural-avatar/sample.glb', 'assets/natural-avatar/asset-manifest.json'];
     for (const file of ['assets/natural-avatar-profile.js', 'assets/natural-avatar.js']) if (fs.existsSync(path.join(root, file))) sources.push(file);
     fs.writeFileSync(path.join(out, 'browser-result.json'), JSON.stringify({ sourceHashes: Object.fromEntries(sources.map(file => [file, sha(fs.readFileSync(path.join(root, file)))])), reports,
       environment: { browser: 'Linux Chromium with SwiftShader', nativeIpadSafari: false },
