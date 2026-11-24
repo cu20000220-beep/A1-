@@ -347,15 +347,71 @@ async function verifyBodyReplacement(browser) {
   } finally { await trial.context.close(); }
 }
 
+async function verifyStudioProportions(browser) {
+  const trial = await prepare(browser, { width: 1280, height: 940, touch: false, lang: 'ko', studio: true });
+  const { page } = trial;
+  try {
+    await page.locator('#avatar-open-default').click();
+    await readyAvatar(page);
+    const measures = page.locator('#avatar-proportion-input');
+    await measures.locator('summary').click();
+    const baseline = await stable3DHash(page), results = [];
+    const profiles = [
+      ['wider-shoulders', { shoulderWidthCm: 54, hipWidthCm: 36 }, 'shoulderHip', 'musinsa-4644434'],
+      ['wider-hips', { shoulderWidthCm: 34, hipWidthCm: 41 }, 'shoulderHip', '29cm-4145774'],
+      ['longer-legs', { torsoCm: 40, legCm: 84 }, 'legTorso', 'musinsa-2124425'],
+      ['longer-arms', { armCm: 66, legCm: 80 }, 'armLeg', '29cm-3423465'],
+      ['shorter-arms', { armCm: 45, legCm: 80 }, 'armLeg', 'musinsa-996498']
+    ];
+    for (const [name, inputs, axis, expectedFirst] of profiles) {
+      await measures.locator('#avatar-proportion-reset').click();
+      for (const [field, value] of Object.entries(inputs)) {
+        await measures.locator('[data-proportion-field=' + field + ']').fill(String(value));
+      }
+      await measures.locator('#avatar-proportion-apply').click();
+      await measures.locator('#avatar-proportion-consent').check();
+      await readyAvatar(page, { bodyFitted: true });
+      const fitted = await page.evaluate(() => A1GltfProof.snapshot());
+      assert.deepEqual(fitted.bodyFitAxes, [axis]);
+      const frame = await stable3DHash(page);
+      assert.notEqual(frame, baseline);
+      await page.locator('#avatar-recommended-clothes').click();
+      const cards = page.locator('#avatar-recommendation-results[data-state=ready] [data-discovery-id]');
+      await cards.first().waitFor();
+      assert.equal(await cards.first().getAttribute('data-discovery-id'), expectedFirst);
+      assert.equal(await cards.first().locator('[data-proportion-reasons]').isVisible(), true);
+      await capture3D(page, 'profile-' + name);
+      results.push({ name, frame, firstCandidate: expectedFirst });
+    }
+    assert.equal(new Set(results.map(result => result.frame)).size, profiles.length);
+    const sample = page.locator('#avatar-recommendation-results [data-avatar-sample="29cm-4145774"]');
+    await sample.click();
+    await page.waitForFunction(() => A1GltfProof.snapshot().garment === 'navy');
+    assert.match(await page.locator('#avatar-selected-recommendation').innerText(), /가디건/);
+    await capture3D(page, 'profile-recommended-navy');
+    await measures.locator('#avatar-proportion-consent').uncheck();
+    await readyAvatar(page);
+    assert.equal(await measures.locator('[data-proportion-field=armCm]').inputValue(), '');
+    assert.equal(await page.locator('#avatar-recommendation-results').isVisible(), false);
+    assert.deepEqual(trial.errors, []);
+    assert.deepEqual(trial.violations, []);
+    assert.deepEqual(trial.merchantNavigations, []);
+    console.log('Nova measurements: five distinct rendered bodies and first recommendations; linked sample and revocation passed.');
+    return { name: 'nova-manual-proportion-recommendations', passed: true, results };
+  } finally { await trial.context.close(); }
+}
+
 (async () => {
   const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   const cancelOnly = process.env.A1_PHOTO_FLOW_CANCEL_ONLY === '1';
+  const profileOnly = !cancelOnly && process.env.A1_PHOTO_FLOW_PROFILE_ONLY === '1';
   const replacementOnly = !cancelOnly && process.env.A1_PHOTO_FLOW_REPLACEMENT_ONLY === '1';
   const report = { inference: 'mocked deterministic landmarks; not proof of actual MediaPipe inference', browser: 'Linux Chromium/SwiftShader; not physical iPad Safari',
-    scope: cancelOnly ? 'cancellation-only' : replacementOnly ? 'replacement-only' : 'full-integration', cases: [] };
+    scope: cancelOnly ? 'cancellation-only' : profileOnly ? 'manual-profiles' : replacementOnly ? 'replacement-only' : 'full-integration', cases: [] };
   try {
-    if (!cancelOnly) report.cases.push(await verifyBodyReplacement(browser));
-    for (const profile of cancelOnly || replacementOnly ? [] : [
+    if (!cancelOnly && !profileOnly) report.cases.push(await verifyBodyReplacement(browser));
+    if (!cancelOnly && !replacementOnly) report.cases.push(await verifyStudioProportions(browser));
+    for (const profile of cancelOnly || replacementOnly || profileOnly ? [] : [
       { width: 1280, height: 900, touch: false, lang: 'ko' },
       { width: 820, height: 1180, touch: true, lang: 'ko' },
       { width: 1180, height: 820, touch: true, lang: 'en' },
@@ -451,7 +507,7 @@ async function verifyBodyReplacement(browser) {
       console.log(prefix + ': personalized Nova 3D, wearable styles, actual 3D/2D pixels, transforms/compare, privacy/delete passed.');
       await trial.context.close();
     }
-    for (const [name, delayedPath, revoke] of replacementOnly ? [] : [['delete-during-template-load', '/gltf-proof', false],
+    for (const [name, delayedPath, revoke] of replacementOnly || profileOnly ? [] : [['delete-during-template-load', '/gltf-proof', false],
       ['revoke-during-template-load', '/gltf-proof', true], ['delete-during-glb-load', '/assets/nova-avatar/avatar.glb', false]]) {
       const delayed = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' }, { delayedPath });
       await analyze(delayed.page); await delayed.page.locator('#avatar-reference-consent').check(); await delayed.page.locator('#lab-open-avatar').click();
@@ -472,7 +528,8 @@ async function verifyBodyReplacement(browser) {
   } finally {
     report.sourceHashes = Object.fromEntries(['tests/photo-fitting-flow-browser.cjs', 'assets/avatar-photo-bridge.js', 'assets/lab-entry.js', 'assets/lab-loader.js',
       'assets/gltf-proof.js', 'assets/natural-avatar-profile.js', 'assets/natural-avatar-fit.js', 'assets/natural-avatar-outfit.js',
-      'assets/nova-avatar-studio.js',
+      'assets/nova-avatar-studio.js', 'assets/nova-garment-fit.js', 'assets/proportion-profile.js', 'assets/proportion-controls.js',
+      'assets/proportion-recommendations.js', 'assets/product-discovery.js', 'assets/product-discovery-view.js',
       'assets/natural-avatar/asset-manifest.json', 'assets/natural-avatar/sample.glb',
       'assets/nova-avatar/asset-manifest.json', 'assets/nova-avatar/avatar.glb',
       'assets/fitting-studio-3d.js', 'assets/fitting-studio-photo.js', 'assets/fitting-studio-photo.css', 'assets/product-lab.js', 'assets/ai-studio.js',

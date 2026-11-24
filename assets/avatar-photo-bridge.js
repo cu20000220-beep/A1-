@@ -44,6 +44,7 @@
  const defaultStatus = document.createElement('p'); defaultStatus.id = 'avatar-default-status'; defaultStatus.setAttribute('role', 'status'); fallback.after(defaultStatus);
  let metrics = null, photoProfile = null, pending = null, revision = 0, navigation = 0, activeRequest = null, viewerObserver = null;
  let studioMeasurements, studioConsent, recommendations, recommendedButton, selectedNote;
+ const clothingConditions = window.A1ShoppingQuery?.parse('의류');
  const valid = value => value && Object.keys(value).sort().join(',') === 'legTorsoRatio,shoulderHipRatio'
   && Number.isFinite(value.shoulderHipRatio) && value.shoulderHipRatio >= .45 && value.shoulderHipRatio <= 2.5
   && Number.isFinite(value.legTorsoRatio) && value.legTorsoRatio >= .6 && value.legTorsoRatio <= 3.5;
@@ -89,7 +90,7 @@
   const usable = Boolean(profile || legacy);
   if (recommendedButton) recommendedButton.hidden = !usable;
   if (recommendations?.target.dataset.state && !recommendations.target.hidden) {
-   if (profile) recommendations.search('의류', {profile}); else recommendations.clear();
+   if (profile) recommendations.search(clothingConditions, {profile}); else recommendations.clear();
   }
  }
  function clearStudioInputs() {
@@ -163,7 +164,7 @@
    recommendedButton.addEventListener('click', () => {
     const profile = studioMeasurements?.current();
     if (!profile) return;
-    recommendations.search('의류', {profile}); reveal(target);
+    recommendations.search(clothingConditions, {profile}); reveal(target);
    });
   }
  }
