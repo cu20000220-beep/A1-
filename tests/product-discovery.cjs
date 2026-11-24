@@ -58,6 +58,51 @@ test('known category, collection, color and fit mismatches are not silently rela
  for(const patch of [{stock:'available'},{category:'tops'},{gender:'female'},{color:'blue'},{fit:'custom'}, {id:123}])assert.throws(()=>D.validateSnapshot(snapshot([row(patch)]),{now}));
 });
 
+test('matching observed attributes rank ahead of unconfirmed attributes without a public score', () => {
+ const unknown = row({
+  id: 'PRIVATE-UNCERTAIN', productUrl: 'https://www.29cm.co.kr/products/43', sourceUrl: 'https://www.29cm.co.kr/products/43',
+  gender: 'unknown', color: 'any', fit: 'any', sizes: [], price: 15000, checkedAt: now,
+ });
+ const exact = row();
+ const input = { ...Q.parse('남성 검정 와이드 슬랙스 5만원 이하'), size: 'm' };
+ const result = D.search(snapshot([unknown, exact]), input, { now });
+ assert.deepEqual(result.candidates.map(candidate => candidate.product.id), [exact.id, unknown.id]);
+ assert.ok(result.candidates[0].reasons.includes('size_matches'));
+ assert.ok(result.candidates[1].warnings.includes('size_unconfirmed'));
+ assert.ok(result.candidates.every(candidate => !Object.hasOwn(candidate, 'score')));
+});
+
+test('occasion reasons distinguish explicit evidence, styling ideas and unsuitable products', () => {
+ const work = row({ id: 'PRIVATE-WORK', type: 'shirt', category: 'tops', name: '오피스 셔츠' });
+ const top = row({
+  id: 'PRIVATE-PLAINTOP', type: 'shirt', category: 'tops', name: '기본 셔츠',
+  productUrl: 'https://www.29cm.co.kr/products/44', sourceUrl: 'https://www.29cm.co.kr/products/44',
+ });
+ const sleep = row({
+  id: 'PRIVATE-SLEEP', type: 'shirt', category: 'tops', name: '파자마 셔츠',
+  productUrl: 'https://www.29cm.co.kr/products/45', sourceUrl: 'https://www.29cm.co.kr/products/45',
+ });
+ const data = snapshot([top, sleep, work]);
+ const result = D.search(data, '출근용 셔츠', { now });
+ assert.deepEqual(result.candidates.map(candidate => candidate.product.id), [work.id, top.id]);
+ assert.ok(result.candidates[0].reasons.includes('purpose_label_matches'));
+ assert.ok(result.candidates[1].reasons.includes('purpose_coordination_hint'));
+ assert.ok(result.candidates[1].warnings.includes('occasion_unconfirmed'));
+ assert.equal(result.excluded.find(candidate => candidate.product.id === sleep.id).reason, 'purpose_not_supported');
+ assert.equal(D.search(data, '운동용 셔츠', { now }).candidates.length, 0);
+});
+
+test('cardigan queries keep the exact garment type even when old observations group knitwear', () => {
+ const knitName = row({ name: '라운드넥 울 가디건', type: 'knit', category: 'tops', color: 'navy', gender: 'women' });
+ const sweater = row({
+  id: 'PRIVATE-SWEATER', name: '라운드넥 울 스웨터', type: 'knit', category: 'tops', color: 'navy', gender: 'women',
+  productUrl: 'https://www.29cm.co.kr/products/48', sourceUrl: 'https://www.29cm.co.kr/products/48',
+ });
+ const data = snapshot([sweater, knitName]);
+ assert.deepEqual(D.search(data, '여성 네이비 가디건', { now }).candidates.map(candidate => candidate.product.id), [knitName.id]);
+ assert.equal(D.search(data, '여성 네이비 니트', { now }).candidates.length, 2);
+});
+
 test('search never applies body measurements or sends private query text anywhere',()=>{
  const before=snapshot(),serialized=JSON.stringify(before);
  for(const query of ['person@example.test 슬랙스','https://evil.test 셔츠','010-1234-5678 슬랙스'])assert.throws(()=>D.search(before,query,{now}));

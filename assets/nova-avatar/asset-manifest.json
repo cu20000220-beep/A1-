@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "assetId": "vtubeme-nova-glb",
+  "name": "Nova",
+  "license": {
+    "id": "CC-BY-4.0",
+    "publicWebDelivery": true,
+    "commercialUse": true,
+    "notice": "LICENSE.txt",
+    "url": "https://creativecommons.org/licenses/by/4.0/",
+    "attribution": "Nova by VTubeMe (https://vtubeme.com/), CC BY 4.0. A1 FASHION corrected non-unit normals on the trousers."
+  },
+  "model": {
+    "path": "avatar.glb",
+    "bytes": 5467216,
+    "sha256": "69b13c05dd1868266dc603c2101d481a0048ad9107c614aa081c79a929741b8e"
+  },
+  "source": {
+    "creator": "VTubeMe",
+    "creatorUrl": "https://vtubeme.com/",
+    "page": "https://vtubeme.com/free-vrm-avatars/nova",
+    "download": "https://vtubeme.com/media/free/nova/model.glb",
+    "retrievedDateKST": "2026-11-12",
+    "bytes": 5467216,
+    "sha256": "c3506d94dc7be7231d110e4fd3447e350162faa358916d4e7af8690a2d0f3714",
+    "publisherNotice": "Licensed CC BY 4.0 — free for personal and commercial use, including VTubing and streaming. Credit VTubeMe with a link back to vtubeme.com; you may modify and redistribute."
+  },
+  "changes": [
+    "Normalized 844 non-unit base NORMAL vectors in accessor 162 on the outfit_bottom mesh.",
+    "GLB JSON and every other binary buffer are byte-identical to the publisher's file."
+  ],
+  "validation": {
+    "validator": "Khronos gltf-validator",
+    "version": "2.0.0-dev.3.10",
+    "errors": 0,
+    "warnings": 29,
+    "infos": 8,
+    "hints": 20,
+    "truncated": false
+  }
+}

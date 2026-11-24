@@ -14,7 +14,7 @@ export function useEmbeddedImageElements(loader, manager) {
   });
 }
 
-export function applyNaturalProfile(model) {
+export function applyNaturalProfile(model, { nova = false } = {}) {
   if (applied.has(model)) return applied.get(model);
   model.updateMatrixWorld(true);
   const original = new Box3().setFromObject(model), height = original.max.y - original.min.y;
@@ -26,17 +26,19 @@ export function applyNaturalProfile(model) {
   model.updateMatrixWorld(true);
 
   const hair = model.getObjectByName('haircut');
-  if (!hair?.material || Array.isArray(hair.material)) throw Error('natural_profile_hair_missing');
+  if (!nova && (!hair?.material || Array.isArray(hair.material))) throw Error('natural_profile_hair_missing');
   // The source contains real hair cards. A depth-writing cutout prevents the
   // translucent overlapping rectangles seen with ordinary blend sorting.
   // Avoid alpha-to-coverage dithering and additional copied hair meshes.
-  hair.material.transparent = false;
-  hair.material.alphaTest = 0.18;
-  hair.material.alphaToCoverage = false;
-  hair.material.depthWrite = true;
-  hair.material.side = DoubleSide;
-  hair.material.roughness = 0.85;
-  hair.material.needsUpdate = true;
+  if (hair) {
+    hair.material.transparent = false;
+    hair.material.alphaTest = 0.18;
+    hair.material.alphaToCoverage = false;
+    hair.material.depthWrite = true;
+    hair.material.side = DoubleSide;
+    hair.material.roughness = 0.85;
+    hair.material.needsUpdate = true;
+  }
 
   function pointBone(name, childName, target) {
     const bone = model.getObjectByName(name), child = model.getObjectByName(childName);
@@ -54,8 +56,14 @@ export function applyNaturalProfile(model) {
     const arm = model.getObjectByName(side + 'Arm');
     if (!arm?.isBone) throw Error('natural_profile_rig_missing');
     const sign = Math.sign(arm.getWorldPosition(new Vector3()).x) || 1;
-    pointBone(side + 'Arm', side + 'ForeArm', [sign * 0.24, -0.97, 0.025]);
-    pointBone(side + 'ForeArm', side + 'ForeArm1', [sign * 0.15, -0.98, 0.10]);
+    const left = side === 'Left';
+    pointBone(side + 'Arm', side + 'ForeArm', nova ? [sign * (left ? .19 : .23), -.97, left ? .08 : -.045] : [sign * .24, -.97, .025]);
+    pointBone(side + 'ForeArm', side + 'ForeArm1', nova ? [sign * (left ? .045 : .10), -.98, left ? .19 : .16] : [sign * .15, -.98, .10]);
+  }
+  if (nova) {
+    const head = model.getObjectByName('Head');
+    if (head?.isBone) { head.rotateY(.09); head.rotateZ(-.035); }
+    model.updateMatrixWorld(true);
   }
   const spine = model.getObjectByName('Spine');
   if (!spine?.isBone) throw Error('natural_profile_rig_missing');

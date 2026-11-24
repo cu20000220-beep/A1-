@@ -17,7 +17,7 @@
     '스타일 이미지 · 2D': 'Style images · 2D',
     '실제 3D 인체 샘플': 'Actual 3D human sample',
     '실제 3D 인체 샘플을 준비하고 있습니다.': 'Preparing the actual 3D human sample.',
-    '이 3D는 위 실사 이미지 속 인물과 다른 별도 샘플입니다. 원본 의상 한 벌이며 사진·체형 수치를 적용하지 않습니다.': 'This 3D model is a separate stock sample, different from the people in the style images above. It has one original outfit and does not use your photo or body measurements.',
+    '기본 3D 인체를 불러옵니다. 사진 분석에서 동의하면 이 기기에서 추정한 비율을 3D 체형에 적용할 수 있습니다.': 'Start with a sample 3D body. With consent in photo analysis, estimated proportions can shape the avatar on this device.',
     '3D 샘플은 격리된 Preview에서 제공됩니다.': 'The 3D sample is available in an isolated Preview.',
     '3D 뷰어 파일을 읽지 못했습니다. 페이지를 새로고침하거나 기존 3D 화면에서 열어주세요.': 'The 3D viewer files could not load. Reload this page or open the existing 3D viewer.',
     '실제 3D 인체를 회전하고 확대해보세요.': 'Rotate and zoom the actual 3D human.',
@@ -67,10 +67,13 @@
     } else if (state === 'loading') message('실제 3D 인체 샘플을 준비하고 있습니다.');
   }
 
-  async function ensureViewer() {
+  async function ensureViewer(initialLook) {
     if (loaded) return;
     if (loading) return loading;
-    if (!viewer()) mount.append(template.content.cloneNode(true));
+    if (!viewer()) {
+      mount.append(template.content.cloneNode(true));
+      if (initialLook === 'nova') mount.querySelector('#gltf-look').value = initialLook;
+    }
     loading = (async () => {
       await import('./gltf-proof.js');
       if (!window.A1GltfProof) throw Error('viewer_not_started');
@@ -81,7 +84,7 @@
     try { await loading; } finally { loading = null; }
   }
 
-  async function choose(next) {
+  async function choose(next, initialLook) {
     if (!['images', 'three'].includes(next)) return;
     if (next === 'three' && !preview) return;
     mode = next; publishMode();
@@ -94,7 +97,7 @@
     revealAfterLoad = true;
     message('실제 3D 인체 샘플을 준비하고 있습니다.');
     try {
-      await ensureViewer();
+      await ensureViewer(initialLook);
       // A user may return to images while the module graph is loading.
       if (mode !== 'three') { event('a1:gltf-suspend'); return; }
       importFailed = false;
@@ -152,6 +155,6 @@
   });
   Object.defineProperty(window, 'A1FittingStudio3D', { value: Object.freeze({ snapshot() {
     return { mode, loaded, loading: Boolean(loading) || viewerState() === 'loading', state: viewerState(), actual3D: mode === 'three' && loaded && viewerState() === 'ready' };
-  }, open() { return choose('three'); }, close() { return choose('images'); } }), writable: false, configurable: false });
+  }, open({look} = {}) { return choose('three', look); }, close() { return choose('images'); } }), writable: false, configurable: false });
   publishMode();
 })();

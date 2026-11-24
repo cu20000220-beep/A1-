@@ -3,8 +3,11 @@ import { GLTFLoader } from './vendor/three-0.187.0/examples/jsm/loaders/GLTFLoad
 import { OrbitControls } from './vendor/three-0.187.0/examples/jsm/controls/OrbitControls.js';
 import { createHumanoidMaterial } from './humanoid-surface.js';
 import { applyNaturalProfile, useEmbeddedImageElements } from './natural-avatar-profile.js';
+import { createNaturalFit } from './natural-avatar-fit.js';
+import { identifyNaturalTop, setNaturalTopColor } from './natural-avatar-outfit.js';
+import { createNovaTopPalette, lightNovaStage } from './nova-avatar-studio.js';
 
-// Independent renderer proof. No photo bridge, storage, APIs or arbitrary files.
+// Renders reviewed meshes. Consented proportions are temporary and stay on-device.
 const root = document.querySelector('#gltf-proof-root');
 const I = window.A1I18n;
 const pairs = {
@@ -13,13 +16,28 @@ const pairs = {
   '무료 베타 · SF 아바타 스타일': 'Free beta · Sci-fi avatar style',
   '무료 베타 · 내추럴 3D 인체': 'Free beta · Natural 3D human',
   '내추럴 3D 피팅룸': 'Natural 3D fitting room',
-  '얼굴·피부·눈·머리카락·의상이 함께 있는 3D 인체 샘플입니다. 전신을 돌려 실제 형상과 표면을 확인해 보세요.': 'A 3D human sample with a coherent face, skin, eyes, hair and outfit. Rotate the full body to inspect the actual geometry and surfaces.',
-  '이 샘플은 사용자의 얼굴·체형을 복원한 결과가 아닙니다. 사진·분석값을 읽거나 전송하지 않습니다. 실제 판매 의류의 피팅·사이즈·착용감을 보장하지 않습니다.': 'This sample is not a reconstruction of your face or body. No photos or analysis values are read or transmitted. It does not guarantee the fit, size or comfort of retail clothing.',
+  '전신을 돌려 의상의 실루엣을 보고, 확대해 옷감의 질감을 확인하세요.': 'Rotate the avatar to see the outfit silhouette, and zoom in to inspect the fabric.',
+  '기본 체형의 3D 피팅 예시입니다. 정확한 의류 사이즈와 착용감은 판매처에서 확인하세요.': 'This sample shows 3D fitting on a default body. Check actual sizing and fit with the retailer.',
   '내추럴 인체 샘플': 'Natural human sample', '샘플 의상': 'Sample outfit', '원본 샘플 의상': 'Original sample outfit',
   '현재 인체 샘플에는 원본 의상 한 벌을 표시합니다. 교체 가능한 실제 의류 모델은 준비 중입니다. 기존 비교 모델에서는 예시 티셔츠 3종을 이용할 수 있습니다.': 'This human sample displays its original outfit. Interchangeable retail garment models are being prepared. The original comparison body still supports three example T-shirts.',
-  '내추럴 인체 샘플을 표시했습니다. 회전·확대와 피부·모발·의류 표면을 확인할 수 있습니다.': 'The natural human sample is displayed. Rotate and zoom to inspect the skin, hair and outfit surfaces.',
+  '3D 피팅 예시를 열었습니다. 회전하고 확대해 의상의 실루엣과 소재를 확인하세요.': 'The 3D fitting sample is ready. Rotate and zoom to inspect the silhouette and fabric.',
   '기본 인체: MetaPerson 공식 샘플 · BSD-3-Clause. 기존 비교 인체: MakeHuman hm08 · CC0. Three.js · MIT.': 'Default human: official MetaPerson sample · BSD-3-Clause. Original comparison body: MakeHuman hm08 · CC0. Three.js · MIT.',
   '내추럴 인체 출처와 이용 조건': 'Natural human source and license',
+  '3D 예시 상의': 'Sample 3D tops',
+  '실사형 스튜디오 아바타': 'Studio 3D avatar',
+  '상의 핏 자세히 보기': 'Inspect top fit',
+  '전신 보기로 돌아가기': 'Return to full body',
+  '상의 · 네이비': 'Top · Navy',
+  '상의 · 테라코타': 'Top · Terracotta',
+  '여유핏 상의': 'Relaxed top',
+  '법선을 보정하고 자세·조명과 체형·예시 상의를 조정했습니다.': 'Normals repaired; posing, lighting, body proportions and sample clothing adjusted.',
+  '기본 티셔츠 · 네이비': 'Regular tee · Navy',
+  '기본 티셔츠 · 테라코타': 'Regular tee · Terracotta',
+  '여유 있는 티셔츠 · 화이트': 'Relaxed tee · White',
+  '예시 상의의 색상과 여유분을 바꿔 입혀볼 수 있습니다.': 'Try sample tops with different colors and silhouettes.',
+  '사진의 비율을 반영한 3D 아바타입니다. 회전해서 예시 의상의 핏을 비교하세요.': 'The 3D avatar reflects your photo proportions. Rotate it to compare the sample fits.',
+  '선택한 신체 비율을 반영한 가상 모델입니다. 회전해서 예시 의상의 핏을 비교하세요.': 'The virtual model uses the selected body proportions. Rotate it to compare sample garments.',
+  '3D에 비율을 적용하지 못해 기본 아바타를 표시합니다.': 'The proportions could not be applied. The default avatar is displayed.',
   'SF 휴머노이드 피팅룸': 'Sci-fi humanoid fitting room',
   '붉은 합성 피부와 청록·금색 금속 패널을 가진 자체 디자인 아바타입니다. 전신을 회전하고 예시 티셔츠를 갈아입혀 보세요. 기존 인체 모델과도 비교할 수 있습니다.': 'An original avatar with red synthetic skin and teal-and-gold metallic panels. Rotate the body, try example T-shirts, and compare it with the original body.',
   '아바타 모습': 'Avatar appearance', 'SF 휴머노이드': 'Sci-fi humanoid', '기존 인체와 비교': 'Compare original body', '기본 아바타 · 티셔츠 없음': 'Base avatar · No T-shirt',
@@ -58,20 +76,56 @@ if (window.A1Preview && /^[a-z0-9-]+\.a1fashion\.pages\.dev$/.test(location.host
 
 function startProof() {
   const $ = selector => document.querySelector(selector);
-  const controlsElements = [...root.querySelectorAll('button:not(#gltf-retry),select,input')];
   let renderer, scene, camera, controls, model, observer, controller, naturalRig;
+  let requestedFit=null, requestedProfile=null, requestedSample='source';
+  let fitted=null, topVertices=null, novaPalette=null, portrait=false, fullView=null;
+  const naturalStyles={navy:'기본 티셔츠 · 네이비',terracotta:'기본 티셔츠 · 테라코타',relaxed:'여유 있는 티셔츠 · 화이트'};
+  const garmentSelect=$('#gltf-garment'), naturalNote=$('#natural-avatar-note');
+  const naturalNotice=root.querySelector('.notice');
+  const defaultNotice='기본 체형의 3D 피팅 예시입니다. 정확한 의류 사이즈와 착용감은 판매처에서 확인하세요.';
+  const defaultGarmentNote='현재 인체 샘플에는 원본 의상 한 벌을 표시합니다. 교체 가능한 실제 의류 모델은 준비 중입니다. 기존 비교 모델에서는 예시 티셔츠 3종을 이용할 수 있습니다.';
+  for(const [id,label] of Object.entries(naturalStyles)){
+    const option=document.createElement('option');option.value=id;I.setText(option,label);garmentSelect.append(option);
+  }
   let state = 'loading', generation = 0, renderCount = 0, disposed = false;
   let materials = new Map(), frameSamples = [], lastMemory = { geometries: 0, textures: 0 };
+  const portraitButton=document.createElement('button');
+  portraitButton.type='button';portraitButton.id='gltf-portrait';portraitButton.hidden=true;
+  portraitButton.setAttribute('aria-pressed','false');
+  I.setText(portraitButton,'상의 핏 자세히 보기');$('#gltf-zoom-in').parentElement.after(portraitButton);
+  const credit=document.createElement('p');credit.id='gltf-nova-credit';credit.hidden=true;
+  const creator=document.createElement('a'), license=document.createElement('a');
+  creator.href='https://vtubeme.com/';creator.textContent='Nova by VTubeMe';
+  license.href='https://creativecommons.org/licenses/by/4.0/';license.textContent='CC BY 4.0';
+  creator.referrerPolicy=license.referrerPolicy='no-referrer';
+  const modifications=document.createElement('span');
+  I.setText(modifications,'법선을 보정하고 자세·조명과 체형·예시 상의를 조정했습니다.');
+  credit.append(creator,' · ',license,' · ',modifications);root.querySelector('footer')?.prepend(credit);
+  const controlsElements = [...root.querySelectorAll('button:not(#gltf-retry),select,input')];
+  const textured = () => look === 'natural' || look === 'nova';
   let drawCalls = 0, triangles = 0, skinPose = false, garment = 'source', materialMode = 'standard', look = 'natural';
   const shirts = { 'LAB-A': 'ExampleTshirtA', 'LAB-B': 'ExampleTshirtB', 'LAB-C': 'ExampleTshirtC' };
   function status(message) { I.setText($('#gltf-status'), message); I.setText($('#gltf-canvas-state'), message); }
   function setState(value) { state = value; root.dataset.loadState = value; $('#gltf-canvas-state').hidden = value === 'ready'; controlsElements.forEach(el => { el.disabled = value !== 'ready'; }); }
   function capabilities() {
-    const natural = look === 'natural';
-    $('#gltf-garment').disabled = natural || state !== 'ready';
-    $('#natural-avatar-note').hidden = !natural;
-    I.setText($('#gltf-garment-title'), natural ? '샘플 의상' : '예시 티셔츠');
-    for (const option of $('#gltf-garment').options) option.hidden = natural ? option.value !== 'source' : option.value === 'source';
+    const natural = textured(), styles = Boolean(natural && fitted && topVertices);
+    portraitButton.hidden=credit.hidden=look!=='nova';
+    portraitButton.disabled=state!=='ready';
+    const novaStyleLabels = {navy:'상의 · 네이비',terracotta:'상의 · 테라코타',relaxed:'여유핏 상의'};
+    for (const option of garmentSelect.options) {
+      if (Object.hasOwn(naturalStyles, option.value)) I.setText(option, look==='nova' ? novaStyleLabels[option.value] : naturalStyles[option.value]);
+    }
+    garmentSelect.disabled = state !== 'ready' || natural && !styles;
+    $('#gltf-skin-proof').disabled = state !== 'ready' || Boolean(fitted);
+    naturalNote.hidden = !natural;
+    I.setText(naturalNote, styles ? '예시 상의의 색상과 여유분을 바꿔 입혀볼 수 있습니다.' : defaultGarmentNote);
+    I.setText($('#gltf-garment-title'), styles ? '3D 예시 상의' : natural ? '샘플 의상' : '예시 티셔츠');
+    naturalNotice.hidden = Boolean(fitted);
+    if (!fitted) I.setText(naturalNotice, defaultNotice);
+    for (const option of garmentSelect.options) {
+      const style = Object.hasOwn(naturalStyles, option.value);
+      option.hidden = style ? !styles : natural ? option.value !== 'source' : option.value === 'source';
+    }
   }
   function render() {
     if (!renderer || !scene || !camera || disposed) return;
@@ -83,11 +137,13 @@ function startProof() {
   }
   function clean() {
     disposed = true;
+    releaseFit(); topVertices=null; novaPalette=null; root.dataset.bodyFit='off';
     controller?.abort(); observer?.disconnect(); controls?.dispose();
     const geometries = new Set(), ownedMaterials = new Set(), textures = new Set(), skeletons = new Set();
     scene?.traverse(object => {
       if (object.geometry) geometries.add(object.geometry);
       if (object.skeleton) skeletons.add(object.skeleton);
+      object.shadow?.dispose();
       for (const material of Array.isArray(object.material) ? object.material : [object.material]) if (material) ownedMaterials.add(material);
     });
     for (const pair of materials.values()) { for (const material of Object.values(pair)) ownedMaterials.add(material); }
@@ -109,20 +165,22 @@ function startProof() {
     status(messages[code] || '3D 렌더러를 시작하지 못했습니다. 기존 3D 체험을 이용하거나 다시 불러오세요.');
   }
   async function approvedAsset(signal) {
+    const asset = look === 'nova' ? {base:'nova-avatar',file:'avatar.glb',license:'CC-BY-4.0',limit:8} :
+      look === 'natural' ? {base:'natural-avatar',file:'sample.glb',license:'BSD-3-Clause',limit:12} :
+        {base:'gltf-proof',file:'avatar.glb',license:'CC0-1.0',limit:4};
     let manifest, bytes;
     try {
-      const natural = look === 'natural', base = natural ? 'assets/natural-avatar/' : 'assets/gltf-proof/';
+      const base = 'assets/' + asset.base + '/';
       const record = await fetch(base + 'asset-manifest.json', { credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store', signal });
       if (!record.ok) throw Error(); manifest = await record.json();
-      const response = await fetch(base + (natural ? 'sample.glb' : 'avatar.glb'), { credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store', signal });
+      const response = await fetch(base + asset.file, { credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store', signal });
       if (!response.ok) throw Error(); bytes = await response.arrayBuffer();
     } catch (error) { if (signal.aborted) throw error; throw Error('asset_network'); }
     // This is a fixed reviewed, self-contained local package; arbitrary URLs,
     // uploaded files and personal data are deliberately not accepted here.
     try {
-      const natural = look === 'natural';
-      if (manifest.license?.id !== (natural ? 'BSD-3-Clause' : 'CC0-1.0') || !manifest.license.publicWebDelivery || manifest.model?.path !== (natural ? 'sample.glb' : 'avatar.glb') ||
-          bytes.byteLength !== manifest.model.bytes || bytes.byteLength > (natural ? 12 : 4) * 1024 * 1024 || !crypto.subtle) throw Error();
+      if (manifest.license?.id !== asset.license || !manifest.license.publicWebDelivery || manifest.model?.path !== asset.file ||
+          bytes.byteLength !== manifest.model.bytes || bytes.byteLength > asset.limit * 1024 * 1024 || !crypto.subtle) throw Error();
       const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(n => n.toString(16).padStart(2, '0')).join('');
       if (hash !== manifest.model.sha256) throw Error();
       const view = new DataView(bytes);
@@ -135,8 +193,81 @@ function startProof() {
     } catch { throw Error('asset_invalid'); }
     return bytes;
   }
+  function releaseFit() {
+    if (!fitted) return;
+    for (const {source} of fitted.parts) source.visible=true;
+    fitted.dispose();
+    fitted=null;
+  }
+  function updateFit() {
+    releaseFit();
+    if (!model || !textured()) return;
+    const nova=look==='nova', outfit=model.getObjectByName(nova ? 'outfit_top' : 'outfit');
+    const pair=materials.get(outfit);
+    const color = choice => {
+      if (novaPalette) novaPalette(choice);
+      else if (topVertices) setNaturalTopColor(outfit.geometry, pair, topVertices, choice);
+    };
+    root.dataset.bodyFit='off';
+    const profile=nova ? requestedProfile : null;
+    if (!requestedFit && !profile) {
+      color('source');
+      garment = garmentSelect.value = 'source';
+      return;
+    }
+    try {
+      if (!topVertices) topVertices = nova ? new Uint8Array(outfit.geometry.getAttribute('position').count).fill(1) : identifyNaturalTop(outfit.geometry);
+      const choice = topVertices && Object.hasOwn(naturalStyles, garmentSelect.value) ? garmentSelect.value : 'source';
+      color(choice === 'relaxed' ? 'source' : choice);
+      if (skinPose) {
+        skinPose=false; $('#gltf-skin-proof').checked=false;
+        naturalRig.spine.quaternion.copy(naturalRig.spineNeutralQuaternion);
+      }
+      fitted = createNaturalFit(model, requestedFit, {topVertices, relaxed:choice === 'relaxed',profile});
+      if (!fitted) throw Error('photo_fit_unavailable');
+      for (const {source} of fitted.parts) source.visible=false;
+      scene.add(fitted.group);
+      garment=garmentSelect.value=choice;
+      root.dataset.bodyFit='applied';
+    } catch {
+      releaseFit();
+      color('source');
+      garment=garmentSelect.value='source';
+      root.dataset.bodyFit='unavailable';
+    }
+  }
+  function naturalStatus() {
+    if (fitted && requestedProfile && look==='nova') return '선택한 신체 비율을 반영한 가상 모델입니다. 회전해서 예시 의상의 핏을 비교하세요.';
+    if (fitted) return '사진의 비율을 반영한 3D 아바타입니다. 회전해서 예시 의상의 핏을 비교하세요.';
+    if (requestedFit || requestedProfile && look==='nova') return '3D에 비율을 적용하지 못해 기본 아바타를 표시합니다.';
+    return '3D 피팅 예시를 열었습니다. 회전하고 확대해 의상의 실루엣과 소재를 확인하세요.';
+  }
+  function setBodyFit(metrics,{profile,sample}={}) {
+    const valid=metrics && Number.isFinite(metrics.shoulderHipRatio) && metrics.shoulderHipRatio>=.45 && metrics.shoulderHipRatio<=2.5
+      && Number.isFinite(metrics.legTorsoRatio) && metrics.legTorsoRatio>=.6 && metrics.legTorsoRatio<=3.5;
+    const next=valid ? {shoulderHipRatio:metrics.shoulderHipRatio,legTorsoRatio:metrics.legTorsoRatio} : null;
+    let nextProfile=null;
+    try {
+      const checked=profile&&window.A1ProportionProfile?.validate(profile);
+      if(checked&&Object.keys(checked).length)nextProfile=checked;
+    } catch { /* Invalid or incomplete input keeps the available photo reference. */ }
+    const nextSample=next||nextProfile ? (Object.hasOwn(naturalStyles,sample)||sample==='source' ? sample : requestedSample) : 'source';
+    if (next?.shoulderHipRatio===requestedFit?.shoulderHipRatio && next?.legTorsoRatio===requestedFit?.legTorsoRatio &&
+        JSON.stringify(nextProfile)===JSON.stringify(requestedProfile) && nextSample===requestedSample) return;
+    requestedFit=next;
+    requestedProfile=nextProfile;
+    requestedSample=nextSample;
+    if (textured()) garmentSelect.value=nextSample;
+    if (state==='ready' && textured()) updateGarment();
+  }
   function updateGarment() {
-    if (look === 'natural') { garment = 'source'; render(); return; }
+    if (textured()) {
+      updateFit();
+      capabilities();
+      if (state==='ready') status(naturalStatus());
+      render();
+      return;
+    }
     garment = $('#gltf-garment').value;
     for (const [id, name] of Object.entries(shirts)) model.getObjectByName(name).visible = garment === id;
     render();
@@ -145,6 +276,7 @@ function startProof() {
     materialMode = $('#gltf-material').value;
     for (const [mesh, pair] of materials) mesh.material = mesh.name === 'Body' && look === 'humanoid'
       ? pair[materialMode === 'basic' ? 'humanoidBasic' : 'humanoid'] : pair[materialMode];
+    if (fitted) for (const {source,mesh} of fitted.parts) mesh.material=source.material;
     render();
   }
   function view(yaw) {
@@ -152,11 +284,32 @@ function startProof() {
     camera.position.set(Math.sin(yaw) * distance, controls.target.y, Math.cos(yaw) * distance);
     controls.update(); render();
   }
+  portraitButton.addEventListener('click', () => {
+    if (state!=='ready' || look!=='nova') return;
+    portrait=!portrait;
+    portraitButton.setAttribute('aria-pressed',String(portrait));
+    I.setText(portraitButton,portrait?'전신 보기로 돌아가기':'상의 핏 자세히 보기');
+    if (portrait) {
+      fullView={position:camera.position.clone(),target:controls.target.clone(),minDistance:controls.minDistance};
+      const yaw=Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z);
+      controls.target.y=1.14;
+      controls.minDistance=.80;
+      const distance=1.18;
+      camera.position.set(Math.sin(yaw)*distance,controls.target.y,Math.cos(yaw)*distance);
+    } else {
+      camera.position.copy(fullView.position);
+      controls.target.copy(fullView.target);
+      controls.minDistance=fullView.minDistance;
+      fullView=null;
+    }
+    controls.update();render();
+  });
   function zoom(factor) { camera.position.sub(controls.target).multiplyScalar(factor).clampLength(controls.minDistance, controls.maxDistance).add(controls.target); controls.update(); render(); }
   async function initialize() {
     const token = ++generation; clean(); disposed = false; setState('loading');
-    look = ['natural','reference','humanoid'].includes($('#gltf-look').value) ? $('#gltf-look').value : 'natural';
-    frameSamples = []; renderCount = 0; skinPose = false; garment = look === 'natural' ? 'source' : 'none'; materialMode = 'standard';
+    look = ['nova','natural','reference','humanoid'].includes($('#gltf-look').value) ? $('#gltf-look').value : 'natural';
+    frameSamples = []; renderCount = 0; skinPose = false; garment = textured() ? requestedSample : 'none'; materialMode = 'standard';
+    portrait=false;fullView=null;portraitButton.setAttribute('aria-pressed','false');I.setText(portraitButton,'상의 핏 자세히 보기');
     $('#gltf-garment').value = garment; $('#gltf-material').value = materialMode; $('#gltf-skin-proof').checked = false;
     $('#gltf-look').value = look;
     capabilities();
@@ -173,37 +326,41 @@ function startProof() {
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.18;
       scene = new THREE.Scene(); scene.background = new THREE.Color('#e9e9e1');
-      camera = new THREE.PerspectiveCamera(34, 1, 0.05, 25); camera.position.set(0, 0.9, 3.7);
+      camera = new THREE.PerspectiveCamera(34, 1, 0.05, 25); camera.position.set(look==='nova'?.38:0, 0.9, look==='nova'?3.28:3.7);
       controls = new OrbitControls(camera, canvas); controls.target.set(0, 0.85, 0);
       controls.enablePan = false; controls.enableDamping = false; controls.minDistance = 1.5; controls.maxDistance = 5;
       controls.minPolarAngle = 0.3; controls.maxPolarAngle = Math.PI * 0.65;
       controls.touches.ONE = THREE.TOUCH.ROTATE; controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
       controls.addEventListener('change', render); controls.listenToKeyEvents(canvas);
-      scene.add(new THREE.HemisphereLight('#fff9ef', '#536455', 2.3));
-      for (const [color, intensity, position] of [['#fff3dd', 3.2, [2.4, 3.4, 3]], ['#dfecff', 1.6, [-2, 1.8, 1]], ['#ffffff', 2.3, [0, 2.6, -3]]]) {
-        const light = new THREE.DirectionalLight(color, intensity); light.position.set(...position); scene.add(light);
+      if (look==='nova') lightNovaStage(renderer,scene);
+      else {
+        scene.add(new THREE.HemisphereLight('#fff9ef', '#536455', 2.3));
+        for (const [color, intensity, position] of [['#fff3dd', 3.2, [2.4, 3.4, 3]], ['#dfecff', 1.6, [-2, 1.8, 1]], ['#ffffff', 2.3, [0, 2.6, -3]]]) {
+          const light = new THREE.DirectionalLight(color, intensity); light.position.set(...position); scene.add(light);
+        }
+        const floor = new THREE.Mesh(new THREE.CircleGeometry(1.3, 64), new THREE.MeshStandardMaterial({ color: '#d7dbcf', roughness: 1 }));
+        floor.rotation.x = -Math.PI / 2; floor.position.y = -0.005; scene.add(floor);
       }
-      const floor = new THREE.Mesh(new THREE.CircleGeometry(1.3, 64), new THREE.MeshStandardMaterial({ color: '#d7dbcf', roughness: 1 }));
-      floor.rotation.x = -Math.PI / 2; floor.position.y = -0.005; scene.add(floor);
       canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); if (!disposed && token === generation) failed('context_lost'); });
       const bytes = await approvedAsset(signal);
       if (token !== generation || signal.aborted) return;
       const manager = new THREE.LoadingManager(); manager.setURLModifier(url => {
         // URI preflight forbids every external reference. These are only Blob
         // URLs made from the already verified embedded images by GLTFLoader.
-        if (look === 'natural' && url.startsWith('blob:' + location.origin + '/')) return url;
+        if (textured() && url.startsWith('blob:' + location.origin + '/')) return url;
         throw Error('asset_invalid');
       });
       const loader = new GLTFLoader(manager);
       // Image elements use the existing img-src blob: policy. Fetching Blob
       // images via ImageBitmapLoader would require relaxing connect-src.
-      if (look === 'natural') useEmbeddedImageElements(loader, manager);
+      if (textured()) useEmbeddedImageElements(loader, manager);
       const gltf = await loader.parseAsync(bytes, '');
       if (token !== generation || signal.aborted) { gltf.scene.traverse(mesh => { mesh.geometry?.dispose(); mesh.material?.dispose?.(); mesh.skeleton?.dispose(); }); return; }
       model = gltf.scene;
-      if (look === 'natural') {
-        if (!model.getObjectByName('AvatarHead')?.isSkinnedMesh || !model.getObjectByName('AvatarBody')?.isSkinnedMesh || !model.getObjectByName('outfit')) throw Error('asset_invalid');
-        naturalRig = applyNaturalProfile(model);
+      if (textured()) {
+        const required=look==='nova'?['outfit_top','outfit_bottom','outfit_shoes']:['outfit'];
+        if (!['AvatarHead','AvatarBody',...required].every(name=>model.getObjectByName(name)?.isSkinnedMesh)) throw Error('asset_invalid');
+        naturalRig = applyNaturalProfile(model,{nova:look==='nova'});
       } else if (!model.getObjectByName('Body')?.isSkinnedMesh || !model.getObjectByName('Spine') || Object.values(shirts).some(name => !model.getObjectByName(name)?.isSkinnedMesh)) throw Error('asset_invalid');
       model.traverse(mesh => {
         if (!mesh.isMesh) return;
@@ -214,20 +371,29 @@ function startProof() {
         const pair = { standard, basic };
         if (mesh.name === 'Body') { pair.humanoid = createHumanoidMaterial(standard); pair.humanoidBasic = createHumanoidMaterial(standard, { unlit: true }); }
         materials.set(mesh, pair);
+        if (look==='nova') {
+          mesh.castShadow=!standard.transparent;
+          mesh.receiveShadow=true;
+          if (mesh.name==='outfit_top') novaPalette=createNovaTopPalette(pair);
+        }
       });
       scene.add(model);
       const resize = () => { if (!renderer) return; const rect = canvas.getBoundingClientRect(); renderer.setSize(Math.max(1, rect.width), Math.max(1, rect.height), false); camera.aspect = Math.max(1, rect.width) / Math.max(1, rect.height); camera.updateProjectionMatrix(); render(); };
       observer = new ResizeObserver(resize); observer.observe(canvas); controls.update(); updateMaterial(); updateGarment(); resize();
-      setState('ready'); capabilities(); status(look === 'natural'
-        ? '내추럴 인체 샘플을 표시했습니다. 회전·확대와 피부·모발·의류 표면을 확인할 수 있습니다.'
+      setState('ready'); capabilities(); status(textured()
+        ? naturalStatus()
         : '전신·예시 티셔츠를 표시했습니다. 회전과 의류 변경을 확인할 수 있습니다.');
     } catch (error) { if (token === generation && !signal.aborted) failed(error.message); }
     finally { clearTimeout(timer); }
   }
-  $('#gltf-garment').addEventListener('change', updateGarment);
+  $('#gltf-garment').addEventListener('change', () => {
+    if (textured()) requestedSample=garmentSelect.value;
+    updateGarment();
+  });
   $('#gltf-material').addEventListener('change', updateMaterial);
   $('#gltf-look').addEventListener('change', initialize);
   $('#gltf-skin-proof').addEventListener('change', () => {
+    if (fitted) return;
     skinPose = $('#gltf-skin-proof').checked;
     if (naturalRig) { naturalRig.spine.quaternion.copy(naturalRig.spineNeutralQuaternion); if (skinPose) naturalRig.spine.rotateZ(0.08); }
     else model.getObjectByName('Spine').rotation.z = skinPose ? 0.12 : 0;
@@ -237,17 +403,20 @@ function startProof() {
   $('#gltf-left').addEventListener('click', () => view(Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) - Math.PI / 18));
   $('#gltf-right').addEventListener('click', () => view(Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) + Math.PI / 18));
   $('#gltf-zoom-in').addEventListener('click', () => zoom(0.9)); $('#gltf-zoom-out').addEventListener('click', () => zoom(1.1));
-  $('#gltf-delete').addEventListener('click', () => { generation++; clean(); setState('disposed'); status('임시 3D 화면을 지웠습니다. 다시 불러오기로 재시작할 수 있습니다.'); });
+  function suspend() {
+    generation++; requestedFit=requestedProfile=null; requestedSample='source'; clean(); setState('disposed');
+  }
+  $('#gltf-delete').addEventListener('click', () => { suspend(); status('임시 3D 화면을 지웠습니다. 다시 불러오기로 재시작할 수 있습니다.'); });
   $('#gltf-retry').addEventListener('click', initialize);
   // The same renderer can be opened lazily inside the style studio. Hiding
   // its panel also cancels in-flight loads and releases GPU resources.
-  window.addEventListener('a1:gltf-suspend', () => { generation++; clean(); setState('disposed'); });
+  window.addEventListener('a1:gltf-suspend', suspend);
   window.addEventListener('a1:gltf-resume', () => { if (state === 'disposed') initialize(); });
-  window.addEventListener('pagehide', () => { generation++; clean(); setState('disposed'); });
-  Object.defineProperty(window, 'A1GltfProof', { value: Object.freeze({ snapshot() {
+  window.addEventListener('pagehide', suspend);
+  Object.defineProperty(window, 'A1GltfProof', { value: Object.freeze({ setBodyFit, snapshot() {
     let meshes = 0, skinnedMeshes = 0, bones = new Set();
     model?.traverse(object => { if (object.isMesh) meshes++; if (object.isSkinnedMesh) { skinnedMeshes++; for (const bone of object.skeleton.bones) bones.add(bone); } });
-    return { state, disposed, meshes, skinnedMeshes, bones: bones.size, drawCalls, triangles, renderCount, garment, materialMode, skinPose, look, naturalProfile: look === 'natural',
+    return { state, disposed, bodyFitted:Boolean(fitted), bodyFitAxes:[...(fitted?.profile.appliedAxes||[])], meshes, skinnedMeshes, bones: bones.size, drawCalls, triangles, renderCount, garment, materialMode, skinPose, look, naturalProfile: textured(), portrait,
       viewYaw: camera ? Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) : 0,
       frameSamples: [...frameSamples], timingScope: 'CPU render submission milliseconds; not GPU frame time or FPS',
       memoryGeometries: lastMemory.geometries, memoryTextures: lastMemory.textures };

@@ -43,3 +43,30 @@ test('body-reference ideas require explicit consent, change clothing fits, prese
  const chosen=Q.parse('여성 네이비 슬림 원피스 하객용');assert.equal(Q.bodySuggestions(chosen,{metrics:wide,consent:true})[0].conditions.fit,'slim');assert.equal(Q.bodySuggestions(chosen,{metrics:wide,consent:true})[0].conditions.type,'dress');
  const manual=Q.links(base).at(-1);assert.equal(manual.manualSearch,true);assert.equal(new URL(manual.searchUrl).search,'');
 });
+
+test('cardigans and relaxed-fit aliases are normalized without losing the garment subtype', () => {
+ const cardigan = Q.parse('여성 네이비 가디건');
+ assert.equal(cardigan.type, 'cardigan');
+ assert.equal(cardigan.category, 'tops');
+ assert.equal(Q.term(cardigan), '여성 네이비 가디건');
+ assert.equal(Q.term(cardigan, 'en'), 'women navy cardigan');
+ assert.equal(Q.parse('women navy cardigans').type, 'cardigan');
+ assert.equal(Q.parse('남성 검정 루즈 슬랙스').fit, 'relaxed');
+ assert.equal(Q.parse('여성 넉넉한 긴팔 티셔츠').fit, 'relaxed');
+ assert.equal(Q.parse('반팔 셔츠').type, 'shirt');
+});
+
+test('category-only searches preserve that category in official search and body-reference ideas', () => {
+ const top = Q.parse('여성 네이비 상의');
+ assert.equal(top.type, 'clothing');
+ assert.equal(top.category, 'tops');
+ assert.equal(Q.term(top), '여성 네이비 상의');
+ assert.equal(Q.describe(top).kind, '상의');
+ assert.equal(Q.parse('검정 하의').category, 'bottoms');
+ assert.equal(Q.parse('여성 하의를 5만원 이하로 찾아줘').category, 'bottoms');
+ assert.equal(Q.parse('5만원 이하의 옷').category, 'all');
+ assert.equal(Q.parse('가벼운 아우터').category, 'outerwear');
+ const metrics = { shoulderHipRatio: 1.5, legTorsoRatio: 1.8 };
+ for (const idea of Q.bodySuggestions(top, { metrics, consent: true })) assert.equal(idea.conditions.category, 'tops');
+ assert.throws(() => Q.term({ ...top, category: 'secret-17-1234' }));
+});

@@ -21,10 +21,11 @@ test('only separately reviewed fitting images extend the fitting image policy; A
 });
 test('operator-authorized product photos extend only img-src to exact reviewed CDN origins',()=>{
  const manifest=JSON.parse(fs.readFileSync(path.resolve(__dirname,'../assets/product-images.json'),'utf8')),observations=JSON.parse(fs.readFileSync(path.resolve(__dirname,'../assets/observed-products.json'),'utf8'));
- const actual=catalogPublicHeaders(template,[],{manifest,observations});
+ const now=Math.max(observations.observedAt,manifest.authorization.recordedAt,...manifest.products.map(entry=>entry.checkedAt));
+ const actual=catalogPublicHeaders(template,[],{manifest,observations,now});
  for(const route of ['/stylist*','/product-lab*','/fitting-studio*']){
   const section=actual.split(route+'\n')[1].split('\n\n')[0];assert.match(section,/img-src[^;]*https:\/\/image\.msscdn\.net https:\/\/img\.29cm\.co\.kr;/);assert.match(section,/connect-src 'self';/);
  }
  const restored=actual.replaceAll(' https://image.msscdn.net https://img.29cm.co.kr;',';');assert.equal(restored,template,'no API, script, payment, account or image-upload policy is relaxed');
- const changed=structuredClone(manifest);changed.products[0].imageUrl='https://unreviewed.test/picture.jpg';assert.throws(()=>catalogPublicHeaders(template,[],{manifest:changed,observations}));
+ const changed=structuredClone(manifest);changed.products[0].imageUrl='https://unreviewed.test/picture.jpg';assert.throws(()=>catalogPublicHeaders(template,[],{manifest:changed,observations,now}));
 });

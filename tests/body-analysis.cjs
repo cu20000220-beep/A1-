@@ -14,6 +14,17 @@ function pose() {
   return result;
 }
 const analyze = points => analyzePose(points, 600, 1000);
+
+function hangingArms(wristY = .48) {
+  const points = pose();
+  for (const [id, [x,y]] of Object.entries({
+    13: [.28,.35], 14: [.72,.35], 15: [.27,wristY], 16: [.73,wristY],
+  })) {
+    points[id] = { x, y, visibility: .99 };
+  }
+  return points;
+}
+
 test('accepts visible upright pose and reports 2D limitations without modifying inputs', () => {
   const points = pose(), snapshot = JSON.stringify(points);
   const result = analyze(points);
@@ -24,7 +35,46 @@ test('accepts visible upright pose and reports 2D limitations without modifying 
   assert.ok(result.notes.some(note => note.includes('정확한 신체 치수')));
   assert.ok(result.notes.some(note => note.includes('구독 이용권 확인')));
   assert.deepEqual(Object.keys(api), ['analyzePose']);
+  assert.deepEqual(result.photoProportions, {
+    shoulderHipRatio: result.metrics.shoulderHipRatio,
+    legTorsoRatio: result.metrics.legTorsoRatio,
+  });
   assert.equal(JSON.stringify(points), snapshot);
+});
+
+test('optional hanging-arm proportions vary independently of the original body metrics', () => {
+  const regular = analyze(hangingArms());
+  const longer = analyze(hangingArms(.55));
+  assert.equal(regular.ok, true);
+  assert.equal(longer.ok, true);
+  assert.deepEqual(regular.metrics, longer.metrics);
+  const armLength = Math.hypot(.02 * 600, .15 * 1000) + Math.hypot(.01 * 600, .13 * 1000);
+  assert.ok(Math.abs(regular.photoProportions.armLegRatio - armLength / regular.metrics.legPixels) < 1e-10);
+  assert.ok(longer.photoProportions.armLegRatio > regular.photoProportions.armLegRatio);
+  assert.equal(regular.photoProportions.shoulderHipRatio, regular.metrics.shoulderHipRatio);
+  assert.equal(regular.photoProportions.legTorsoRatio, regular.metrics.legTorsoRatio);
+  assert.equal(Object.hasOwn(regular.metrics, 'armLegRatio'), false, 'legacy consumers keep their original metric shape');
+  assert.ok(Object.isFrozen(regular.photoProportions));
+});
+
+test('unreliable arm landmarks do not remove usable shoulder and leg proportions', () => {
+  const cases = [
+    points => { points[15].visibility = .74; },
+    points => { points[15].y = .30; },
+    points => { points[15].x = .72; },
+    points => { points[15].x = .002; },
+    points => { delete points[15]; },
+  ];
+  for (const change of cases) {
+    const points = hangingArms();
+    change(points);
+    const result = analyze(points);
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.photoProportions, {
+      shoulderHipRatio: result.metrics.shoulderHipRatio,
+      legTorsoRatio: result.metrics.legTorsoRatio,
+    });
+  }
 });
 
 test('pixel aspect ratio is applied to geometric distances', () => {

@@ -37,7 +37,7 @@
     <section id="studio-photo-flow" aria-labelledby="studio-photo-title" data-state="idle">
       <h2 id="studio-photo-title">내 사진으로 이어서 피팅하기</h2>
       <p>사진 분석부터 의류 사진 배치까지 이 페이지에서 이어갑니다. 개인 사진과 분석값은 기기 메모리에만 유지합니다.</p>
-      <p>3D는 별도 인체 샘플이며, 의류 사진은 내 사진 위에 2D로 겹칩니다. AI 자연 합성이나 실제 상품 3D 착용이 아닙니다.</p>
+      <p>사진상 비율과 직접 입력한 치수로 3D 아바타를 조절할 수 있습니다. 이용 허락을 확인한 의류 사진은 로컬 2D 피팅에서 볼 수 있습니다.</p>
       <div class="studio-photo-actions"><button id="studio-open-analysis" type="button">사진 선택·체형 분석</button><button id="studio-open-photo-fitting" type="button">내 사진 2D 피팅 열기</button></div>
       <p id="studio-photo-status" role="status" aria-live="polite"></p>
       <button id="studio-photo-retry" type="button" hidden>사진 피팅 다시 시도</button>
@@ -67,15 +67,15 @@
         <section class="looks-section" aria-labelledby="looks-title"><div class="looks-heading"><div><p class="eyebrow">02 / LOOK OPTIONS</p><h3 id="looks-title">다른 스타일도 만나보세요.</h3></div><span>예시 의상 · 실제 상품 아님</span></div><div id="studio-style-grid" class="looks-grid" aria-label="예시 의상 선택"></div><p class="looks-note">의상별 이미지는 정면만 준비되어 있습니다. 다른 방향은 기본 의상에서 확인하세요.</p></section>
       </div>
 <section id="studio-3d-panel" class="studio-three-panel" hidden aria-label="실제 3D 인체 샘플">
-      <p class="studio-three-note">이 3D는 위 실사 이미지 속 인물과 다른 별도 샘플입니다. 원본 의상 한 벌이며 사진·체형 수치를 적용하지 않습니다.</p>
+      <p class="studio-three-note">기본 3D 인체를 불러옵니다. 사진 분석에서 동의하면 이 기기에서 추정한 비율을 3D 체형에 적용할 수 있습니다.</p>
       <p id="studio-3d-status" role="status" aria-live="polite">3D 보기를 선택하면 모델을 불러옵니다.</p>
       <button id="studio-3d-retry" type="button" hidden>3D 화면 다시 불러오기</button>
       <div id="studio-3d-mount"></div>
       <template id="studio-3d-template"><p id="gltf-unavailable">이 기술 검증은 격리된 Preview에서만 제공됩니다.</p><div id="gltf-proof-root" data-load-state="blocked" hidden>
     <p class="eyebrow">무료 베타 · 내추럴 3D 인체</p>
     <h3>내추럴 3D 피팅룸</h3>
-    <p class="lead">얼굴·피부·눈·머리카락·의상이 함께 있는 3D 인체 샘플입니다. 전신을 돌려 실제 형상과 표면을 확인해 보세요.</p>
-    <p class="notice">이 샘플은 사용자의 얼굴·체형을 복원한 결과가 아닙니다. 사진·분석값을 읽거나 전송하지 않습니다. 실제 판매 의류의 피팅·사이즈·착용감을 보장하지 않습니다.</p>
+    <p class="lead">전신을 돌려 의상의 실루엣을 보고, 확대해 옷감의 질감을 확인하세요.</p>
+    <p class="notice">기본 체형의 3D 피팅 예시입니다. 정확한 의류 사이즈와 착용감은 판매처에서 확인하세요.</p>
     <div class="workspace">
       <section class="stage" aria-label="3D 전신 화면">
         <canvas id="gltf-canvas" width="720" height="900" tabindex="0" aria-label="회전 가능한 예시 3D 전신과 티셔츠"></canvas>
@@ -83,7 +83,7 @@
         <p class="gesture">한 손가락으로 회전 · 두 손가락으로 확대·축소</p>
       </section>
       <section class="panel" aria-label="렌더링 조작">
-        <label>아바타 모습<select id="gltf-look" disabled><option value="natural">내추럴 인체 샘플</option><option value="reference">기존 인체와 비교</option><option value="humanoid">SF 휴머노이드</option></select></label>
+        <label>아바타 모습<select id="gltf-look" disabled><option value="natural">내추럴 인체 샘플</option><option value="nova">실사형 스튜디오 아바타</option><option value="reference">기존 인체와 비교</option><option value="humanoid">SF 휴머노이드</option></select></label>
         <label><span id="gltf-garment-title">샘플 의상</span><select id="gltf-garment" disabled><option value="source">원본 샘플 의상</option><option value="none">기본 아바타 · 티셔츠 없음</option><option value="LAB-A">기본 · 블루</option><option value="LAB-B">여유형 · 테라코타</option><option value="LAB-C">짧은형 · 그린</option></select></label>
         <p id="natural-avatar-note" class="small">현재 인체 샘플에는 원본 의상 한 벌을 표시합니다. 교체 가능한 실제 의류 모델은 준비 중입니다. 기존 비교 모델에서는 예시 티셔츠 3종을 이용할 수 있습니다.</p>
         <div class="buttons"><button id="gltf-front" disabled>정면</button><button id="gltf-side" disabled>측면</button><button id="gltf-back" disabled>후면</button></div>
@@ -105,6 +105,6 @@
     </section>
     <section class="next-section" aria-labelledby="next-title"><div><p class="eyebrow">CONTINUE WITH A1</p><h2 id="next-title">스타일에서,<br>나에게 맞는 선택으로.</h2></div><div class="next-links"><a href="index.html#ai-studio"><span>01</span><div><h3>내 사진 체형 분석</h3><p>기존 기기 내 사진 분석으로 이동합니다.</p></div><b aria-hidden="true">↗</b></a><a href="product-lab.html"><span>02</span><div><h3>내 사진 로컬 2D 미리보기</h3><p>별도 동의 후 기기 안에서 이미지 배치를 체험하세요.</p></div><b aria-hidden="true">↗</b></a><a href="gltf-proof.html"><span>03</span><div><h3>실제 3D 연구실</h3><p>회전 가능한 3D 인체 샘플은 별도 화면에서 확인하세요.</p></div><b aria-hidden="true">↗</b></a><a href="index.html#shopping-search"><span>04</span><div><h3>국내 의류 검색</h3><p>원하는 조건으로 공식 판매처 검색을 시작하세요.</p></div><b aria-hidden="true">↗</b></a></div></section>
   </main>
-  <footer class="site-footer"><a class="brand" href="index.html"><strong>A1</strong><span>FASHION</span></a><p>나를 이해하는 스타일, A1 FASHION.</p><p>스타일 이미지는 2D 예시이며 사진 피팅은 기기 내 2D 겹치기입니다. 3D는 별도 인체 샘플이며 AI 자연 합성·실제 상품 3D 착용·정확한 사이즈 보장은 제공하지 않습니다.</p><a href="privacy.html">개인정보 처리 안내</a></footer>
+  <footer class="site-footer"><a class="brand" href="index.html"><strong>A1</strong><span>FASHION</span></a><p>나를 이해하는 스타일, A1 FASHION.</p><p>3D 아바타는 선택한 비율을 반영한 가상 모델입니다. 착용감과 사이즈는 판매처에서 확인하세요.</p><a href="privacy.html">개인정보 처리 안내</a></footer>
 </body>
 </html>

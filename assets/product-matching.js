@@ -1,6 +1,11 @@
 /* Deterministic condition matching. No inference of body measurements or size. */
 'use strict';
-((root,factory)=>{const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.A1ProductMatching=api;})(typeof globalThis!=='undefined'?globalThis:this,()=>{
+((root, factory) => {
+ const commonJS = typeof module === 'object' && module.exports;
+ const api = factory(() => commonJS ? require('./proportion-recommendations.js') : root.A1ProportionRecommendations);
+ if (commonJS) module.exports = api;
+ else root.A1ProductMatching = api;
+})(globalThis, getProportionRecommendations => {
  const currencies=['KRW','USD','EUR','GBP','JPY'],styles=['all','minimal','casual','classic','streetwear'];
  const validMetrics=m=>m&&Object.keys(m).sort().join(',')==='legTorsoRatio,shoulderHipRatio'&&Number.isFinite(m.shoulderHipRatio)&&m.shoulderHipRatio>=.45&&m.shoulderHipRatio<=2.5&&Number.isFinite(m.legTorsoRatio)&&m.legTorsoRatio>=.6&&m.legTorsoRatio<=3.5;
  function preferences(value){
@@ -13,8 +18,10 @@
  }
  const fold=v=>typeof v==='string'?v.normalize('NFC').trim().toLowerCase():'';
  const colorTokens={navy:['navy','네이비'],black:['black','블랙','검정'],white:['white','화이트','흰색'],beige:['beige','베이지']};
- function rank(products,input,{now=Date.now(),mode='approved'}={}){
+ function rank(products,input,{now=Date.now(),mode='approved',profile}={}){
   const p=preferences(input);
+  const hasProfile=profile && typeof profile==='object' && !Array.isArray(profile) && Object.keys(profile).length>0;
+  const recommendations=hasProfile ? getProportionRecommendations() : null;
   if(!Array.isArray(products)||products.length>100||!['approved','fixture'].includes(mode)||!Number.isSafeInteger(now)||now<=0)throw new TypeError('invalid_catalog');
   const matches=[],excluded=[];
   for(const product of products){
@@ -39,13 +46,20 @@
    if(p.occasion!=='all'){if(product.occasions?.length)add(15,product.occasions.includes(p.occasion),'occasion_match');else{total+=15;warnings.push('occasion_unknown');}}
    if(p.size){add(15,sizes.some(v=>fold(v)===fold(p.size)),'listed_size_match');if(!sizes.length)warnings.push('size_unknown');}
    if(p.gender!=='all')add(5,true,'collection_match');
-   if(p.bodyConsent){
+   if(p.bodyConsent&&!hasProfile){
     const match=p.metrics.shoulderHipRatio>1.15?tags.some(t=>['straight','relaxed'].includes(t)):p.metrics.shoulderHipRatio<.9?tags.includes('layered'):tags.includes('balanced');
     add(10,match,'photo_ratio_reference');warnings.push('photo_ratios_not_measurements');
    }
-   matches.push({product,score:Math.round(100*earned/total),reasons,warnings,...(p.bodyConsent?{bodyReference:true}:{bodyReference:false})});
+   const proportionReasons=recommendations?.evidence(product,profile) ?? [];
+   matches.push({
+    product, score:Math.round(100*earned/total), reasons, warnings,
+    bodyReference:hasProfile ? proportionReasons.length>0 : p.bodyConsent,
+    ...(hasProfile ? {proportionReasons} : {})
+   });
   }
-  matches.sort((a,b)=>b.score-a.score||a.product.price-b.product.price||a.product.id.localeCompare(b.product.id));
+  matches.sort((a,b)=>b.score-a.score||
+   (b.proportionReasons?.length ?? 0)-(a.proportionReasons?.length ?? 0)||
+   a.product.price-b.product.price||a.product.id.localeCompare(b.product.id));
   return {mode,preferences:p,matches,excluded,scoreMeaning:'condition-match-not-fit-probability'};
  }
  return Object.freeze({preferences,rank,validMetrics});

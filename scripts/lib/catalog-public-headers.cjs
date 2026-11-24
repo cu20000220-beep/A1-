@@ -15,7 +15,7 @@ function catalogPublicHeaders(template,products,imageContext){
  // Explicit operator authorization is separate from a supplier-feed contract.
  // Validate the complete manifest rather than trusting a client-supplied host.
  if(imageContext){
-  const images=require('../../assets/product-images.js').validateManifest(imageContext.manifest,imageContext.observations);
+  const images=require('../../assets/product-images.js').validateManifest(imageContext.manifest,imageContext.observations,{now:imageContext.now});
   for(const image of images)if(image.delivery==='remote-reference'){
    const origin=reviewedOrigin(image.imageUrl,'unreviewed_operator_image');origins.add(origin);fittingOrigins.add(origin);
   }

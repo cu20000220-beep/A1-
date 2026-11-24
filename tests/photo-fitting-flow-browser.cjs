@@ -19,7 +19,8 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 
 function instrumentMockAnalysis() {
   const create = URL.createObjectURL.bind(URL), revoke = URL.revokeObjectURL.bind(URL);
-  window.__flowImageUrls = new Set(); window.__flowBodySelections = 0;
+  window.__flowImageUrls = new Set(); window.__flowBodySelections = 0; window.__flowAnalyses = 0;
+  document.addEventListener('a1:analysis-ready', () => { __flowAnalyses++; });
   URL.createObjectURL = value => { const url = create(value); __flowImageUrls.add(url); return url; };
   URL.revokeObjectURL = url => { __flowImageUrls.delete(url); revoke(url); };
   sessionStorage.setItem('a1:unrelated-test-state', 'SYNTHETIC-STATE-KEEP');
@@ -28,9 +29,13 @@ function instrumentMockAnalysis() {
     setOptions() {} onResults(fn) { this.result = fn; }
     async initialize() {} async reset() {} async close() {}
     async send() {
-      const points = Array.from({ length: 33 }, () => ({ x: .5, y: .5, visibility: .99 }));
-      for (const [index, [x, y]] of Object.entries({ 11: [.3, .2], 12: [.7, .2], 23: [.36, .45], 24: [.64, .45],
-        25: [.36, .65], 26: [.64, .65], 27: [.36, .9], 28: [.64, .9] })) points[index] = { x, y, visibility: .99 };
+      const points = Array.from({ length: 33 }, (_, index) => ({ x: .5, y: .5, visibility: index < 11 ? 0 : .99 }));
+      const body = window.__flowDifferentRatios
+        ? { 11: [.26, .2], 12: [.74, .2], 23: [.35, .37], 24: [.65, .37],
+          25: [.35, .63], 26: [.65, .63], 27: [.35, .93], 28: [.65, .93] }
+        : { 11: [.3, .2], 12: [.7, .2], 23: [.36, .45], 24: [.64, .45],
+          25: [.36, .65], 26: [.64, .65], 27: [.36, .9], 28: [.64, .9] };
+      for (const [index, [x, y]] of Object.entries(body)) points[index] = { x, y, visibility: .99 };
       this.result({ poseLandmarks: points });
     }
   };
@@ -94,10 +99,17 @@ async function prepare(browser, profile, { delayedPath } = {}) {
     allowMerchant(url) { allowMerchant = url; } };
 }
 
-async function analyze(page) {
+async function analyze(page, { autoFit = false } = {}) {
+  const consent = page.locator('#ai-form #avatar-reference-consent');
+  const alreadyConsented = await consent.isChecked();
+  const completed = await page.evaluate(() => __flowAnalyses);
   await page.locator('#ai-photo').setInputFiles(path.join(root, 'assets/photos/man.jpg'));
-  await page.locator('#ai-analyze').click();
-  await page.waitForFunction(() => !document.querySelector('#ai-result').hidden);
+  if (!alreadyConsented) {
+    await page.waitForFunction(() => !document.querySelector('#ai-analyze').disabled);
+    if (autoFit) await consent.check();
+    await page.locator('#ai-analyze').click();
+  }
+  await page.waitForFunction(previous => __flowAnalyses === previous + 1 && !document.querySelector('#ai-result').hidden, completed);
   assert.equal(await page.locator('#ai-preview-canvas').evaluate(c => c.width * c.height), 1, 'full-photo preview is erased at analysis success');
   assert.equal(await page.locator('#ai-clean-canvas').evaluate(c => c.hidden && c.width > 100 && c.height > 100), true);
 }
@@ -121,17 +133,27 @@ async function capture3D(page, name) {
   return { name, sha256: sha(bytes), colors: colors.size, chromatic };
 }
 
-async function readyNatural(page) {
-  await page.waitForFunction(() => window.A1GltfProof?.snapshot().state === 'ready', null, { timeout: 45000 });
+async function readyAvatar(page, { look = 'nova', bodyFitted = false } = {}) {
+  await page.waitForFunction(expected => {
+    const state = window.A1GltfProof?.snapshot();
+    return state?.state === 'ready' && state.look === expected.look && state.bodyFitted === expected.bodyFitted;
+  }, { look, bodyFitted }, { timeout: 45000 });
   const value = await page.evaluate(() => A1GltfProof.snapshot());
-  assert.equal(value.look, 'natural'); assert.equal(value.bones, 73); assert.ok(value.skinnedMeshes >= 10);
-  assert.ok(value.triangles > 40000 && value.memoryTextures > 10);
+  assert.equal(value.look, look); assert.equal(value.bones, 73); assert.ok(value.skinnedMeshes >= 10);
+  assert.ok(value.triangles > (look === 'nova' ? 15000 : 40000) && value.memoryTextures > 10);
   assert.equal(await page.locator('#avatar-root:visible').count(), 0, 'the old mannequin must not be the analysis default');
   assert.equal(await page.locator('#gltf-proof-root').count(), 1, 'the existing singleton renderer is mounted once');
   return value;
 }
 
-async function stable3DHash(page) {
+async function verifyNovaCredit(page) {
+  const credit = page.locator('#gltf-nova-credit');
+  assert.equal(await credit.isVisible(), true, 'the active Nova asset displays attribution');
+  assert.equal(await credit.locator('a[href="https://vtubeme.com/"]').isVisible(), true);
+  assert.equal(await credit.locator('a[href="https://creativecommons.org/licenses/by/4.0/"]').isVisible(), true);
+}
+
+async function renderedFrame(page) {
   // Read the WebGL canvas synchronously with an actual render. A locator
   // screenshot can otherwise include the site's sticky header after the
   // consent checkbox scrolls it, producing a false geometry-change result.
@@ -140,7 +162,25 @@ async function stable3DHash(page) {
     return document.querySelector('#gltf-canvas').toDataURL('image/png');
   });
   assert.ok(value.length > 10000, 'the actual WebGL frame contains rendered detail');
-  return sha(value);
+  return Buffer.from(value.split(',', 2)[1], 'base64');
+}
+
+async function stable3DHash(page) { return sha(await renderedFrame(page)); }
+
+async function verifyPortrait(page, prefix, fullFrame) {
+  const portrait = page.locator('#gltf-portrait');
+  assert.equal(await portrait.isVisible(), true);
+  assert.equal(await page.evaluate(() => A1GltfProof.snapshot().portrait), false);
+  await portrait.click();
+  assert.equal(await page.evaluate(() => A1GltfProof.snapshot().portrait), true);
+  assert.notEqual(await stable3DHash(page), fullFrame, 'the portrait shows a different WebGL view of the same actor');
+  assert.equal(await page.evaluate(() => A1GltfProof.snapshot().portrait), true, 'front rotation preserves portrait framing');
+  const capture = await capture3D(page, prefix + '-3d-portrait');
+  await portrait.click();
+  assert.equal(await page.evaluate(() => A1GltfProof.snapshot().portrait), false);
+  await page.locator('#gltf-front').click();
+  assert.equal(await stable3DHash(page), fullFrame, 'closing the portrait restores the full-body frame');
+  return capture;
 }
 
 async function touch(page) {
@@ -211,7 +251,8 @@ async function verifyClear(page) {
   assert.equal(await page.locator('#lab-garment-photo').inputValue(), '');
   assert.equal(await page.locator('#lab-local-photo-result').isVisible(), false);
   await page.waitForFunction(() => {
-    const state = window.A1GltfProof?.snapshot(); return !state || state.disposed && state.memoryGeometries === 0 && state.memoryTextures === 0;
+    const state = window.A1GltfProof?.snapshot();
+    return !state || state.disposed && !state.bodyFitted && state.memoryGeometries === 0 && state.memoryTextures === 0;
   });
   assert.equal(await page.locator('#gltf-proof-root:visible').count(), 0, 'deleting analysis also hides its temporary avatar');
   assert.equal(await page.evaluate(() => __flowImageUrls.size), 0);
@@ -250,12 +291,71 @@ async function verifyShopping(page, trial, { activate = false, click = false } =
   return { searches, actualRetailerResponseTested: false, navigationIntercepted: click };
 }
 
+async function verifyBodyReplacement(browser) {
+  const trial = await prepare(browser, { width: 1280, height: 900, touch: false, lang: 'ko' });
+  const { page } = trial;
+  const consent = page.locator('#avatar-reference-consent');
+  try {
+    await analyze(page, { autoFit: true });
+    await readyAvatar(page, { bodyFitted: true });
+    assert.equal(await page.evaluate(() => typeof window.A1AvatarPhoto), 'undefined');
+    const firstMetrics = await page.locator('#ai-metrics').innerText();
+    const first = PNG.sync.read(await renderedFrame(page));
+
+    // Leave consent enabled and submit the same fixture with different
+    // inferred body proportions. The second selection starts analysis.
+    await page.evaluate(() => {
+      window.__flowDifferentRatios = true;
+      document.addEventListener('a1:analysis-cleared', () => {
+        window.__flowFitClearedOnReplacement = A1GltfProof.snapshot().bodyFitted === false;
+      }, { once: true });
+    });
+    await analyze(page);
+    assert.equal(await consent.isChecked(), true);
+    assert.equal(await page.evaluate(() => __flowFitClearedOnReplacement), true, 'replacement discards the old 3D shape before analysis');
+    assert.deepEqual(await page.evaluate(() => [__flowBodySelections, __flowAnalyses]), [2, 2]);
+    await readyAvatar(page, { bodyFitted: true });
+    assert.notEqual(await page.locator('#ai-metrics').innerText(), firstMetrics, 'replacement displays the updated body proportions');
+    const secondFrame = await renderedFrame(page);
+    const second = PNG.sync.read(secondFrame);
+    assert.deepEqual([first.width, first.height], [second.width, second.height], 'the compared frames have identical dimensions');
+    assert.notEqual(sha(first.data), sha(second.data), 'updated proportions change the rendered avatar at the same framing');
+    await capture3D(page, 'index-ko-1280-3d-different-proportions');
+
+    await consent.uncheck();
+    await readyAvatar(page);
+    assert.equal(await page.locator('#natural-photo-reference').isVisible(), false);
+    await consent.check();
+    await page.locator('#lab-open-avatar').click();
+    await readyAvatar(page, { bodyFitted: true });
+    assert.equal(await stable3DHash(page), sha(secondFrame), 'reapplying consent recovers the newest render');
+    await page.locator('#ai-clear').click();
+    await page.waitForFunction(() => {
+      const state = A1GltfProof.snapshot();
+      return state.disposed && !state.bodyFitted && state.memoryTextures === 0 && state.memoryGeometries === 0;
+    });
+    assert.equal(await consent.isChecked(), false);
+    assert.equal(await page.locator('#ai-clean-canvas').evaluate(canvas => canvas.width * canvas.height), 1);
+    assert.equal(await page.locator('#gltf-proof-root:visible').count(), 0);
+    assert.equal(await page.evaluate(() => __flowImageUrls.size), 0);
+    assert.deepEqual(await page.evaluate(() => Object.keys(sessionStorage)), ['a1:unrelated-test-state']);
+    assert.deepEqual(await page.evaluate(() => Object.keys(localStorage)), ['a1-fashion:language']);
+    assert.deepEqual(trial.errors, []); assert.deepEqual(trial.violations, []); assert.deepEqual(trial.merchantNavigations, []);
+    console.log('Nova body photo: changed proportions, automatic replacement, revoke and clear passed.');
+    return { name: 'nova-body-replacement-privacy', bodyLandmarksMocked: true, automaticReplacement: true,
+      changedAvatar: true, revoked: true, cleared: true, requests: trial.calls.length };
+  } finally { await trial.context.close(); }
+}
+
 (async () => {
   const browser = await chromium.launch({ executablePath: '/usr/bin/chromium', args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  const cancelOnly = process.env.A1_PHOTO_FLOW_CANCEL_ONLY === '1';
+  const replacementOnly = !cancelOnly && process.env.A1_PHOTO_FLOW_REPLACEMENT_ONLY === '1';
   const report = { inference: 'mocked deterministic landmarks; not proof of actual MediaPipe inference', browser: 'Linux Chromium/SwiftShader; not physical iPad Safari',
-    scope: process.env.A1_PHOTO_FLOW_CANCEL_ONLY === '1' ? 'cancellation-only' : 'full-integration', cases: [] };
+    scope: cancelOnly ? 'cancellation-only' : replacementOnly ? 'replacement-only' : 'full-integration', cases: [] };
   try {
-    for (const profile of process.env.A1_PHOTO_FLOW_CANCEL_ONLY === '1' ? [] : [
+    if (!cancelOnly) report.cases.push(await verifyBodyReplacement(browser));
+    for (const profile of cancelOnly || replacementOnly ? [] : [
       { width: 1280, height: 900, touch: false, lang: 'ko' },
       { width: 820, height: 1180, touch: true, lang: 'ko' },
       { width: 1180, height: 820, touch: true, lang: 'en' },
@@ -263,31 +363,56 @@ async function verifyShopping(page, trial, { activate = false, click = false } =
     ]) {
       const trial = await prepare(browser, profile), { page } = trial;
       const prefix = (profile.studio ? 'studio-' : 'index-') + profile.lang + '-' + profile.width;
+      let stockFrame;
       if (profile.studio) {
         // The pre-existing style viewer still has a legacy comparison choice.
         // Entering the photo flow must change the *rendered* actor, not merely
-        // remove that choice and let the select's value silently become natural.
-        await page.locator('[data-studio-mode=three]').click(); await readyNatural(page);
+        // change the label of that choice.
+        await page.locator('[data-studio-mode=three]').click(); await readyAvatar(page, { look: 'natural' });
+        assert.equal(await page.locator('#gltf-nova-credit').isVisible(), false, 'the independent sample keeps its own attribution');
         await page.locator('#gltf-look').selectOption('reference');
         await page.waitForFunction(() => {
           const state = window.A1GltfProof?.snapshot(); return state?.state === 'ready' && state.look === 'reference';
         });
-        await page.locator('#avatar-open-default').click(); await readyNatural(page);
-        assert.equal(await page.locator('#gltf-look option:not([value=natural])').count(), 0, 'the primary photo flow cannot retain a legacy actor choice');
+        await page.locator('#avatar-open-default').click(); await readyAvatar(page);
+        assert.equal(await page.locator('#gltf-look').inputValue(), 'nova', 'photo-flow selection matches the rendered Nova actor');
+        await verifyNovaCredit(page);
         assert.equal(await page.locator('#natural-photo-reference').isVisible(), false);
-        assert.equal(await page.evaluate(() => __flowBodySelections), 0, 'restoring the natural actor must work without a photo');
-        await capture3D(page, prefix + '-restored-natural-without-photo');
+        assert.equal(await page.evaluate(() => __flowBodySelections), 0, 'restoring Nova must work without a photo');
+        await capture3D(page, prefix + '-restored-nova-without-photo');
       }
       if (!profile.studio && !profile.touch) {
-        await page.locator('#avatar-open-default').click(); await readyNatural(page);
+        await page.locator('#avatar-open-default').click(); await readyAvatar(page);
+        await verifyNovaCredit(page);
         assert.equal(await page.locator('#natural-photo-reference').isVisible(), false);
-        assert.equal(await page.evaluate(() => __flowBodySelections), 0, 'the natural sample works without selecting a photo');
+        assert.equal(await page.evaluate(() => __flowBodySelections), 0, 'the Nova sample works without selecting a photo');
+        stockFrame = await stable3DHash(page);
       }
-      await analyze(page); assert.equal(await page.locator('#avatar-reference-consent').isChecked(), false);
-      await page.locator('#avatar-reference-consent').check(); await page.locator('#lab-open-avatar').click();
-      const initial = await readyNatural(page);
+      const autoFit = !profile.touch;
+      await analyze(page, { autoFit });
+      assert.equal(await page.locator('#avatar-reference-consent').isChecked(), autoFit);
+      if (!autoFit) {
+        await page.locator('#avatar-reference-consent').check();
+        await page.locator('#lab-open-avatar').click();
+      }
+      const initial = await readyAvatar(page, { bodyFitted: true });
+      await verifyNovaCredit(page);
       assert.equal(await page.locator('#natural-photo-reference').isVisible(), true);
-      assert.match(await page.locator('#natural-photo-reference').innerText(), /참고|reference/i);
+      assert.match(await page.locator('#natural-photo-reference').innerText(), /비율|ratio|proportion/i);
+      const fittedFrame = await stable3DHash(page);
+      if (stockFrame) assert.notEqual(fittedFrame, stockFrame, 'automatic fitting changes the Nova sample pixels');
+      const portrait = autoFit ? await verifyPortrait(page, prefix, fittedFrame) : null;
+      const styles = page.locator('#gltf-garment'), styleHashes = new Set([fittedFrame]);
+      for (const style of ['relaxed', 'navy']) {
+        await styles.selectOption(style);
+        await page.waitForFunction(expected => window.A1GltfProof?.snapshot().garment === expected, style);
+        styleHashes.add(await stable3DHash(page));
+        if (autoFit) await capture3D(page, prefix + '-3d-' + style);
+      }
+      assert.equal(styleHashes.size, 3, 'the original and both wearable choices render distinct pixels');
+      await styles.selectOption('source');
+      await page.waitForFunction(() => window.A1GltfProof?.snapshot().garment === 'source');
+      assert.equal(await stable3DHash(page), fittedFrame, 'returning the original clothing restores its frame');
       const frames = [];
       for (const view of ['front', 'side', 'back']) { await page.locator('#gltf-' + view).click(); frames.push(await capture3D(page, prefix + '-3d-' + view)); }
       assert.equal(new Set(frames.map(f => f.sha256)).size, 3, 'front/side/back are distinct actual 3D projections');
@@ -303,25 +428,31 @@ async function verifyShopping(page, trial, { activate = false, click = false } =
       await page.locator('#gltf-front').click();
       const priorWithdrawal = await stable3DHash(page);
       await page.locator('#avatar-reference-consent').uncheck();
-      assert.equal(await page.locator('#natural-photo-reference').isVisible(), false, 'ratio reference disappears when permission is withdrawn');
-      assert.equal(await stable3DHash(page), priorWithdrawal, 'reference-only ratios never silently morph the stock GLB');
+      await readyAvatar(page);
+      assert.equal(await page.locator('#natural-photo-reference').isVisible(), false, 'ratios disappear when permission is withdrawn');
+      assert.notEqual(await stable3DHash(page), priorWithdrawal, 'withdrawing consent removes the personalized geometry from the rendered avatar');
+      await page.locator('#avatar-reference-consent').check();
+      await page.locator('#lab-open-avatar').click();
+      await readyAvatar(page, { bodyFitted: true });
+      assert.equal(await stable3DHash(page), priorWithdrawal, 'reapplying permission restores the fitted avatar using the existing analysis');
       const shopping = await verifyShopping(page, trial, { activate: true });
       // Reopen the existing singleton to verify the direct photo-fitting CTA
       // after the shopping CTA, without replacing any analyzed body pixels.
-      await page.locator('#avatar-open-default').click(); await readyNatural(page);
+      await page.locator('#avatar-open-default').click(); await readyAvatar(page);
       const fit = await verifyPhotoFitting(page, prefix);
       await verifyClear(page);
       assert.deepEqual(trial.errors, []); assert.deepEqual(trial.violations, []);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'integrated controls fit the mobile viewport');
       if (!profile.touch) await verifyShopping(page, trial, { click: true });
-      report.cases.push({ profile, inferenceMocked: true, naturalBones: initial.bones, noLegacyMannequin: true,
-        restoredNaturalFromReferenceWithoutPhoto: Boolean(profile.studio), frames, ratioReferenceOnly: true, fit, shopping, deletion: true,
+      report.cases.push({ profile, inferenceMocked: true, actor: initial.look, bones: initial.bones, noLegacyMannequin: true,
+        restoredNovaFromReferenceWithoutPhoto: Boolean(profile.studio), frames, portrait, bodyFitted: true, autoFit,
+        distinctGarments: styleHashes.size, consentRevocable: true, fit, shopping, deletion: true,
         requests: trial.calls.length, errors: trial.errors, csp: trial.violations });
-      console.log(prefix + ': same-page natural GLB, consent/reference, actual 3D/2D pixels, transforms/compare, privacy/delete passed.');
+      console.log(prefix + ': personalized Nova 3D, wearable styles, actual 3D/2D pixels, transforms/compare, privacy/delete passed.');
       await trial.context.close();
     }
-    for (const [name, delayedPath, revoke] of [['delete-during-template-load', '/gltf-proof', false],
-      ['revoke-during-template-load', '/gltf-proof', true], ['delete-during-glb-load', '/assets/natural-avatar/sample.glb', false]]) {
+    for (const [name, delayedPath, revoke] of replacementOnly ? [] : [['delete-during-template-load', '/gltf-proof', false],
+      ['revoke-during-template-load', '/gltf-proof', true], ['delete-during-glb-load', '/assets/nova-avatar/avatar.glb', false]]) {
       const delayed = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' }, { delayedPath });
       await analyze(delayed.page); await delayed.page.locator('#avatar-reference-consent').check(); await delayed.page.locator('#lab-open-avatar').click();
       await delayed.seenDelay;
@@ -331,8 +462,8 @@ async function verifyShopping(page, trial, { activate = false, click = false } =
       assert.equal(await delayed.page.locator('#gltf-proof-root:visible').count(), 0, 'late work cannot reopen a cancelled photo/avatar flow');
       assert.equal(await delayed.page.locator('#avatar-reference-consent').isChecked(), false);
       const gpu = await delayed.page.evaluate(() => window.A1GltfProof?.snapshot());
-      if (gpu) { assert.equal(gpu.disposed, true); assert.equal(gpu.memoryGeometries, 0); assert.equal(gpu.memoryTextures, 0); }
-      if (revoke) assert.equal(await delayed.page.locator('#ai-result').isVisible(), true, 'withdrawing ratio reference does not erase independent photo-analysis consent');
+      if (gpu) { assert.equal(gpu.disposed, true); assert.equal(gpu.bodyFitted, false); assert.equal(gpu.memoryGeometries, 0); assert.equal(gpu.memoryTextures, 0); }
+      if (revoke) assert.equal(await delayed.page.locator('#ai-result').isVisible(), true, 'withdrawing fitting consent does not erase the independent photo analysis');
       else assert.equal(await delayed.page.locator('#ai-clean-canvas').evaluate(c => c.width * c.height), 1);
       assert.deepEqual(delayed.errors, []); assert.deepEqual(delayed.violations, []);
       report.cases.push({ name, passed: true }); console.log(name + ': cancelled work stays hidden and releases GPU resources.'); await delayed.context.close();
@@ -340,7 +471,10 @@ async function verifyShopping(page, trial, { activate = false, click = false } =
     report.passed = true;
   } finally {
     report.sourceHashes = Object.fromEntries(['tests/photo-fitting-flow-browser.cjs', 'assets/avatar-photo-bridge.js', 'assets/lab-entry.js', 'assets/lab-loader.js',
-      'assets/gltf-proof.js', 'assets/natural-avatar-profile.js', 'assets/natural-avatar/asset-manifest.json', 'assets/natural-avatar/sample.glb',
+      'assets/gltf-proof.js', 'assets/natural-avatar-profile.js', 'assets/natural-avatar-fit.js', 'assets/natural-avatar-outfit.js',
+      'assets/nova-avatar-studio.js',
+      'assets/natural-avatar/asset-manifest.json', 'assets/natural-avatar/sample.glb',
+      'assets/nova-avatar/asset-manifest.json', 'assets/nova-avatar/avatar.glb',
       'assets/fitting-studio-3d.js', 'assets/fitting-studio-photo.js', 'assets/fitting-studio-photo.css', 'assets/product-lab.js', 'assets/ai-studio.js',
       'index.html', 'product-lab.html', 'fitting-studio.html', '_headers']
       .filter(file => fs.existsSync(path.join(root, file))).map(file => [file, sha(fs.readFileSync(path.join(root, file)))]));

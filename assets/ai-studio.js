@@ -18,6 +18,9 @@
   let fileSource = '사진은 외부 서버로 전송하거나 저장하지 않습니다.';
   let fileParams = {};
 
+  window.A1PhotoProportions = Object.freeze({ proportions: () => analysis?.photoProportions || null });
+  window.A1I18n?.register({'사진 속 팔 / 다리 기준점 길이': 'Arm / leg landmark lengths in the photo'});
+
   function t(source, params = {}) {
     return window.A1I18n?.t(source, params) ?? source.replace(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => Object.hasOwn(params, key) ? String(params[key]) : match);
   }
@@ -39,8 +42,10 @@
     $('#ai-metrics').replaceChildren();
     for (const [label, ratio] of [
       ['사진 속 어깨 / 골반 기준점 간격', analysis.metrics.shoulderHipRatio],
-      ['사진 속 다리 / 몸통 기준점 길이', analysis.metrics.legTorsoRatio]
+      ['사진 속 다리 / 몸통 기준점 길이', analysis.metrics.legTorsoRatio],
+      ['사진 속 팔 / 다리 기준점 길이', analysis.photoProportions?.armLegRatio]
     ]) {
+      if (!Number.isFinite(ratio)) continue;
       const dt = document.createElement('dt'), dd = document.createElement('dd');
       text(dt, label);
       text(dd, '{ratio}배', { ratio: ratio.toFixed(2) });
@@ -66,8 +71,10 @@
   }
 
   function eraseCanvas(canvas) {
-    if (canvas) { canvas.width = 1; canvas.height = 1; }
+    if (canvas) { canvas.width = 1; canvas.height = 1; delete canvas.fittingLandmarks; }
   }
+
+  const avatarConsent = () => $('#avatar-reference-consent')?.checked === true;
 
   function clear(reason = 'user') {
     revision++;
@@ -167,6 +174,63 @@
     })]).finally(() => clearTimeout(timer));
   }
 
+  function createPose() {
+    const pose = new window.Pose({ locateFile: file => new URL(file, vendor).href });
+    pose.setOptions({ modelComplexity: 0, smoothLandmarks: false, enableSegmentation: false, minDetectionConfidence: .6, minTrackingConfidence: .6 });
+    return pose;
+  }
+
+  function bodyLandmarks(landmarks) {
+    if (!Array.isArray(landmarks) || landmarks.length < 29) return null;
+    // Keep Pose indices for existing fitting math while using only the
+    // shoulder-to-ankle range.
+    const points = Array(29);
+    for (let index = 11; index <= 28; index++) {
+      const point = landmarks[index];
+      if (point) points[index] = { x:point.x, y:point.y, z:point.z, visibility:point.visibility };
+    }
+    return points;
+  }
+
+  // A separate short-lived inference for a seller photograph already loaded
+  // by the fitting UI. Only coordinates leave this function.
+  async function estimateGarmentPose(canvas, { signal } = {}) {
+    const abortReason = () => signal.reason ?? new DOMException('Garment pose cancelled', 'AbortError');
+    if (signal?.aborted) throw abortReason();
+    if (!canvas || canvas.width < 2 || canvas.height < 2) return null;
+    let abort;
+    const cancellation = new Promise((_, reject) => {
+      abort = () => reject(abortReason());
+      signal?.addEventListener('abort', abort, { once: true });
+    });
+    const wait = async (work, milliseconds) => {
+      await timeout(Promise.race([work, cancellation]), milliseconds);
+      if (signal?.aborted) throw abortReason();
+    };
+    let pose, work, points = null;
+    try {
+      await wait(loadLibrary(), 45000);
+      pose = createPose();
+      pose.onResults(result => { points = bodyLandmarks(result.poseLandmarks); });
+      work = pose.initialize();
+      await wait(work, 90000);
+      work = pose.send({ image: canvas });
+      await wait(work, 45000);
+      return points;
+    } finally {
+      signal?.removeEventListener('abort', abort);
+      if (pose) {
+        // Do not close the runtime while an abandoned inference is still
+        // executing inside WASM.
+        const dispose = async () => { try { await pose.close(); } catch { /* Best-effort cleanup. */ } };
+        if (work) work.then(dispose, dispose);
+        else await dispose();
+      }
+    }
+  }
+
+  window.A1GarmentPose = Object.freeze({ estimate: estimateGarmentPose });
+
   function drawResult(source, points) {
     const output = $('#ai-canvas');
     // Discard the face area rather than drawing facial landmarks or a face avatar.
@@ -189,6 +253,12 @@
     clean.width = output.width;
     clean.height = output.height;
     clean.getContext('2d').drawImage(output, 0, 0);
+    clean.fittingLandmarks = [11, 12, 23, 24, 25, 26, 27, 28, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map(id => ({
+      x: points[id].x * source.width,
+      y: points[id].y * source.height - crop,
+      z: points[id].z,
+      visibility: points[id].visibility
+    }));
     ctx.strokeStyle = '#c9ff85';
     ctx.fillStyle = '#c9ff85';
     ctx.lineWidth = Math.max(3, output.width / 180);
@@ -224,6 +294,8 @@
       $('#ai-placeholder').hidden = true;
       fileInfo('{name} · 사진 준비 완료', { name: file.name });
       status('사진이 준비됐습니다. 무료 분석 버튼을 눌러주세요.');
+      controls();
+      if (avatarConsent()) $('#ai-form').requestSubmit();
     } catch (error) { if (token === revision) status(error.message, true); }
     controls();
   });
@@ -249,10 +321,9 @@
       status('무료 AI 모델을 불러오는 중입니다. 첫 실행에는 시간이 걸릴 수 있어요.');
       await wait(loadLibrary(), 45000);
       if (token !== revision) return;
-      pose = new window.Pose({locateFile: file => new URL(file, vendor).href});
-      pose.setOptions({modelComplexity: 0, smoothLandmarks: false, enableSegmentation: false, minDetectionConfidence: .6, minTrackingConfidence: .6});
+      pose = createPose();
       let points;
-      pose.onResults(result => { points = result.poseLandmarks?.map(p => ({x:p.x,y:p.y,z:p.z,visibility:p.visibility})); });
+      pose.onResults(result => { points = bodyLandmarks(result.poseLandmarks); });
       run.work = pose.initialize();
       await wait(run.work, 90000);
       if (token !== revision) return;

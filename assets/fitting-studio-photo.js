@@ -14,9 +14,9 @@
     '사진 선택·체형 분석': 'Choose a photo & analyze proportions',
     '내 사진 2D 피팅 열기': 'Open local 2D photo fitting',
     '사진 분석부터 의류 사진 배치까지 이 페이지에서 이어갑니다. 개인 사진과 분석값은 기기 메모리에만 유지합니다.': 'Continue from photo analysis to garment-photo placement on this page. Personal photos and analysis values stay in device memory.',
-    '3D는 별도 인체 샘플이며, 의류 사진은 내 사진 위에 2D로 겹칩니다. AI 자연 합성이나 실제 상품 3D 착용이 아닙니다.': 'The 3D view is a separate human sample. Garment photos are overlaid on your photo in 2D; this is not generative AI try-on or 3D retail-garment fitting.',
+    '사진상 비율과 직접 입력한 치수로 3D 아바타를 조절할 수 있습니다. 이용 허락을 확인한 의류 사진은 로컬 2D 피팅에서 볼 수 있습니다.': 'Use estimated photo proportions and entered measurements to adjust the 3D avatar. Open authorized garment photos in local 2D fitting.',
     '스타일 이미지 비교·3D 인체 샘플·기기 내 사진 분석과 의류 사진 2D 피팅을 연결하는 무료 A1 FASHION 스튜디오': 'A free A1 FASHION studio connecting style-image comparison, a 3D human sample, on-device photo analysis and 2D garment-photo fitting',
-    '스타일 이미지는 2D 예시이며 사진 피팅은 기기 내 2D 겹치기입니다. 3D는 별도 인체 샘플이며 AI 자연 합성·실제 상품 3D 착용·정확한 사이즈 보장은 제공하지 않습니다.': 'Style images are 2D examples; photo fitting is an on-device 2D overlay. The 3D view is a separate human sample. Generative AI try-on, 3D retail-garment fitting and exact size guarantees are not provided.',
+    '3D 아바타는 선택한 비율을 반영한 가상 모델입니다. 착용감과 사이즈는 판매처에서 확인하세요.': 'The 3D avatar is a virtual model that uses your selected proportions. Check fit and size with the retailer.',
     '사진 피팅은 격리된 Preview에서 제공됩니다.': 'Photo fitting is available in an isolated Preview.',
     '기존 사진 분석·2D 피팅 화면을 준비하고 있습니다.': 'Preparing the existing photo-analysis and 2D-fitting tools.',
     '먼저 이 페이지에서 사진을 선택하고 분석하세요. 의류 사진은 별도 이용 권한과 내 사진 사용 동의 후 배치할 수 있습니다.': 'First choose and analyze a photo on this page. A garment photo can be placed after separate garment permission and personal-photo consent.',
@@ -94,7 +94,7 @@
     // Fixed local dependencies, in order. ai-studio is loaded after its DOM and
     // the lab listeners so its existing currentScript/MediaPipe path is intact.
     for (const path of ['assets/i18n-main.js', 'assets/i18n-analysis.js', 'assets/body-analysis.js',
-      'assets/product-matching.js', 'assets/offer-comparison.js', 'assets/product-catalog.js', 'assets/shopping-query.js', 'assets/lab-loader.js', 'assets/product-discovery.js', 'assets/product-images.js', 'assets/catalog-fitting.js', 'assets/product-discovery-view.js']) {
+      'assets/proportion-profile.js', 'assets/proportion-recommendations.js', 'assets/proportion-controls.js', 'assets/product-matching.js', 'assets/offer-comparison.js', 'assets/product-catalog.js', 'assets/shopping-query.js', 'assets/lab-loader.js', 'assets/product-discovery.js', 'assets/product-images.js', 'assets/catalog-fitting.js', 'assets/product-discovery-view.js']) {
       await loadScript(path);
       if (token !== revision) throw Error('CANCELLED');
     }
@@ -118,7 +118,7 @@
       const intro = mount.querySelector('.lab-intro');
       if (intro) intro.hidden = true;
     }
-    for (const path of ['assets/product-lab.js', 'assets/lab-entry.js', 'assets/avatar-photo-bridge.js', 'assets/ai-studio.js']) {
+    for (const path of ['assets/garment-pose.js', 'assets/product-lab.js', 'assets/lab-entry.js', 'assets/avatar-photo-bridge.js', 'assets/ai-studio.js']) {
       await loadScript(path);
       if (token !== revision) throw Error('CANCELLED');
     }

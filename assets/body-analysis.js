@@ -12,6 +12,32 @@
   const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const midpoint = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
 
+  function visibleArmRatio(landmarks, toPixel, legPixels) {
+    const reliable = point => point && Number.isFinite(point.visibility) && point.visibility >= .75 &&
+      Number.isFinite(point.x) && Number.isFinite(point.y) &&
+      point.x > .005 && point.x < .995 && point.y > .005 && point.y < .995;
+    const shoulderCenterX = (landmarks[11].x + landmarks[12].x) / 2;
+    const armLengths = [];
+    for (const side of [[11, 13, 15], [12, 14, 16]]) {
+      const points = side.map(id => landmarks[id]);
+      if (!points.every(reliable) || (points[2].x - shoulderCenterX) * (points[0].x - shoulderCenterX) <= 0) return null;
+      const [shoulder, elbow, wrist] = points.map(toPixel);
+      if (!(shoulder.y < elbow.y && elbow.y < wrist.y)) return null;
+      const upper = distance(shoulder, elbow), lower = distance(elbow, wrist);
+      const upperDown = elbow.y - shoulder.y, lowerDown = wrist.y - elbow.y;
+      const cosine = ((elbow.x - shoulder.x) * (wrist.x - elbow.x) + upperDown * lowerDown) / (upper * lower);
+      // A raised, crossed or substantially bent arm is a poor proxy for
+      // how the limb's length would look in a neutral standing avatar.
+      if (upperDown < upper * .78 || lowerDown < lower * .78 || cosine < .86) return null;
+      const upperShare = upper / (upper + lower);
+      if (upperShare < .29 || upperShare > .71) return null;
+      armLengths.push(upper + lower);
+    }
+    if (Math.min(...armLengths) < Math.max(...armLengths) * .78) return null;
+    const ratio = (armLengths[0] + armLengths[1]) / (2 * legPixels);
+    return ratio >= .36 && ratio <= .98 ? ratio : null;
+  }
+
   function analyzePose(landmarks, imageWidth, imageHeight) {
     if (!Array.isArray(landmarks) || landmarks.length < 29 ||
         !Number.isFinite(imageWidth) || !Number.isFinite(imageHeight) ||
@@ -29,9 +55,8 @@
     }
 
     // Convert normalized coordinates to image pixels before comparing lengths.
-    const [ls, rs, lh, rh, lk, rk, la, ra] = points.map(p => ({
-      x: p.x * imageWidth, y: p.y * imageHeight
-    }));
+    const toPixel = p => ({ x: p.x * imageWidth, y: p.y * imageHeight });
+    const [ls, rs, lh, rh, lk, rk, la, ra] = points.map(toPixel);
     const shoulders = midpoint(ls, rs), hips = midpoint(lh, rh);
     const shoulderPixels = distance(ls, rs), hipPixels = distance(lh, rh);
     const torsoPixels = distance(shoulders, hips);
@@ -65,8 +90,13 @@
         ? '사진 속 골반 기준점 간격이 어깨 기준점 간격보다 넓게 추정되었습니다.'
         : '사진 속 어깨와 골반 기준점 간격이 비교적 가까운 범위로 추정되었습니다.';
 
+    const photoProportions = { shoulderHipRatio, legTorsoRatio };
+    const armLegRatio = visibleArmRatio(landmarks, toPixel, legPixels);
+    if (armLegRatio !== null) photoProportions.armLegRatio = armLegRatio;
+
     return {
       ok: true,
+      photoProportions: Object.freeze(photoProportions),
       metrics: {
         shoulderHipRatio, legTorsoRatio,
         shoulderPixels, hipPixels, torsoPixels, legPixels,

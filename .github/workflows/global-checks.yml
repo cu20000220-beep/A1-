@@ -25,7 +25,7 @@ jobs:
       - name: Offline unit, authorization, SQLite and privacy checks
         run: >-
           node --test
-          tests/body-analysis.cjs tests/membership-policy.cjs
+          tests/body-analysis.cjs tests/proportion-recommendations.cjs tests/membership-policy.cjs
           tests/premium-backend.cjs tests/recommendation-engine.cjs
           tests/firebase-auth.cjs tests/localization-server.cjs
           tests/global-entitlements.cjs tests/global-schema.cjs
@@ -42,8 +42,8 @@ jobs:
           tests/fullbody-asset-policy.cjs tests/gltf-package-inspector.cjs
           tests/fullbody-intake-cli.cjs
           tests/gltf-proof.cjs tests/gltf-proof-export.cjs
-          tests/natural-avatar-asset.cjs
-          tests/fitting-studio.cjs tests/product-discovery.cjs tests/product-images.cjs tests/product-image-file.cjs tests/product-image-intake.cjs tests/product-image-packaging.cjs tests/public-beta-bootstrap.cjs tests/virtual-tryon.cjs
+          tests/natural-avatar-asset.cjs tests/natural-proportion-fit.cjs
+          tests/fitting-studio.cjs tests/product-discovery.cjs tests/product-images.cjs tests/garment-pose.cjs tests/product-image-file.cjs tests/product-image-intake.cjs tests/product-image-packaging.cjs tests/public-beta-bootstrap.cjs tests/virtual-tryon.cjs
       - name: Package public assets only
         run: node scripts/build-site.cjs
       - name: Check public artifact exposure

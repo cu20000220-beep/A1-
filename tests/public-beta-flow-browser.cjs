@@ -93,7 +93,11 @@ async function ready(page){await page.waitForFunction(()=>window.A1PublicBeta?.m
 async function search(page){await page.locator('#shopping-query').fill(query);await page.locator('#shopping-search-form button').click();await page.waitForFunction(()=>document.querySelector('#shopping-discovery')?.dataset.state==='ready');assert.equal(await page.locator('#shopping-discovery [data-discovery-id]').count(),2);}
 async function analyze(page){await page.locator('#ai-photo').setInputFiles(path.join(dist,'assets/photos/man.jpg'));await page.locator('#ai-analyze').click();await page.waitForFunction(()=>!document.querySelector('#ai-result').hidden);}
 function card(page){return page.locator('#shopping-discovery [data-discovery-id="'+id+'"]');}
-async function select(page){const button=card(page).locator('[data-discovery-fit="'+id+'"]');await button.scrollIntoViewIfNeeded();await page.waitForFunction(id=>{const e=document.querySelector('#shopping-discovery [data-discovery-fit="'+id+'"]');return e&&!e.disabled;},id);await button.click();await page.waitForSelector('#lab-garment-photo-figure:not([hidden])');}
+async function select(page){const button=card(page).locator('[data-discovery-fit="'+id+'"]');await button.scrollIntoViewIfNeeded();await page.waitForFunction(id=>{const e=document.querySelector('#shopping-discovery [data-discovery-fit="'+id+'"]');return e&&!e.disabled;},id);await button.click();await page.waitForSelector('#lab-garment-photo-figure:not([hidden])');
+ const preview=page.locator('#lab-garment-photo-preview'),bounds=await preview.boundingBox();
+ for(const [x,y] of [[.15,.15],[.85,.15],[.8,.85],[.2,.85]])await preview.click({position:{x:x*bounds.width,y:y*bounds.height}});
+ await page.locator('#lab-garment-outline-apply').click();
+}
 async function assertLocalGuards(page){
  assert.equal(await page.locator('#lab-open-compare').isDisabled(),true);assert.equal(await page.locator('#lab-open-avatar').isDisabled(),true);
  for(const selector of['#lab-fixtures','#lab-show-all','#lab-reload-image','#lab-fit-flow','#lab-fit-result'])assert.equal(await page.locator(selector).isVisible(),false,selector+' is unavailable in Production');

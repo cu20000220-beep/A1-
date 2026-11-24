@@ -64,7 +64,18 @@ async function prepare(browser,{entry='/',width=820,lang='ko',manifestMode='read
 async function analyze(page){await page.locator('#ai-photo').setInputFiles(path.join(root,'assets/photos/man.jpg'));await page.locator('#ai-analyze').click();await page.waitForFunction(()=>!document.querySelector('#ai-result').hidden);await page.locator('#lab-open-recommend').click();await page.waitForFunction(()=>document.querySelector('#lab-observed-products')?.dataset.state==='ready');}
 function card(page){return page.locator('#lab-observed-products [data-discovery-id="'+id+'"]');}
 async function readyImage(page){await page.waitForFunction(()=>document.querySelector('#lab-observed-products')?.dataset.imageState==='ready');await card(page).locator('[data-discovery-fit="'+id+'"]').waitFor();await page.waitForFunction(id=>{const e=document.querySelector('#lab-observed-products [data-discovery-fit="'+id+'"]');return e&&!e.disabled;},id);}
-async function selectImage(page){await readyImage(page);await card(page).locator('[data-discovery-fit="'+id+'"]').click();await page.waitForSelector('#lab-selected-catalog:not([hidden])');await page.waitForFunction(()=>!document.querySelector('#lab-garment-photo-figure').hidden);}
+async function selectOutline(page){
+ const apply=page.locator('#lab-garment-outline-apply'),preview=page.locator('#lab-garment-photo-preview');
+ await apply.waitFor();
+ assert.equal(await apply.isDisabled(),true);
+ const bounds=await preview.boundingBox();
+ for(const [x,y] of [[.15,.15],[.84,.15],[.76,.86],[.24,.86]]){
+  await preview.click({position:{x:bounds.width*x,y:bounds.height*y}});
+ }
+ await apply.click();
+ assert.equal(await preview.evaluate(c=>c.getContext('2d').getImageData(0,c.height-1,1,1).data[3]),0,'pixels outside the garment outline are clipped');
+}
+async function selectImage(page){await readyImage(page);await card(page).locator('[data-discovery-fit="'+id+'"]').click();await page.waitForSelector('#lab-selected-catalog:not([hidden])');await page.waitForFunction(()=>!document.querySelector('#lab-garment-photo-figure').hidden);await selectOutline(page);}
 async function pixel(page){return page.locator('#lab-local-photo-canvas').evaluate(c=>c.toDataURL());}
 function cleanNetwork(trial){for(const request of trial.calls){assert.doesNotMatch(request.url,/shoulderHipRatio|legTorsoRatio|bodyPhoto|metrics|base64|memberEmail/);assert.equal(request.method,'GET');}assert.deepEqual(trial.errors,[]);assert.deepEqual(trial.violations,[]);}
 (async()=>{
@@ -86,7 +97,7 @@ function cleanNetwork(trial){for(const request of trial.calls){assert.doesNotMat
   }
   {const trial=await prepare(browser,{entry:'/#fit-observed-product='+id}),{page}=trial;
    await page.waitForFunction(id=>window.A1CatalogFitting?.current()?.id===id,id);assert.equal(page.url(),origin+'/');assert.equal(await page.locator('#ai-studio').count(),1);assert.equal(await page.locator('#lab-local-photo-consent').isChecked(),false);
-   await page.locator('#ai-photo').setInputFiles(path.join(root,'assets/photos/man.jpg'));assert.equal(await page.evaluate(()=>A1CatalogFitting.current()?.id),id,'body-photo replacement retains only the public product selection');await page.locator('#ai-analyze').click();await page.waitForFunction(()=>!document.querySelector('#ai-result').hidden);await page.waitForSelector('#lab-garment-photo-figure:not([hidden])');
+   await page.locator('#ai-photo').setInputFiles(path.join(root,'assets/photos/man.jpg'));assert.equal(await page.evaluate(()=>A1CatalogFitting.current()?.id),id,'body-photo replacement retains only the public product selection');await page.locator('#ai-analyze').click();await page.waitForFunction(()=>!document.querySelector('#ai-result').hidden);await page.waitForSelector('#lab-garment-photo-figure:not([hidden])');await selectOutline(page);
    assert.equal(await page.evaluate(()=>__imageFlowSelections),1);assert.equal(await page.evaluate(()=>A1CatalogFitting.current()?.id),id);assert.equal(await page.locator('#lab-local-photo-consent').isChecked(),false);await page.locator('#lab-local-photo-consent').check();await page.locator('#lab-local-photo-fit').click();await page.waitForSelector('#lab-local-photo-result:visible');await page.locator('#ai-clear').click();assert.equal(await page.evaluate(()=>A1CatalogFitting.current()),null);assert.equal(await page.locator('#lab-local-photo-canvas').evaluate(c=>c.width*c.height),1);cleanNetwork(trial);
    report.cases.push({name:'public-product-fragment-before-photo-retains-selection-with-separate-consent',publicIdFragmentRemoved:true,privateFixtureOnly:true,passed:true});await trial.context.close();}
   {const trial=await prepare(browser,{imageMode:'cors-denied'}),{page}=trial;await analyze(page);await readyImage(page);await card(page).locator('[data-discovery-fit="'+id+'"]').click();await page.waitForFunction(()=>/브라우저|browser/i.test(document.querySelector('#lab-local-photo-status')?.textContent||''));assert.equal(await page.locator('#lab-local-photo-result').isVisible(),false);assert.ok(await card(page).locator('[data-discovery-buy]').count());assert.equal(await page.locator('#lab-garment-photo').isVisible(),true);cleanNetwork(trial);report.cases.push({name:'cors-denial-explained-without-proxy-or-fake-fit',expectedBrowserCorsError:true,passed:true});await trial.context.close();}

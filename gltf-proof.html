@@ -16,8 +16,8 @@
   <main id="gltf-proof-root" data-load-state="blocked" hidden>
     <p class="eyebrow">무료 베타 · 내추럴 3D 인체</p>
     <h1>내추럴 3D 피팅룸</h1>
-    <p class="lead">얼굴·피부·눈·머리카락·의상이 함께 있는 3D 인체 샘플입니다. 전신을 돌려 실제 형상과 표면을 확인해 보세요.</p>
-    <p class="notice">이 샘플은 사용자의 얼굴·체형을 복원한 결과가 아닙니다. 사진·분석값을 읽거나 전송하지 않습니다. 실제 판매 의류의 피팅·사이즈·착용감을 보장하지 않습니다.</p>
+    <p class="lead">전신을 돌려 의상의 실루엣을 보고, 확대해 옷감의 질감을 확인하세요.</p>
+    <p class="notice">기본 체형의 3D 피팅 예시입니다. 정확한 의류 사이즈와 착용감은 판매처에서 확인하세요.</p>
     <div class="workspace">
       <section class="stage" aria-label="3D 전신 화면">
         <canvas id="gltf-canvas" width="720" height="900" tabindex="0" aria-label="회전 가능한 예시 3D 전신과 티셔츠"></canvas>
@@ -25,7 +25,7 @@
         <p class="gesture">한 손가락으로 회전 · 두 손가락으로 확대·축소</p>
       </section>
       <section class="panel" aria-label="렌더링 조작">
-        <label>아바타 모습<select id="gltf-look" disabled><option value="natural">내추럴 인체 샘플</option><option value="reference">기존 인체와 비교</option><option value="humanoid">SF 휴머노이드</option></select></label>
+        <label>아바타 모습<select id="gltf-look" disabled><option value="natural">내추럴 인체 샘플</option><option value="nova">실사형 스튜디오 아바타</option><option value="reference">기존 인체와 비교</option><option value="humanoid">SF 휴머노이드</option></select></label>
         <label><span id="gltf-garment-title">샘플 의상</span><select id="gltf-garment" disabled><option value="source">원본 샘플 의상</option><option value="none">기본 아바타 · 티셔츠 없음</option><option value="LAB-A">기본 · 블루</option><option value="LAB-B">여유형 · 테라코타</option><option value="LAB-C">짧은형 · 그린</option></select></label>
         <p id="natural-avatar-note" class="small">현재 인체 샘플에는 원본 의상 한 벌을 표시합니다. 교체 가능한 실제 의류 모델은 준비 중입니다. 기존 비교 모델에서는 예시 티셔츠 3종을 이용할 수 있습니다.</p>
         <div class="buttons"><button id="gltf-front" disabled>정면</button><button id="gltf-side" disabled>측면</button><button id="gltf-back" disabled>후면</button></div>

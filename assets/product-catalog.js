@@ -30,15 +30,22 @@
   try{const product=validateSnapshot(snapshot,now).find(p=>p.id===id);return product&&product.stock==='in_stock'&&product.fittingRightsVerified===true&&safeUrl(product.fittingImageUrl)?product:null;}catch{return null;}
  }
  const colorMap={black:['black','검정','검은','블랙'],white:['white','흰색','화이트'],navy:['navy','남색','네이비'],beige:['beige','베이지'],grey:['grey','gray','회색','그레이','차콜']};
- function search(snapshot,conditions,{now=Date.now(),size='',query='',bodyConsent=false,metrics}={}){
+ function matchesGarment(product,type){
+  return type==='clothing'||product.type===type||type==='cardigan'&&product.type==='knit'&&/가디건|카디건|\bcardigans?\b/i.test(product.name);
+ }
+ function search(snapshot,conditions,{now=Date.now(),size='',query='',bodyConsent=false,metrics,profile}={}){
   const products=validateSnapshot(snapshot,now),fold=s=>s.normalize('NFC').trim().toLowerCase();
   if(!conditions||typeof size!=='string'||size.length>30||!['all',...categories].includes(conditions.category)||!['any',...Object.keys(colorMap)].includes(conditions.color))throw TypeError('conditions_invalid');
   const brands=[...new Set(products.map(p=>fold(p.brand)))].filter(brand=>brand.length>1&&fold(query).includes(brand));
   const broad=conditions.type==='clothing'&&conditions.category==='all'&&conditions.color==='any'&&conditions.gender==='all'&&conditions.style==='all'&&conditions.occasion==='all'&&conditions.budget===null;
   const textFilter=fold(query)&&broad&&!/^(의류|옷|clothing|clothes)$/i.test(query.trim());
-  const filtered=products.filter(p=>(conditions.category==='all'||p.category===conditions.category)&&(conditions.type==='clothing'||p.type===conditions.type)&&(conditions.color==='any'||colorMap[conditions.color].includes(fold(p.color)))&&(!size||!p.sizes.length||p.sizes.some(v=>fold(v)===fold(size)))&&(!size||!p.offerSize||fold(p.offerSize)===fold(size))&&(!brands.length||brands.includes(fold(p.brand)))&&(!textFilter||fold(p.name+' '+p.brand).includes(fold(query))));
+  const filtered=products.filter(p=>(conditions.category==='all'||p.category===conditions.category)&&matchesGarment(p,conditions.type)&&(conditions.color==='any'||colorMap[conditions.color].includes(fold(p.color)))&&(!size||!p.sizes.length||p.sizes.some(v=>fold(v)===fold(size)))&&(!size||!p.offerSize||fold(p.offerSize)===fold(size))&&(!brands.length||brands.includes(fold(p.brand)))&&(!textFilter||fold(p.name+' '+p.brand).includes(fold(query))));
   const organic=filtered.filter(p=>!p.commercial?.sponsored),sponsored=filtered.filter(p=>p.commercial?.sponsored);
-  const options={style:conditions.style,gender:conditions.gender,currency:conditions.currency,budget:conditions.budget===null?1e9:conditions.budget,size:size.length>20?'':size,color:conditions.color==='grey'?'any':conditions.color,occasion:conditions.occasion,avoid:[],bodyConsent,...(bodyConsent?{metrics}:{})};const result=M.rank(organic,options,{now,mode:'approved'});result.sponsored=M.rank(sponsored,options,{now,mode:'approved'}).matches;result.unavailable=filtered.filter(p=>p.stock!=='in_stock'&&p.currency===conditions.currency&&p.price<=options.budget&&(conditions.gender==='all'||p.gender==='unisex'||p.gender===conditions.gender));return result;
+  const options={style:conditions.style,gender:conditions.gender,currency:conditions.currency,budget:conditions.budget===null?1e9:conditions.budget,size:size.length>20?'':size,color:conditions.color==='grey'?'any':conditions.color,occasion:conditions.occasion,avoid:[],bodyConsent,...(bodyConsent?{metrics}:{})};
+  const ranking={now,mode:'approved',profile};
+  const result=M.rank(organic,options,ranking);
+  result.sponsored=M.rank(sponsored,options,ranking).matches;
+  result.unavailable=filtered.filter(p=>p.stock!=='in_stock'&&p.currency===conditions.currency&&p.price<=options.budget&&(conditions.gender==='all'||p.gender==='unisex'||p.gender===conditions.gender));return result;
  }
  function chartComparison(product,measurements,size=''){
   if(!product.sizeChart||!product.sizeChart.rows.length||product.sizeChart.kind==='unknown')return {status:'unknown',rows:[]};

@@ -1,0 +1,14 @@
+Nova by VTubeMe
+Creator: https://vtubeme.com/
+Original model page: https://vtubeme.com/free-vrm-avatars/nova
+Original GLB: https://vtubeme.com/media/free/nova/model.glb
+
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+https://creativecommons.org/licenses/by/4.0/legalcode
+
+VTubeMe's notice on the Nova page authorizes personal and commercial use,
+modification and redistribution with credit to VTubeMe and a link to its site.
+
+Changes by A1 FASHION: normalized 844 non-unit base normals on the trousers
+mesh for glTF conformance. All other file contents match the publisher's GLB.

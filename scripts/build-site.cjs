@@ -16,14 +16,12 @@ const catalog=require('./lib/product-catalog.cjs').validateSnapshot(
 // Independent factual product links carry no retailer image/fitting permission.
 const discoveryFile = path.join(root, 'assets/observed-products.json');
 if (fs.statSync(discoveryFile).size > 1000000) throw Error('Product observations exceed 1 MB');
-require('../assets/product-discovery.js').validateSnapshot(JSON.parse(fs.readFileSync(discoveryFile, 'utf8')));
-const observations=JSON.parse(fs.readFileSync(discoveryFile,'utf8'));
-const imagesFile=path.join(root,'assets/product-images.json');
-if(fs.statSync(imagesFile).size>1000000)throw Error('Product images manifest exceeds 1 MB');
-const productImageBytes=fs.readFileSync(imagesFile);
-const productImages=JSON.parse(productImageBytes);
-const imageEntries=require('../assets/product-images.js').validateManifest(productImages,observations);
-const reviewedImageCopies=new Map(require('./lib/product-image-store.cjs').validateLocalCopies(root,imageEntries).map(record=>[record.relative,record.bytes]));
+const observations = JSON.parse(fs.readFileSync(discoveryFile, 'utf8'));
+const {readBoundedFile,validateLocalCopies} = require('./lib/product-image-store.cjs');
+const imageManifestBytes = readBoundedFile(path.join(root,'assets/product-images.json'), 1000000);
+const imageManifest = JSON.parse(imageManifestBytes);
+const {entries:imageEntries,validUntil:imageExpiry} = require('../assets/product-images.js').inspectManifest(imageManifest,observations);
+const localImageCopies = validateLocalCopies(root,imageEntries);
 const files = [];
 
 function collect(relative) {
@@ -52,6 +50,9 @@ const publicEntries = [
   'assets/offer-comparison.js',
   'assets/approved-products.json',
   'assets/product-discovery.js',
+  'assets/proportion-profile.js',
+  'assets/proportion-recommendations.js',
+  'assets/proportion-controls.js',
   'assets/local-fashion-core.js',
   'assets/public-beta-bootstrap.js',
   'assets/product-images.js',
@@ -83,7 +84,12 @@ const publicEntries = [
   'assets/gltf-proof.css',
   'assets/humanoid-surface.js',
   'assets/natural-avatar-profile.js',
+  'assets/natural-avatar-fit.js',
+  'assets/nova-garment-fit.js',
+  'assets/natural-avatar-outfit.js',
   'assets/natural-avatar',
+  'assets/nova-avatar-studio.js',
+  'assets/nova-avatar',
   'assets/gltf-proof',
   'assets/avatar-geometry.js',
   'assets/human-base.js',
@@ -94,6 +100,7 @@ const publicEntries = [
   'assets/avatar-lab.js',
   'assets/avatar-photo-bridge.js',
   'assets/avatar-lab.css',
+  'assets/garment-pose.js',
   'assets/product-lab.js',
   'assets/lab-entry.js',
   'assets/lab-loader.js',
@@ -130,10 +137,23 @@ const publicEntries = [
   'assets/vendor'
 ];
 for (const entry of publicEntries) collect(entry);
+// Expired authorizations leave factual recommendations available. Neither
+// local image copies nor merchant CDN references are published under them.
+const now = Date.now();
+const imagesExpired = imageExpiry !== null && imageExpiry <= now;
+const productImages = imagesExpired ? {version:1,authorization:null,products:[]} : imageManifest;
+const productImageBytes = imagesExpired ? Buffer.from(JSON.stringify(productImages) + '\n') : imageManifestBytes;
+const reviewedImageCopies = new Map((imagesExpired ? [] : localImageCopies).map(({relative,bytes})=>[relative,bytes]));
 // Never publish an entire intake directory: unrelated/private files in it are
 // not deployment assets. Copy only the exact validated manifest-bound bytes.
 for(const relative of reviewedImageCopies.keys())files.push(relative);
 if (files.length + 1 > 1000) throw new Error('Deployment exceeds the dashboard upload file limit.');
+
+// Keep connection, script and API policies intact. Image allowances follow
+// the same authorization snapshot as the published image manifest.
+const headers = require('./lib/catalog-public-headers.cjs').catalogPublicHeaders(
+  fs.readFileSync(path.join(root,'_headers'),'utf8'), catalog.products, {manifest:productImages,observations,now}
+);
 
 // Never replace an existing directory unless a previous invocation created it.
 if (fs.existsSync(output)) {
@@ -153,7 +173,5 @@ for (const relative of files) {
   else if(relative==='assets/product-images.json')fs.writeFileSync(target,productImageBytes);
   else fs.copyFileSync(path.join(root, relative), target);
 }
-// Keep connect-src/script-src/API isolation intact. Only image origins from the
-// privately validated snapshot can extend the stylist image display policy.
-fs.writeFileSync(path.join(output,'_headers'),require('./lib/catalog-public-headers.cjs').catalogPublicHeaders(fs.readFileSync(path.join(root,'_headers'),'utf8'),catalog.products,{manifest:productImages,observations}));
+fs.writeFileSync(path.join(output,'_headers'),headers);
 console.log(`Built ${files.length} static files in dist/ (no package installation or external requests).`);
