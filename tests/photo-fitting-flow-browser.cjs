@@ -424,8 +424,8 @@ async function verifyStudioProportions(browser) {
         // The pre-existing style viewer still has a legacy comparison choice.
         // Entering the photo flow must change the *rendered* actor, not merely
         // change the label of that choice.
-        await page.locator('[data-studio-mode=three]').click(); await readyAvatar(page, { look: 'natural' });
-        assert.equal(await page.locator('#gltf-nova-credit').isVisible(), false, 'the independent sample keeps its own attribution');
+        await page.locator('[data-studio-mode=three]').click(); await readyAvatar(page);
+        assert.equal(await page.locator('#gltf-nova-credit').isVisible(), true);
         await page.locator('#gltf-look').selectOption('reference');
         await page.waitForFunction(() => {
           const state = window.A1GltfProof?.snapshot(); return state?.state === 'ready' && state.look === 'reference';

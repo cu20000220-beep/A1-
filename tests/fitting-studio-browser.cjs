@@ -190,7 +190,11 @@ async function truthAndLinks(page, lang) {
     await three.page.locator('[data-studio-mode="three"]').click();
     await three.page.waitForFunction(() => window.A1GltfProof?.snapshot().state === 'ready', null, { timeout: 30000 });
     const actual = await three.page.evaluate(() => A1GltfProof.snapshot());
-    assert.equal(actual.bones, 73); assert.ok(actual.memoryTextures > 10); assert.ok(actual.triangles > 40000);
+    assert.equal(actual.look, 'nova', 'the first ordinary 3D entry renders the Nova avatar');
+    assert.equal(await three.page.locator('#gltf-look').inputValue(), 'nova');
+    assert.ok(three.requests.includes('/assets/nova-avatar/avatar.glb'));
+    assert.equal(three.requests.includes('/assets/natural-avatar/sample.glb'), false);
+    assert.equal(actual.bones, 73); assert.ok(actual.memoryTextures > 10); assert.ok(actual.triangles > 15000);
     assert.equal(await three.page.locator('#studio-root').isVisible(), false);
     assert.equal(await three.page.locator('#gltf-garment').isDisabled(), true, 'stock outfit is not presented as product fitting');
     const viewFrames = [];
@@ -207,11 +211,18 @@ async function truthAndLinks(page, lang) {
     const stopped = await three.page.evaluate(() => A1GltfProof.snapshot());
     assert.equal(stopped.memoryGeometries, 0); assert.equal(stopped.memoryTextures, 0);
     assert.equal(await three.page.locator('#studio-root').isVisible(), true);
-    await three.page.locator('[data-studio-mode="three"]').click();
+    await three.page.locator('[data-studio-mode="images"]').press('End');
     await three.page.waitForFunction(() => A1GltfProof.snapshot().state === 'ready', null, { timeout: 30000 });
     assert.equal(await three.page.evaluate(() => A1FittingStudio3D.snapshot().actual3D), true);
+    assert.equal(await three.page.evaluate(() => A1GltfProof.snapshot().look), 'nova', 'keyboard re-entry keeps the default actor');
+    await three.page.locator('#gltf-look').selectOption('natural');
+    await three.page.waitForFunction(() => {
+      const current = A1GltfProof.snapshot();
+      return current.state === 'ready' && current.look === 'natural';
+    }, null, { timeout: 30000 });
+    assert.ok(three.requests.includes('/assets/natural-avatar/sample.glb'), 'the old comparison asset loads on explicit selection');
     assert.deepEqual(three.errors, []); assert.deepEqual(three.consoleErrors, []); assert.deepEqual(three.violations, []);
-    reports.push({ actualInline3D: true, bones: actual.bones, triangles: actual.triangles, viewFrames, cleanup: stopped, requests: three.requests });
+    reports.push({ actualInline3D: true, look: actual.look, bones: actual.bones, triangles: actual.triangles, viewFrames, cleanup: stopped, requests: three.requests });
     await three.context.close();
     for (const recoveryAction of ['retry', 'reset']) {
     const failure = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' }, { blocked: true });
@@ -238,7 +249,7 @@ async function truthAndLinks(page, lang) {
     reports.push({ failureMode: 'modelSheetBlocked', recoveryAction, status: failureStatus, manualRecovery: true, requests: failure.requests });
     await failure.context.close();
     }
-    const sources = ['fitting-studio.html', 'assets/fitting-studio.js', 'assets/fitting-studio.css', 'assets/fitting-studio-3d.js', 'assets/fitting-studio-3d.css', 'assets/gltf-proof.js', 'assets/studio/hero.png', 'assets/studio/male-sheet.png', 'assets/studio/female-sheet.png'];
+    const sources = ['fitting-studio.html', 'assets/fitting-studio.js', 'assets/fitting-studio.css', 'assets/fitting-studio-3d.js', 'assets/fitting-studio-3d.css', 'assets/gltf-proof.js', 'assets/nova-avatar/avatar.glb', 'assets/studio/hero.png', 'assets/studio/male-sheet.png', 'assets/studio/female-sheet.png'];
     fs.writeFileSync(path.join(out, 'browser-result.json'), JSON.stringify({ sourceHashes: Object.fromEntries(sources.map(file => [file, sha(fs.readFileSync(path.join(root, file)))])),
       reports, environment: { browser: 'Linux Chromium', nativeIpadSafari: false },
       scope: 'Generated 2D style images and a separate, actual stock 3D model rendered in the same page. No personalized photo fitting, exact sizing, image-to-3D reconstruction, retail stock or native iPad Safari certification.' }, null, 2) + '\n');

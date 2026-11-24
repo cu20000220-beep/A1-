@@ -22,6 +22,7 @@ const pairs = {
   '현재 인체 샘플에는 원본 의상 한 벌을 표시합니다. 교체 가능한 실제 의류 모델은 준비 중입니다. 기존 비교 모델에서는 예시 티셔츠 3종을 이용할 수 있습니다.': 'This human sample displays its original outfit. Interchangeable retail garment models are being prepared. The original comparison body still supports three example T-shirts.',
   '3D 피팅 예시를 열었습니다. 회전하고 확대해 의상의 실루엣과 소재를 확인하세요.': 'The 3D fitting sample is ready. Rotate and zoom to inspect the silhouette and fabric.',
   '기본 인체: MetaPerson 공식 샘플 · BSD-3-Clause. 기존 비교 인체: MakeHuman hm08 · CC0. Three.js · MIT.': 'Default human: official MetaPerson sample · BSD-3-Clause. Original comparison body: MakeHuman hm08 · CC0. Three.js · MIT.',
+  '내추럴 비교 인체는 MetaPerson 공식 샘플(BSD-3-Clause)입니다. 기존 비교 인체는 MakeHuman hm08(CC0)이며, 렌더러는 Three.js(MIT)입니다.': 'The natural comparison body is the official MetaPerson sample (BSD-3-Clause). The original comparison body is MakeHuman hm08 (CC0), rendered with Three.js (MIT).',
   '내추럴 인체 출처와 이용 조건': 'Natural human source and license',
   '3D 예시 상의': 'Sample 3D tops',
   '실사형 스튜디오 아바타': 'Studio 3D avatar',
