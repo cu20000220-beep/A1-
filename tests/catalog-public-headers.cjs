@@ -1,9 +1,10 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {catalogPublicHeaders}=require('../scripts/lib/catalog-public-headers.cjs'),template=fs.readFileSync(path.resolve(__dirname,'../_headers'),'utf8');
+const {catalogPublicHeaders}=require('../scripts/lib/catalog-public-headers.cjs'),template=fs.readFileSync(path.resolve(__dirname,'../_headers'),'utf8').replace(/\r\n/g,'\n');
 test('empty catalog leaves policies unchanged; reviewed display images reach all catalog entry points',()=>{
  assert.equal(catalogPublicHeaders(template,[]),template);
  const product={sourceVerified:true,imageUrl:'https://images.example.test/approved.jpg'},actual=catalogPublicHeaders(template,[product,product,{...product,imageUrl:'https://brand.example.test/photo.jpg'}]);
+ assert.equal(catalogPublicHeaders(template.replaceAll('\n','\r\n'),[product]),catalogPublicHeaders(template,[product]));
  const policy=actual.split('/stylist*\n')[1].split('\n\n')[0];assert.match(policy,/img-src 'self' https:\/\/brand\.example\.test https:\/\/images\.example\.test;/);assert.match(policy,/connect-src 'self';/);assert.match(policy,/script-src 'self';/);
  for(const route of ['/product-lab*','/fitting-studio*']){const section=actual.split(route+'\n')[1].split('\n\n')[0];assert.match(section,/img-src 'self' blob: https:\/\/brand\.example\.test https:\/\/images\.example\.test;/);assert.match(section,/connect-src 'self';/);}
  const restored=actual.replaceAll("img-src 'self' https://brand.example.test https://images.example.test;","img-src 'self';").replaceAll("img-src 'self' blob: https://brand.example.test https://images.example.test;","img-src 'self' blob:;");

@@ -10,12 +10,18 @@
  I.register({
   '선택한 상품으로 사진 미리보기':'Preview this product on my photo',
   '선택한 상품의 이미지 미리보기 이용 권한이 확인되지 않았습니다.':'Image-preview permission for this product has not been verified.',
+  '현재 확인 가능한 상품 자료에 이 상품이 없습니다.':'This product is missing from the currently verified product data.',
+  '재고를 확인할 수 없어 이 상품을 피팅할 수 없습니다.':'This product cannot be fitted because its availability could not be confirmed.',
+  '상품 또는 이미지의 확인 기간이 만료되었습니다.':'The product or image verification has expired.',
+  '이 상품을 스튜디오에서 열기':'Open this product in the studio',
   '선택한 상품을 준비하지 못했습니다. 다시 선택해주세요.':'The selected product could not be prepared. Select it again.',
   '선택한 상품은 유지했습니다. 먼저 사진을 선택하고 분석한 뒤 이미지 사용에 동의해주세요.':'Your product is selected. Choose and analyze a photo, then consent to image use.',
   '판매처에서 이 상품 구매하기':'Buy this product at the seller',
   '상품 이미지 이용 권한 확인 · 사진 사용 동의는 별도입니다.':'Product-image permission reviewed · using your photo requires separate consent.'
  });
- function status(message){let target=document.querySelector('#catalog-fitting-status');if(!target){target=document.createElement('p');target.id='catalog-fitting-status';target.setAttribute('role','status');(document.querySelector('#shopping-query-status')||document.querySelector('#stylist-status')||document.querySelector('#ai-status')||document.querySelector('main')).after(target);}I.setText(target,message);}
+ const reasons={rights:'선택한 상품의 이미지 미리보기 이용 권한이 확인되지 않았습니다.',missing:'현재 확인 가능한 상품 자료에 이 상품이 없습니다.',stock:'재고를 확인할 수 없어 이 상품을 피팅할 수 없습니다.',expired:'상품 또는 이미지의 확인 기간이 만료되었습니다.'};
+ function status(message){let target=document.querySelector('#catalog-fitting-status');if(!target){target=document.createElement('p');target.id='catalog-fitting-status';target.setAttribute('role','status');(document.querySelector('#studio-photo-status')||document.querySelector('#shopping-query-status')||document.querySelector('#stylist-status')||document.querySelector('#ai-status')||document.querySelector('main')).after(target);}I.setText(target,message);return target;}
+ const fragmentFor=(kind,id)=>'#'+(kind==='observed'?'fit-observed-product':'fit-product')+'='+encodeURIComponent(id);
  function current(){
   if(!selected||selected.expiresAt<=Date.now())return null;
   if(selected.sourceKind==='operator-authorized-observation'){
@@ -29,10 +35,18 @@
   const url=new URL(response.url||path,location.origin);if(url.origin!==location.origin||url.pathname!==path||url.search)throw Error('catalog');
   const text=await response.text();if(text.length>1000000)throw Error('catalog');return JSON.parse(text);
  }
+ function checkExpiry(){
+  const remaining=selected.expiresAt-Date.now();
+  if(remaining>0){timer=setTimeout(checkExpiry,Math.min(2147483647,remaining));return;}
+  clear();failure(Error('expired'));
+ }
  async function showProduct(product,id,token,kind='approved'){
   if(token!==revision)return;
   // A public item ID is the only cross-page handoff. No private pixels/ratios.
-  if(!document.querySelector('#ai-form')){location.assign('/#'+(kind==='observed'?'fit-observed-product':'fit-product')+'='+encodeURIComponent(id));return;}
+  if(window.A1StudioPhotoFitting){
+   if(window.A1StudioPhotoFitting.snapshot().state!=='ready'&&!await window.A1StudioPhotoFitting.open('analysis'))return;
+   if(token!==revision)return;
+  }else if(!document.querySelector('#ai-form')){location.assign('/'+fragmentFor(kind,id));return;}
   if(!document.querySelector('#lab-root')){
    const template=await window.A1LabTemplates.load('product');if(token!==revision)return;
    if(!document.querySelector('#lab-root')){
@@ -44,21 +58,28 @@
    }
   }
   if(token!==revision)return;window.A1LabTemplates.initialize('product',document.querySelector('#lab-root'));
-  selected=Object.freeze({...product});clearTimeout(timer);timer=setTimeout(clear,Math.max(1,Math.min(2147483647,product.expiresAt-Date.now()+1)));
+  if(product.expiresAt<=Date.now())throw Error('expired');
+  selected=Object.freeze({...product});checkExpiry();
+  if(token!==revision)return;
   document.dispatchEvent(new CustomEvent('a1:catalog-fitting-selected',{detail:{id}}));
   const ready=Boolean(document.querySelector('#ai-result')&&!document.querySelector('#ai-result').hidden),target=document.querySelector(ready?'#lab-local-photo-fitting':'#ai-form');target?.scrollIntoView({block:'start'});
   if(ready&&window.A1LabNavigation)await window.A1LabNavigation.open('#lab-local-photo-fitting');
-  if(!ready)status('선택한 상품은 유지했습니다. 먼저 사진을 선택하고 분석한 뒤 이미지 사용에 동의해주세요.');
+  if(token!==revision)return;
+  status(ready?'':'선택한 상품은 유지했습니다. 먼저 사진을 선택하고 분석한 뒤 이미지 사용에 동의해주세요.');
+  const studioLink=document.querySelector('#catalog-fitting-studio-link');
+  if(studioLink){studioLink.href='fitting-studio.html'+fragmentFor(kind,id);studioLink.hidden=false;}
  }
- function clear(){revision++;controller?.abort();clearTimeout(timer);selected=null;selectedObservation=selectedImages=null;document.dispatchEvent(new CustomEvent('a1:catalog-fitting-clear'));}
+ function clear(){revision++;controller?.abort();clearTimeout(timer);selected=null;selectedObservation=selectedImages=null;const link=document.querySelector('#catalog-fitting-studio-link');if(link){link.hidden=true;link.removeAttribute('href');}const notice=document.querySelector('#catalog-fitting-status');if(notice)I.setText(notice,'');document.dispatchEvent(new CustomEvent('a1:catalog-fitting-clear'));}
+ function failure(error){status(reasons[error.message]||'선택한 상품을 준비하지 못했습니다. 다시 선택해주세요.');}
  async function open(id){
   if(typeof id!=='string'||! /^[A-Za-z0-9_.:-]{1,160}$/.test(id))return;
-  const token=++revision;controller?.abort();controller=new AbortController();const active=controller,deadline=setTimeout(()=>active.abort(),10000);
+  clear();const token=revision;controller=new AbortController();const active=controller,deadline=setTimeout(()=>active.abort(),10000);
   try{
-   const response=await fetch('/assets/approved-products.json',{credentials:'omit',cache:'no-store',redirect:'error',signal:active.signal});if(!response.ok||!/application\/json/i.test(response.headers.get('content-type')||''))throw Error('catalog');
-   const text=await response.text();if(text.length>1000000)throw Error('catalog');const snapshot=JSON.parse(text),product=C.fittingProduct(snapshot,id);if(!product)throw Error('rights');if(token!==revision)return;
-   selectedObservation=selectedImages=null;await showProduct(product,id,token);
-  }catch(error){if(token===revision)status(error.message==='rights'?'선택한 상품의 이미지 미리보기 이용 권한이 확인되지 않았습니다.':'선택한 상품을 준비하지 못했습니다. 다시 선택해주세요.');}
+   const snapshot=await publicJson('/assets/approved-products.json',active),listing=C.validateSnapshot(snapshot).find(p=>p.id===id);
+   if(!listing)throw Error('missing');if(listing.stock!=='in_stock')throw Error('stock');
+   const product=C.fittingProduct(snapshot,id);if(!product)throw Error('rights');if(token!==revision||active.signal.aborted)return;
+   await showProduct(product,id,token);
+  }catch(error){if(token===revision)failure(error);}
   finally{clearTimeout(deadline);}
  }
  async function openObserved(id){
@@ -67,10 +88,13 @@
   try{
    if(!window.A1ProductImages)throw Error('catalog');
    const [observations,images]=await Promise.all([publicJson('/assets/observed-products.json',active),publicJson('/assets/product-images.json',active)]);
+   const listing=window.A1ProductDiscovery.validateSnapshot(observations).find(p=>p.id===id);
+   if(!listing)throw Error('missing');if(listing.stock==='out_of_stock')throw Error('stock');
+   try{window.A1ProductImages.validateManifest(images,observations);}catch(error){if(error.message==='product_image_authorization_expired')throw Error('expired');throw error;}
    const product=window.A1ProductImages.fittingProduct(images,observations,id);if(!product)throw Error('rights');
    if(token!==revision||active.signal.aborted)return;selectedObservation=observations;selectedImages=images;
    await showProduct(product,id,token,'observed');
-  }catch(error){if(token===revision)status(error.message==='rights'?'선택한 상품의 이미지 미리보기 이용 권한이 확인되지 않았습니다.':'선택한 상품을 준비하지 못했습니다. 다시 선택해주세요.');}
+  }catch(error){if(token===revision)failure(error);}
   finally{clearTimeout(deadline);}
  }
  // A file replacement fires the existing analysis-clear event before its new
@@ -79,7 +103,7 @@
  window.addEventListener('pagehide',clear);
  window.A1CatalogFitting=Object.freeze({open,openObserved,current,clear});
  const fragment=new URLSearchParams(location.hash.slice(1)),id=fragment.get('fit-product'),observedId=fragment.get('fit-observed-product');
- if(id||observedId){history.replaceState(null,'',location.pathname+location.search);const resume=()=>observedId?openObserved(observedId):open(id);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',resume,{once:true});else resume();}
+ if((id||observedId)&&!window.A1StudioPhotoFitting){history.replaceState(null,'',location.pathname+location.search);const resume=()=>observedId?openObserved(observedId):open(id);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',resume,{once:true});else resume();}
  }
  if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',initialize,{once:true});
  document.addEventListener('a1:public-local-ready',initialize);document.addEventListener('a1:public-beta-ready',initialize);initialize();

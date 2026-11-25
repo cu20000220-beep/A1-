@@ -29,7 +29,12 @@
     '실행 파일 초기화에 실패했습니다. 페이지를 새로고침한 뒤 다시 여세요. 선택한 사진은 다시 선택해야 합니다.': 'The viewer files could not initialize. Reload this page and reopen the tools. Any selected photo must be selected again.',
     '페이지 새로고침': 'Reload page'
   });
-  const allowed = () => Boolean(window.A1Preview || window.A1PublicLocal?.mode === 'server-public-local');
+  const allowed = () => Boolean(window.A1Preview || window.A1PublicLocal?.mode === 'server-public-local' || window.A1PublicBeta?.mode === 'server-free-beta-local');
+  function productHandoff() {
+    const fragment = new URLSearchParams(location.hash.slice(1));
+    const observed = fragment.get('fit-observed-product'), id = observed || fragment.get('fit-product');
+    return /^[A-Za-z0-9_.:-]{1,160}$/.test(id || '') ? { id, observed: Boolean(observed) } : null;
+  }
   let pending = null, mounted = false, revision = 0, lastTarget = 'fitting', needsReload = false, reloadReason = 'init';
   const scripts = new Map();
   const message = source => I.setText(status, source);
@@ -158,6 +163,13 @@
         ? '분석 사진을 다시 선택할 필요가 없습니다. 이용 권한이 있는 의류 사진을 선택하고 내 사진 사용에 별도로 동의하세요.'
         : '먼저 이 페이지에서 사진을 선택하고 분석하세요. 의류 사진은 별도 이용 권한과 내 사진 사용 동의 후 배치할 수 있습니다.');
       reveal(document.querySelector(target === 'analysis' ? '#ai-studio' : '#lab-local-photo-fitting'));
+      const handoff = productHandoff();
+      if (handoff) {
+        history.replaceState(null, '', location.pathname + location.search);
+        const catalog = window.A1CatalogFitting;
+        await (handoff.observed ? catalog.openObserved(handoff.id) : catalog.open(handoff.id));
+        if (!catalog.current()) reveal(document.querySelector('#catalog-fitting-status'));
+      }
       return true;
     } catch (error) {
       if (token !== revision) return false;
@@ -196,10 +208,12 @@
     for (const button of host.querySelectorAll(':scope > .studio-photo-actions > button')) button.disabled = !enabled;
     if (!enabled) message('사진 피팅 사용 가능 여부를 확인하고 있습니다.');
     else if (!mounted && !pending) message('');
+    if (enabled && !mounted && !pending && productHandoff()) open('analysis');
   };
   document.addEventListener('a1:public-local-ready', updateAvailability);
-  updateAvailability();
+  document.addEventListener('a1:public-beta-ready', updateAvailability);
   Object.defineProperty(window, 'A1StudioPhotoFitting', { value: Object.freeze({ open, snapshot() {
     return { mounted, loading: Boolean(pending), state: host.dataset.state || 'idle' };
   } }), writable: false, configurable: false });
+  updateAvailability();
 })();

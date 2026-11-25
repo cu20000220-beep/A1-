@@ -161,7 +161,7 @@ if (files.length + 1 > 1000) throw new Error('Deployment exceeds the dashboard u
 // Keep connection, script and API policies intact. Image allowances follow
 // the same authorization snapshot as the published image manifest.
 const headers = require('./lib/catalog-public-headers.cjs').catalogPublicHeaders(
-  fs.readFileSync(path.join(root,'_headers'),'utf8'), catalog.products, {manifest:productImages,observations,now}
+  fs.readFileSync(path.join(root,'_headers'),'utf8').replace(/\r\n/g,'\n'), catalog.products, {manifest:productImages,observations,now}
 );
 
 // Never replace an existing directory unless a previous invocation created it.

@@ -459,6 +459,7 @@ function initializeProductLab(){
  });
  const localMessage=source=>tx('#lab-local-photo-status',source);
  function eraseLocalResult(){
+  delete $('#lab-local-photo-result').dataset.productId;
   localPhotoCanvas.width=localPhotoCanvas.height=1;$('#lab-local-photo-result').hidden=true;
   releasePoseLayers();
  }
@@ -563,7 +564,7 @@ function initializeProductLab(){
   $('#lab-local-photo-x').value='50';$('#lab-local-photo-y').value=String(Math.round(centre*100));range.value=String(scale);
  }
  async function importCatalogProduct(){
-  const product=window.A1CatalogFitting?.current();if(!product||$('#ai-result').hidden)return;
+  const product=window.A1CatalogFitting?.current();if(!product)return;
   clearLocalPhoto({silent:true});localCatalogProduct=product;const token=localRevision;
   $('#lab-garment-photo-rights').checked=true;$('#lab-garment-photo-rights').closest('label').hidden=true;$('#lab-garment-photo').closest('label').hidden=true;
   const observed=product.sourceKind==='operator-authorized-observation';
@@ -571,6 +572,8 @@ function initializeProductLab(){
   if(observed&&product.delivery==='remote-reference')catalogPanel.append(node('p',t('판매처 원격 상품사진 · 브라우저에서 이미지 처리가 허용되는 경우에만 배치할 수 있습니다.')));
   if(observed)catalogPanel.append(node('p',t('재고·사이즈·최종 가격은 판매처에서 다시 확인해주세요.')),node('p',t('의류 종류와 사진의 자세를 참고해 배치합니다. 위치와 크기를 조절할 수 있으며 실제 치수·핏을 판정하지 않습니다.')));
   const buy=node('a',t(observed?'판매처에서 상품 확인':'판매처에서 이 상품 구매하기'));buy.href=product.productUrl;buy.dataset.selectedCatalogBuy=product.id;buy.rel=(product.commercial?.affiliate?'sponsored ':'')+'noopener noreferrer';buy.referrerPolicy='no-referrer';buy.addEventListener('click',e=>{if(!e.isTrusted||window.A1CatalogFitting?.current()?.id!==product.id||buy.href!==product.productUrl)e.preventDefault();});catalogPanel.append(buy);
+  $('#lab-local-photo-remove-bg').closest('label').hidden=true;
+  if($('#ai-result').hidden){localMessage('먼저 사진 분석을 완료해주세요. 사진은 이 기기 안에서만 사용합니다.');return;}
   const image=new Image();image.crossOrigin='anonymous';image.referrerPolicy='no-referrer';let rejectLoad,timer;
   const release=()=>{clearTimeout(timer);image.onload=image.onerror=null;image.removeAttribute('src');};const load={cancel(){release();rejectLoad?.(Error('cancelled'));}};pendingGarment=load;
   try{await new Promise((resolve,reject)=>{rejectLoad=reject;image.onload=resolve;image.onerror=()=>reject(Error('cors'));timer=setTimeout(()=>reject(Error('timeout')),10000);image.src=product.fittingImageUrl;});
@@ -578,17 +581,17 @@ function initializeProductLab(){
    if(!image.naturalWidth||!image.naturalHeight||image.naturalWidth*image.naturalHeight>30000000)throw Error('image');
    const scale=Math.min(1,1600/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0,canvas.width,canvas.height);ctx.getImageData(0,0,1,1);localGarment=canvas;
    if(observed&&product.imageKind!=='isolated-garment'){
-    $('#lab-local-photo-remove-bg').closest('label').hidden=true;startOutline();return;
+    startOutline();return;
    }
    prepareGarmentPhoto();presetCatalogPlacement(product);localMessage('의류 사진을 준비했습니다. 내 사진 사용에 별도로 동의한 뒤 겹쳐보기를 누르세요.');
    preparePoseFit(0,0);
-  }catch{if(token===localRevision&&!localDisposed){clearLocalPhoto({silent:true});localMessage('판매처 이미지의 브라우저 처리를 허용하지 않거나 이미지를 열지 못했습니다. 이용 가능한 의류 사진을 기기에서 선택해주세요.');}}
+  }catch{if(token===localRevision&&!localDisposed){window.A1CatalogFitting.clear();localMessage('판매처 이미지의 브라우저 처리를 허용하지 않거나 이미지를 열지 못했습니다. 이용 가능한 의류 사진을 기기에서 선택해주세요.');}}
   finally{release();if(pendingGarment===load)pendingGarment=null;}
  }
  document.addEventListener('a1:catalog-fitting-selected',importCatalogProduct);document.addEventListener('a1:catalog-fitting-clear',()=>clearLocalPhoto({silent:true}));
  function prepareGarmentPhoto(){
   if(!localGarment)return;const canvas=document.createElement('canvas');canvas.width=localGarment.width;canvas.height=localGarment.height;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(localGarment,0,0);
-  if($('#lab-local-photo-remove-bg').checked){
+  if(!localCatalogProduct&&$('#lab-local-photo-remove-bg').checked){
    // Only edge-connected near-white pixels. This is not AI segmentation and
    // must not be used to infer folds or erase a white garment's background.
    const image=ctx.getImageData(0,0,canvas.width,canvas.height),data=image.data,w=canvas.width,h=canvas.height,seen=new Uint8Array(w*h),queue=new Uint32Array(w*h);let start=0,end=0;
@@ -630,6 +633,7 @@ function initializeProductLab(){
     if(poseFit)for(const {canvas,left,top} of handPatches)ctx.drawImage(canvas,left*scale,top*scale,canvas.width*scale,canvas.height*scale);
    }
    const footer=Math.max(28,localPhotoCanvas.width/25);ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(0,localPhotoCanvas.height-footer,localPhotoCanvas.width,footer);ctx.fillStyle='#253b25';ctx.font=Math.max(11,localPhotoCanvas.width/45)+'px sans-serif';ctx.fillText('LOCAL PHOTO OVERLAY / NOT AI TRY-ON',8,localPhotoCanvas.height-footer*.3);
+   if(localCatalogProduct)$('#lab-local-photo-result').dataset.productId=localCatalogProduct.id;
    $('#lab-local-photo-result').hidden=false;localMessage(poseFit?'자세를 반영한 2D 피팅 · 소매와 몸통을 맞췄습니다.':'실제 의류 사진 로컬 2D 미리보기 · AI 착용 합성 아님');if(showResult)reveal('#lab-local-photo-result');
   }catch{eraseLocalResult();localMessage('의류 미리보기를 그리지 못했습니다. 사진을 다시 선택해주세요.');}
  }
@@ -651,7 +655,7 @@ function initializeProductLab(){
  $('#lab-local-photo-consent').addEventListener('change',()=>{if(!$('#lab-local-photo-consent').checked)eraseLocalResult();});
  $('#lab-local-photo-fit').addEventListener('click',()=>drawLocalPhoto(true));$('#lab-local-photo-clear').addEventListener('click',()=>{clearLocalPhoto();window.A1CatalogFitting?.clear();});
  for(const id of ['lab-local-photo-x','lab-local-photo-y','lab-local-photo-scale','lab-local-photo-rotation','lab-local-photo-opacity','lab-local-photo-before'])$('#'+id).addEventListener('input',()=>{if(!$('#lab-local-photo-result').hidden)drawLocalPhoto();});
- $('#lab-local-photo-remove-bg').addEventListener('change',()=>{try{if(outline.length||editingOutline)return;discardPoseFit();releasePoseLayers();prepareGarmentPhoto();if(!$('#lab-local-photo-result').hidden)drawLocalPhoto();}catch{eraseLocalResult();localMessage('의류 사진의 배경 제거에 실패했습니다. 배경 제거를 끄고 다시 시도해주세요.');}});
+ $('#lab-local-photo-remove-bg').addEventListener('change',()=>{try{if(localCatalogProduct||outline.length||editingOutline)return;discardPoseFit();releasePoseLayers();prepareGarmentPhoto();if(!$('#lab-local-photo-result').hidden)drawLocalPhoto();}catch{eraseLocalResult();localMessage('의류 사진의 배경 제거에 실패했습니다. 배경 제거를 끄고 다시 시도해주세요.');}});
  form.addEventListener('submit',e=>{e.preventDefault();if(!fixtures&&catalogState!=='ready'){loadCatalog();reveal('#lab-catalog');return;}if(update())reveal(ranked.length?'#lab-products':'#lab-catalog');});
  $('#lab-body-consent').addEventListener('change',update);
  $('#lab-fixtures').addEventListener('click',()=>{if(!preview)return;fixtures=!fixtures;rows=fixtures?makeFixtures():[];selected=null;compare.clear();eraseFit();update();reveal(fixtures&&ranked.length?'#lab-products':'#lab-catalog');});
