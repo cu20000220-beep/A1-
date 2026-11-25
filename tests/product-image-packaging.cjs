@@ -7,6 +7,10 @@ const sha=b=>crypto.createHash('sha256').update(b).digest('hex'),id='musinsa-116
 test('public packaging includes only verified local product copies and fails closed on substitutions',async t=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'a1-PRIVATE-packaging-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
  for(const name of ['assets','templates','catalog','scripts'])fs.cpSync(path.join(repo,name),path.join(root,name),{recursive:true});
+ for(const file of ['docs/validation/real-products/source-receipt.json','docs/validation/public-beta/tenth-product-source.json']){
+  fs.mkdirSync(path.dirname(path.join(root,file)),{recursive:true});
+  fs.copyFileSync(path.join(repo,file),path.join(root,file));
+ }
  for(const name of fs.readdirSync(repo).filter(name=>name.endsWith('.html')||name==='_headers'))fs.copyFileSync(path.join(repo,name),path.join(root,name));
  const dir=path.join(root,'assets/catalog-images');fs.mkdirSync(dir,{recursive:true});const marker='PRIVATE-UNREGISTERED-PERSONAL-FILE-DO-NOT-PUBLISH';fs.writeFileSync(path.join(dir,'unregistered-personal.jpg'),marker);
  const dest=path.join(root,'dist/assets/catalog-images',id+'.jpg'),manifestPath=path.join(root,'assets/product-images.json');

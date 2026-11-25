@@ -121,3 +121,18 @@ test('a chat follow-up narrows real snapshot results and preserves retailer evid
  assert.ok(refined.every(row => row.product.fit === 'wide'));
  assert.deepEqual(Discovery.search(data, Chat.refine('네이비로', wide), options).candidates, []);
 });
+
+test('explicit seasonal preferences carry across local conversation in both languages', () => {
+ const summer = Q.parse('여름용 검정 티셔츠 4만원 이하');
+ assert.equal(summer.season, 'summer');
+ assert.equal(Q.describe(summer).season, '여름용');
+ assert.equal(Q.describe(summer, 'en').season, 'summer');
+ assert.equal(Q.parse(Q.term(summer)).season, 'summer');
+ assert.equal(Q.parse('봄버 재킷').season, 'any', 'a bomber jacket is not a spring label');
+ assert.deepEqual(Chat.refine('가을로', summer), { ...summer, season: 'autumn' });
+ assert.deepEqual(Chat.refine('fall instead of summer', summer), { ...summer, season: 'autumn' });
+ assert.deepEqual(Chat.refine('여름 대신 겨울', summer), { ...summer, season: 'winter' });
+ assert.deepEqual(Chat.refine('계절은 상관없어요', summer), { ...summer, season: 'any' });
+ assert.throws(()=>Q.parse('봄 가을 셔츠'),/unsupported_season/);
+ for(const row of Q.links(summer))assert.match(row.searchTerm,/여름용/);
+});

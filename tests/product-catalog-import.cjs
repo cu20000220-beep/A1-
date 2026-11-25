@@ -4,6 +4,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const C=require('../scripts/lib/product-catalog.cjs'),BrowserCatalog=require('../assets/product-catalog.js'),now=Date.parse('2026-11-09T12:00:00Z');
 const product={id:'offline-fixture-1',approvalId:'fixture-source',name:'Synthetic validation fixture (not a real listing)',brand:'LOCAL TEST',category:'bottoms',type:'slacks',color:'black',styles:['classic'],occasions:['work'],gender:'men',price:45000,currency:'KRW',sizes:['M'],sizeChart:{unit:'cm',kind:'garment',rows:[{size:'M',waist:80,hips:102,inseam:76}]},imageUrl:'https://images.example.test/item.jpg',retailer:'Fixture seller',purchaseUrl:'https://seller.example.test/items/fixture',sourceUrl:'https://seller.example.test/authorized-feed',permissionChecked:true,lastChecked:'2026-11-09T11:00:00Z',stock:'in_stock',tags:['straight'],designTagsComplete:true};
 const approval={id:'fixture-source',seller:'Fixture seller',domains:['seller.example.test'],imageDomains:['images.example.test'],rightsConfirmed:true,displayApproved:true,validUntil:'2026-11-10T12:00:00Z',evidenceRef:'PRIVATE local test permission evidence (not public)',sourceUrl:'https://seller.example.test/authorized-feed',retentionHours:24};
+const storage={storageApproved:true,storageEvidenceRef:'PRIVATE local test storage permission (not public)'};
 function approved(rows=[product],sourcePatch={}){const input={version:1,products:rows},bytes=JSON.stringify(input),manifest={version:1,sources:[{...approval,...sourcePatch}]};const preview=C.compileCatalog(input,manifest,{now,inputSha256:C.sha(bytes),inspect:true});manifest.sources[0].inputSha256=preview.inputSha256;manifest.sources[0].productsSha256=preview.digests[approval.id];return {input,manifest,bytes,inputSha256:preview.inputSha256};}
 function compile(x){return C.compileCatalog(x.input,x.manifest,{now,inputSha256:x.inputSha256}).snapshot;}
 test('reviewed exact seller file yields public real-data structure without private approval evidence',()=>{
@@ -46,6 +47,8 @@ test('optional offer identity, scoped nullable costs and commercial disclosure a
 });
 test('official provider records require reviewed source kind and exact allowed seller list',()=>{
  const input={version:1,products:[{...product,sourceKind:'official-api',externalId:'provider-record-123',retailer:'Reviewed shop'}]},bytes=JSON.stringify(input),manifest={version:1,sources:[{...approval,kind:'official-api',retailers:['Reviewed shop']}]};
+ assert.throws(()=>C.compileCatalog(input,manifest,{now,inspect:true}),/storage_permission_required/);
+ Object.assign(manifest.sources[0],storage);
  const inspected=C.compileCatalog(input,manifest,{now,inputSha256:C.sha(bytes),inspect:true});manifest.sources[0].inputSha256=inspected.inputSha256;manifest.sources[0].productsSha256=inspected.digests[approval.id];const snapshot=C.compileCatalog(input,manifest,{now,inputSha256:inspected.inputSha256}).snapshot;assert.equal(snapshot.products[0].retailerName,'Reviewed shop');assert.equal(snapshot.products[0].sourceKind,'official-api');assert.equal(C.validateSnapshot(snapshot,manifest,now),snapshot);
  assert.throws(()=>C.compileCatalog({...input,products:[{...input.products[0],retailer:'Unreviewed shop'}]},manifest,{now,inputSha256:inspected.inputSha256,inspect:true}));
  assert.throws(()=>C.compileCatalog({...input,products:[{...product,retailer:'Reviewed shop'}]},manifest,{now,inputSha256:inspected.inputSha256,inspect:true}));
@@ -54,7 +57,32 @@ test('affiliate feeds and known tracking links cannot publish without reviewed d
  for(const key of ['affid','campid','tag','trackingId'])assert.throws(()=>approved([{...product,purchaseUrl:product.purchaseUrl+'?'+key+'=TESTONLY'}]),/affiliate_disclosure_required/);
  const affiliate={...product,purchaseUrl:product.purchaseUrl+'?affid=TESTONLY',commercial:{sponsored:false,affiliate:true,label:'Synthetic affiliate permission fixture'}};
  assert.throws(()=>approved([affiliate]),/commercial_permission_required/);assert.equal(compile(approved([affiliate],{commercialApproved:true})).products[0].commercial.affiliate,true);
- const manifest={version:1,sources:[{...approval,kind:'affiliate-feed',retailers:[product.retailer]}]},input={version:1,products:[{...product,sourceKind:'affiliate-feed'}]};assert.throws(()=>C.compileCatalog(input,manifest,{now,inspect:true}),/affiliate_disclosure_required/);
+ const manifest={version:1,sources:[{...approval,...storage,kind:'affiliate-feed',retailers:[product.retailer]}]},input={version:1,products:[{...product,sourceKind:'affiliate-feed'}]};assert.throws(()=>C.compileCatalog(input,manifest,{now,inspect:true}),/affiliate_disclosure_required/);
+});
+test('explicit seller apparel facts use private storage scope, preserve nulls and canonicalize CSV values',()=>{
+ const enriched={...product,price:null,color:null,sizeChart:null,material:null,fit:' WIDE ',seasons:['Winter','fall','autumn']};
+ assert.throws(()=>approved([{...product,material:'Cotton 100%'}]),/storage_permission_required/);
+ assert.throws(()=>approved([product],{storageApproved:true}),/storage_evidence_required/);
+ assert.throws(()=>approved([product],{storageApproved:false}),/storage_permission_required/);
+ const x=approved([enriched],storage),snapshot=compile(x),row=snapshot.products[0];
+ assert.deepEqual([row.price,row.color,row.sizeChart,row.material,row.fit,row.seasons],[null,null,null,null,'wide',['autumn','winter']]);
+ assert.doesNotMatch(JSON.stringify(snapshot),/storageApproved|storageEvidenceRef|PRIVATE/);
+ assert.equal(C.validateSnapshot(snapshot,x.manifest,now),snapshot);
+ for(const patch of [{material:'x'.repeat(121)},{fit:'any'},{seasons:['monsoon']},{seasons:'winter'}]) {
+  assert.throws(()=>approved([{...enriched,...patch}],storage),/invalid_/);
+ }
+ const csv='price,color,material,fit,seasons\nnull,null,"면 100%",wide,winter|autumn\n';
+ assert.deepEqual(C.parseCsv(csv).products,[{price:null,color:null,material:'면 100%',fit:'wide',seasons:['winter','autumn']}]);
+ assert.deepEqual(C.parseCsv('name,price,color\nKnown listing,,\n').products,[{name:'Known listing',price:null,color:null}]);
+});
+test('approved destination filtering only uses a verified shipping country when requested',()=>{
+ const source=compile(approved([product,{...product,id:'local-destination-fixture',purchaseUrl:'https://seller.example.test/items/shipping',shippingCountries:['US']}]));
+ const conditions={category:'all',type:'clothing',color:'any',gender:'all',style:'all',occasion:'all',budget:null,currency:'KRW'};
+ const ids=options=>BrowserCatalog.search(source,conditions,{now,...options}).matches.map(row=>row.product.id);
+ assert.equal(ids().length,2);
+ assert.deepEqual(ids({destination:'US'}),['local-destination-fixture']);
+ assert.deepEqual(ids({destination:'KR'}),[]);
+ assert.throws(()=>ids({destination:'us'}),/conditions_invalid/);
 });
 
 test('optional fitting image needs separate operator permission and a permitted image host',()=>{

@@ -7,11 +7,14 @@ const TYPES=['clothing','slacks','jeans','trousers','shirt','tshirt','knit','jac
 const STYLES=['minimal','casual','classic','streetwear'];
 const OCCASIONS=['work','casual','event'];
 const TAGS=['straight','relaxed','layered','balanced','tight','cropped','low-rise','logos'];
+const FITS=['semiwide','oversized','relaxed','wide','straight','slim','regular'];
+const SEASONS=['spring','summer','autumn','winter'];
+const APPAREL_FIELDS=['material','fit','seasons'];
 const OFFER_FIELDS=['gtin','mpn','offerSize','sizeSystem','condition','shipping','tax','duties','costDestination','shippingCountries','sourceKind','externalId','commercial','purchaseConditions','purchaseConditionsVerified'];
 const SOURCE_KINDS=['seller-file','official-api','affiliate-feed','brand-file'];
-const INPUT_FIELDS=['id','approvalId','name','brand','category','type','color','styles','occasions','gender','price','currency','sizes','sizeChart','imageUrl','retailer','purchaseUrl','sourceUrl','permissionChecked','lastChecked','stock','tags','designTagsComplete',...OFFER_FIELDS,'fittingImageUrl'];
-const PUBLIC_FIELDS=['id','approvalId','name','brand','category','type','color','styles','occasions','gender','price','currency','sizes','sizeChart','imageUrl','retailerName','productUrl','source','sourceUrl','sourceVerified','checkedAt','expiresAt','stock','tags','designTagsComplete',...OFFER_FIELDS,'fittingImageUrl','fittingRightsVerified'];
-const APPROVAL_FIELDS=['id','seller','domains','imageDomains','rightsConfirmed','displayApproved','validUntil','evidenceRef','sourceUrl','retentionHours','inputSha256','productsSha256','kind','retailers','commercialApproved','fittingUseApproved'];
+const INPUT_FIELDS=['id','approvalId','name','brand','category','type','color','styles','occasions','gender','price','currency','sizes','sizeChart','imageUrl','retailer','purchaseUrl','sourceUrl','permissionChecked','lastChecked','stock','tags','designTagsComplete',...OFFER_FIELDS,'fittingImageUrl',...APPAREL_FIELDS];
+const PUBLIC_FIELDS=['id','approvalId','name','brand','category','type','color','styles','occasions','gender','price','currency','sizes','sizeChart','imageUrl','retailerName','productUrl','source','sourceUrl','sourceVerified','checkedAt','expiresAt','stock','tags','designTagsComplete',...OFFER_FIELDS,'fittingImageUrl','fittingRightsVerified',...APPAREL_FIELDS];
+const APPROVAL_FIELDS=['id','seller','domains','imageDomains','rightsConfirmed','displayApproved','validUntil','evidenceRef','sourceUrl','retentionHours','inputSha256','productsSha256','kind','retailers','commercialApproved','fittingUseApproved','storageApproved','storageEvidenceRef','trainingApproved','trainingEvidenceRef'];
 const object=v=>v&&typeof v==='object'&&!Array.isArray(v);
 const fail=code=>{throw new TypeError(code);};
 const keys=(v,allowed)=>{if(!object(v)||Object.keys(v).some(k=>!allowed.includes(k)))fail('unrecognized_fields');};
@@ -38,8 +41,42 @@ function sizeChart(value,labels){if(value==null)return {unit:'cm',kind:'unknown'
  return {unit:'cm',kind:value.kind,rows};
 }
 function nullableText(value,max){return value==null||value===''?null:text(value,max);}
+function apparelFields(raw,approval){
+ // Older reviewed seller snapshots predate these columns and keep their hash.
+ if((approval.kind||'seller-file')==='seller-file'&&!APPAREL_FIELDS.some(key=>Object.hasOwn(raw,key)))return {};
+ if(approval.storageApproved!==true)fail('storage_permission_required');
+ const material=nullableText(raw.material,120);
+ const fit=raw.fit==null?null:typeof raw.fit==='string'?raw.fit.trim().toLowerCase():raw.fit;
+ if(fit!==null&&!FITS.includes(fit))fail('invalid_apparel_fit');
+ let seasons=null;
+ if(raw.seasons!=null){
+  if(!Array.isArray(raw.seasons)||raw.seasons.length>12)fail('invalid_apparel_seasons');
+  const values=raw.seasons.map(value=>{
+   if(typeof value!=='string')fail('invalid_apparel_seasons');
+   const season=value.trim().toLowerCase();
+   return season==='fall'?'autumn':season;
+  });
+  if(values.some(season=>!SEASONS.includes(season)))fail('invalid_apparel_seasons');
+  if(values.length)seasons=SEASONS.filter(season=>values.includes(season));
+ }
+ return {material,fit,seasons};
+}
+function sourceScopes(approval){
+ for(const [scope,decision,evidence] of [
+  ['storage',approval.storageApproved,approval.storageEvidenceRef],
+  ['training',approval.trainingApproved,approval.trainingEvidenceRef]
+ ]){
+  if(decision!==undefined&&typeof decision!=='boolean')fail('invalid_'+scope+'_approval');
+  if(evidence!==undefined&&evidence!==null)text(evidence,300);
+  if(decision===true&&typeof evidence!=='string')fail(scope+'_evidence_required');
+ }
+ // The original seller-file contract already binds a reviewed retention limit.
+ // Imports from other sources need a separate recorded storage grant.
+ if(approval.storageApproved===false||((approval.kind||'seller-file')!=='seller-file'&&approval.storageApproved!==true))fail('storage_permission_required');
+ if(approval.trainingApproved===true&&approval.storageApproved!==true)fail('training_storage_permission_required');
+}
 function gtin(value){if(value==null||value==='')return null;if(typeof value!=='string'||!/^(?:\d{8}|\d{12}|\d{13}|\d{14})$/.test(value)||/^0+$/.test(value))fail('invalid_gtin');let sum=0;for(let i=value.length-2,weight=3;i>=0;i--,weight=weight===3?1:3)sum+=Number(value[i])*weight;if((10-sum%10)%10!==Number(value.at(-1)))fail('invalid_gtin_checksum');return value;}
-function fee(value,currency){if(value==null||value==='')return null;const scale=['KRW','JPY'].includes(currency)?1:100,minor=Math.round(value*scale);if(!Number.isFinite(value)||value<0||value>1e9||!Number.isSafeInteger(minor)||Math.abs(value*scale-minor)>.000001)fail('invalid_destination_fee');return minor/scale;}
+function fee(value,currency,error='invalid_destination_fee'){if(value==null||value==='')return null;const scale=['KRW','JPY'].includes(currency)?1:100,minor=Math.round(value*scale);if(!Number.isFinite(value)||value<0||value>1e9||!Number.isSafeInteger(minor)||Math.abs(value*scale-minor)>.000001)fail(error);return minor/scale;}
 function offerFields(raw,approval,labels){if(!OFFER_FIELDS.some(key=>Object.hasOwn(raw,key))){if(approval.kind&&approval.kind!=='seller-file')fail('source_kind_required');return {};}
  const kind=raw.sourceKind==null?'seller-file':raw.sourceKind;if(!SOURCE_KINDS.includes(kind)||kind!==(approval.kind||'seller-file'))fail('source_kind_mismatch');
  const countryList=raw.shippingCountries==null?[]:raw.shippingCountries;if(!Array.isArray(countryList)||countryList.length>30||countryList.some(c=>typeof c!=='string'||!(/^[A-Z]{2}$/).test(c)))fail('invalid_shipping_countries');const shippingCountries=[...new Set(countryList)];
@@ -53,16 +90,21 @@ function offerFields(raw,approval,labels){if(!OFFER_FIELDS.some(key=>Object.hasO
  if(kind==='affiliate-feed'&&commercial?.affiliate!==true)fail('affiliate_disclosure_required');
  return {gtin:gtin(raw.gtin),mpn:nullableText(raw.mpn,100),offerSize,sizeSystem:nullableText(raw.sizeSystem,30),condition,shipping,tax,duties,costDestination,shippingCountries,sourceKind:kind,externalId:nullableText(raw.externalId,160),commercial,purchaseConditions:nullableText(raw.purchaseConditions,300),purchaseConditionsVerified:raw.purchaseConditionsVerified===true};
 }
-function approvalsMap(manifest,{inspect=false}={}){keys(manifest,['version','sources']);if(manifest.version!==1||!Array.isArray(manifest.sources)||manifest.sources.length>100)fail('invalid_approvals');const map=new Map();for(const a of manifest.sources){keys(a,APPROVAL_FIELDS);const key=id(a.id);if(map.has(key))fail('duplicate_approval');if(a.rightsConfirmed!==true||a.displayApproved!==true||typeof a.retentionHours!=='number'||!Number.isInteger(a.retentionHours)||a.retentionHours<1||a.retentionHours>168)fail('approval_not_granted');if(a.commercialApproved!==undefined&&typeof a.commercialApproved!=='boolean')fail('invalid_commercial_approval');if(a.fittingUseApproved!==undefined&&typeof a.fittingUseApproved!=='boolean')fail('invalid_fitting_approval');if(a.kind!==undefined&&!SOURCE_KINDS.includes(a.kind))fail('invalid_source_kind');if(a.retailers!==undefined&&(!['official-api','affiliate-feed'].includes(a.kind)||!Array.isArray(a.retailers)||!a.retailers.length||a.retailers.length>50))fail('invalid_approved_retailers');const retailers=a.retailers?.map(v=>text(v,100));if(retailers&&new Set(retailers).size!==retailers.length)fail('duplicate_approved_retailer');const seller=text(a.seller,100);text(a.evidenceRef,300);const domains=listDomains(a.domains),imageDomains=listDomains(a.imageDomains);const sourceUrl=url(a.sourceUrl,domains);if(!inspect){hash(a.inputSha256);hash(a.productsSha256);}map.set(key,{...a,seller,...(retailers?{retailers}:{}),domains,imageDomains,sourceUrl,validUntilMs:timestamp(a.validUntil)});}return map;}
+function approvalsMap(manifest,{inspect=false}={}){keys(manifest,['version','sources']);if(manifest.version!==1||!Array.isArray(manifest.sources)||manifest.sources.length>100)fail('invalid_approvals');const map=new Map();for(const a of manifest.sources){keys(a,APPROVAL_FIELDS);const key=id(a.id);if(map.has(key))fail('duplicate_approval');if(a.rightsConfirmed!==true||a.displayApproved!==true||typeof a.retentionHours!=='number'||!Number.isInteger(a.retentionHours)||a.retentionHours<1||a.retentionHours>168)fail('approval_not_granted');if(a.commercialApproved!==undefined&&typeof a.commercialApproved!=='boolean')fail('invalid_commercial_approval');if(a.fittingUseApproved!==undefined&&typeof a.fittingUseApproved!=='boolean')fail('invalid_fitting_approval');if(a.kind!==undefined&&!SOURCE_KINDS.includes(a.kind))fail('invalid_source_kind');sourceScopes(a);if(a.retailers!==undefined&&(!['official-api','affiliate-feed'].includes(a.kind)||!Array.isArray(a.retailers)||!a.retailers.length||a.retailers.length>50))fail('invalid_approved_retailers');const retailers=a.retailers?.map(v=>text(v,100));if(retailers&&new Set(retailers).size!==retailers.length)fail('duplicate_approved_retailer');const seller=text(a.seller,100);text(a.evidenceRef,300);const domains=listDomains(a.domains),imageDomains=listDomains(a.imageDomains);const sourceUrl=url(a.sourceUrl,domains);if(!inspect){hash(a.inputSha256);hash(a.productsSha256);}map.set(key,{...a,seller,...(retailers?{retailers}:{}),domains,imageDomains,sourceUrl,validUntilMs:timestamp(a.validUntil)});}return map;}
 function listDomains(v){if(!Array.isArray(v)||!v.length||v.length>20)fail('invalid_domains');return [...new Set(v.map(domain))];}
 function normalizeProduct(raw,approval,now){keys(raw,INPUT_FIELDS);if(raw.permissionChecked!==true||!approval||approval.validUntilMs<=now)fail('permission_missing_or_expired');
  const productId=id(raw.id),approvalId=id(raw.approvalId);if(approvalId!==approval.id)fail('approval_mismatch');const checkedAt=timestamp(raw.lastChecked);const expiresAt=Math.min(checkedAt+approval.retentionHours*3600000,approval.validUntilMs);if(checkedAt>now||expiresAt<=now)fail('stale_product');
  if(!CATEGORIES.includes(raw.category)||!TYPES.includes(raw.type||'clothing')||!CURRENCIES.includes(raw.currency)||!['women','men','unisex'].includes(raw.gender)||!['in_stock','out_of_stock','unknown'].includes(raw.stock))fail('invalid_product_attributes');
- const scale=CURRENCIES.slice(0,2).includes(raw.currency)?1:100,minor=Math.round(raw.price*scale);if(!Number.isFinite(raw.price)||raw.price<=0||raw.price>1000000000||!Number.isSafeInteger(minor)||Math.abs(raw.price*scale-minor)>0.000001)fail('invalid_price');
+ const scopedStorage=approval.storageApproved===true;
+ const priceUnknown=scopedStorage&&raw.price==null;
+ if(!priceUnknown&&(!Number.isFinite(raw.price)||raw.price<=0))fail('invalid_price');
+ const price=priceUnknown?null:fee(raw.price,raw.currency,'invalid_price');
  if(Object.hasOwn(raw,'designTagsComplete')&&typeof raw.designTagsComplete!=='boolean')fail('invalid_design_completeness');
  const retailer=text(raw.retailer,100);if(approval.retailers?!approval.retailers.includes(retailer):retailer!==approval.seller)fail('seller_mismatch');const sourceUrl=url(raw.sourceUrl,approval.domains);if(sourceUrl!==approval.sourceUrl)fail('source_mismatch');const labels=sizes(raw.sizes),offer=offerFields(raw,approval,labels),buyerUrl=purchaseUrl(raw.purchaseUrl,approval.domains);
  if([...new URL(buyerUrl).searchParams.keys()].some(k=>/^(?:aff(?:iliate)?[_-]?id|affid|affiliate|campid|customid|mkcid|mkevt|tag|ascsubtag|trackingid)$/i.test(k))&&offer.commercial?.affiliate!==true)fail('affiliate_disclosure_required');
- return {id:productId,approvalId,name:text(raw.name),brand:text(raw.brand,80),category:raw.category,type:raw.type||'clothing',color:text(raw.color,40),styles:list(raw.styles||[],STYLES,4),occasions:list(raw.occasions||[],OCCASIONS,3),gender:raw.gender,price:minor/scale,currency:raw.currency,sizes:labels,sizeChart:sizeChart(raw.sizeChart,labels),imageUrl:url(raw.imageUrl,approval.imageDomains),retailerName:retailer,productUrl:buyerUrl,source:retailer+' · '+(offer.sourceKind&&offer.sourceKind!=='seller-file'?'approved '+offer.sourceKind+' material':'approved seller file'),sourceUrl,sourceVerified:true,checkedAt,expiresAt,stock:raw.stock,tags:list(raw.tags||[],TAGS,12),designTagsComplete:raw.designTagsComplete===true,...offer,...fittingFields(raw,approval)};
+ const color=scopedStorage&&raw.color==null?null:text(raw.color,40);
+ const measurements=scopedStorage&&raw.sizeChart==null?null:sizeChart(raw.sizeChart,labels);
+ return {id:productId,approvalId,name:text(raw.name),brand:text(raw.brand,80),category:raw.category,type:raw.type||'clothing',color,styles:list(raw.styles||[],STYLES,4),occasions:list(raw.occasions||[],OCCASIONS,3),gender:raw.gender,price,currency:raw.currency,sizes:labels,sizeChart:measurements,imageUrl:url(raw.imageUrl,approval.imageDomains),retailerName:retailer,productUrl:buyerUrl,source:retailer+' · '+(offer.sourceKind&&offer.sourceKind!=='seller-file'?'approved '+offer.sourceKind+' material':'approved seller file'),sourceUrl,sourceVerified:true,checkedAt,expiresAt,stock:raw.stock,tags:list(raw.tags||[],TAGS,12),designTagsComplete:raw.designTagsComplete===true,...offer,...fittingFields(raw,approval),...apparelFields(raw,approval)};
 }
 function groupsDigest(products){const groups=new Map();for(const p of products){if(!groups.has(p.approvalId))groups.set(p.approvalId,[]);groups.get(p.approvalId).push(p);}return Object.fromEntries([...groups].map(([key,value])=>[key,sha(JSON.stringify(value.sort((a,b)=>a.id.localeCompare(b.id))))]));}
 function compileCatalog(input,manifest,{now=Date.now(),inputSha256,inspect=false}={}){if(!Number.isSafeInteger(now)||now<=0)fail('invalid_now');keys(input,['version','products']);if(input.version!==1||!Array.isArray(input.products)||input.products.length>100)fail('invalid_product_file');const approvals=approvalsMap(manifest,{inspect}),seen=new Set();const products=input.products.map(raw=>{const p=normalizeProduct(raw,approvals.get(raw.approvalId),now);if(seen.has(p.id))fail('duplicate_product');seen.add(p.id);return p;});const digests=groupsDigest(products);
@@ -70,7 +112,24 @@ function compileCatalog(input,manifest,{now=Date.now(),inputSha256,inspect=false
  return {snapshot:{version:1,generatedAt:now,products},inputSha256,digests};
 }
 function validateSnapshot(snapshot,manifest,now=Date.now()){if(!Number.isSafeInteger(now)||now<=0)fail('invalid_now');keys(snapshot,['version','generatedAt','products']);if(snapshot.version!==1||!Array.isArray(snapshot.products)||snapshot.products.length>100||(!snapshot.products.length?snapshot.generatedAt!==null&&(!Number.isSafeInteger(snapshot.generatedAt)||snapshot.generatedAt<=0||snapshot.generatedAt>now):!Number.isSafeInteger(snapshot.generatedAt)||snapshot.generatedAt<=0||snapshot.generatedAt>now))fail('invalid_snapshot');
- const approvals=approvalsMap(manifest),seen=new Set(),products=snapshot.products.map(p=>{keys(p,PUBLIC_FIELDS);const a=approvals.get(p.approvalId);const raw={id:p.id,approvalId:p.approvalId,name:p.name,brand:p.brand,category:p.category,type:p.type,color:p.color,styles:p.styles,occasions:p.occasions,gender:p.gender,price:p.price,currency:p.currency,sizes:p.sizes,sizeChart:p.sizeChart,imageUrl:p.imageUrl,retailer:p.retailerName,purchaseUrl:p.productUrl,sourceUrl:p.sourceUrl,permissionChecked:true,lastChecked:new Date(p.checkedAt).toISOString(),stock:p.stock,tags:p.tags,designTagsComplete:p.designTagsComplete,...Object.fromEntries([...OFFER_FIELDS,'fittingImageUrl'].filter(key=>Object.hasOwn(p,key)).map(key=>[key,p[key]]))};const out=normalizeProduct(raw,a,now);if(p.sourceVerified!==true||JSON.stringify(out)!==JSON.stringify(p)||seen.has(p.id))fail('snapshot_record_mismatch');seen.add(p.id);return out;});for(const [key,digest]of Object.entries(groupsDigest(products)))if(approvals.get(key).productsSha256!==digest)fail('snapshot_hash_mismatch');return snapshot;
+ const approvals=approvalsMap(manifest),seen=new Set(),products=snapshot.products.map(p=>{keys(p,PUBLIC_FIELDS);const a=approvals.get(p.approvalId);const raw={id:p.id,approvalId:p.approvalId,name:p.name,brand:p.brand,category:p.category,type:p.type,color:p.color,styles:p.styles,occasions:p.occasions,gender:p.gender,price:p.price,currency:p.currency,sizes:p.sizes,sizeChart:p.sizeChart,imageUrl:p.imageUrl,retailer:p.retailerName,purchaseUrl:p.productUrl,sourceUrl:p.sourceUrl,permissionChecked:true,lastChecked:new Date(p.checkedAt).toISOString(),stock:p.stock,tags:p.tags,designTagsComplete:p.designTagsComplete,...Object.fromEntries([...OFFER_FIELDS,'fittingImageUrl',...APPAREL_FIELDS].filter(key=>Object.hasOwn(p,key)).map(key=>[key,p[key]]))};const out=normalizeProduct(raw,a,now);if(p.sourceVerified!==true||JSON.stringify(out)!==JSON.stringify(p)||seen.has(p.id))fail('snapshot_record_mismatch');seen.add(p.id);return out;});for(const [key,digest]of Object.entries(groupsDigest(products)))if(approvals.get(key).productsSha256!==digest)fail('snapshot_hash_mismatch');return snapshot;
 }
-function parseCsv(source){if(typeof source!=='string'||source.length>4*1024*1024)fail('invalid_csv');const rows=[];let row=[],field='',quoted=false;for(let i=0;i<source.length;i++){const c=source[i];if(c==='"'){if(quoted&&source[i+1]==='"'){field+='"';i++;}else if(quoted)quoted=false;else if(!field)quoted=true;else fail('invalid_csv_quote');}else if(c===','&&!quoted){row.push(field);field='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&source[i+1]==='\n')i++;row.push(field);if(row.some(v=>v!==''))rows.push(row);row=[];field='';}else field+=c;}if(quoted)fail('invalid_csv_quote');if(field||row.length){row.push(field);if(row.some(v=>v!==''))rows.push(row);}if(!rows.length)fail('missing_csv_header');const header=rows.shift().map((v,i)=>i===0?v.replace(/^\uFEFF/,''):v);if(new Set(header).size!==header.length||header.some(v=>!INPUT_FIELDS.includes(v)))fail('invalid_csv_header');return {version:1,products:rows.map(values=>{if(values.length!==header.length)fail('invalid_csv_columns');const p={};header.forEach((k,i)=>{const v=values[i];if((OFFER_FIELDS.includes(k)||k==='fittingImageUrl')&&!v.trim())return;if(['styles','occasions','sizes','tags','shippingCountries'].includes(k))p[k]=v?v.split('|').map(x=>x.trim()):[];else if(k==='sizeChart'||k==='commercial')try{p[k]=v?JSON.parse(v):null;}catch{fail(k==='sizeChart'?'invalid_csv_size_chart':'invalid_csv_commercial');}else if(['permissionChecked','designTagsComplete','purchaseConditionsVerified'].includes(k)){if(v!==''&&v!=='true'&&v!=='false')fail('invalid_csv_boolean');p[k]=v==='true';}else if(k==='price')p[k]=v.trim()?Number(v):NaN;else if(['shipping','tax','duties'].includes(k))p[k]=v.trim()?Number(v):null;else if(v!==''||['type','gender'].includes(k)===false)p[k]=v;});return p;})};}
+function parseCsv(source){if(typeof source!=='string'||source.length>4*1024*1024)fail('invalid_csv');const rows=[];let row=[],field='',quoted=false;for(let i=0;i<source.length;i++){const c=source[i];if(c==='"'){if(quoted&&source[i+1]==='"'){field+='"';i++;}else if(quoted)quoted=false;else if(!field)quoted=true;else fail('invalid_csv_quote');}else if(c===','&&!quoted){row.push(field);field='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&source[i+1]==='\n')i++;row.push(field);if(row.some(v=>v!==''))rows.push(row);row=[];field='';}else field+=c;}if(quoted)fail('invalid_csv_quote');if(field||row.length){row.push(field);if(row.some(v=>v!==''))rows.push(row);}if(!rows.length)fail('missing_csv_header');const header=rows.shift().map((v,i)=>i===0?v.replace(/^\uFEFF/,''):v);if(new Set(header).size!==header.length||header.some(v=>!INPUT_FIELDS.includes(v)))fail('invalid_csv_header');
+ return {version:1,products:rows.map(values=>{
+  if(values.length!==header.length)fail('invalid_csv_columns');
+  const p={};
+  header.forEach((k,i)=>{
+   const v=values[i];
+   if((OFFER_FIELDS.includes(k)||APPAREL_FIELDS.includes(k)||k==='fittingImageUrl')&&!v.trim())return;
+   if((APPAREL_FIELDS.includes(k)||k==='color'||k==='price')&&v.trim()==='null'||(k==='color'||k==='price')&&!v.trim())p[k]=null;
+   else if(['styles','occasions','sizes','tags','shippingCountries','seasons'].includes(k))p[k]=v?v.split('|').map(x=>x.trim()):[];
+   else if(k==='sizeChart'||k==='commercial')try{p[k]=v?JSON.parse(v):null;}catch{fail(k==='sizeChart'?'invalid_csv_size_chart':'invalid_csv_commercial');}
+   else if(['permissionChecked','designTagsComplete','purchaseConditionsVerified'].includes(k)){if(v!==''&&v!=='true'&&v!=='false')fail('invalid_csv_boolean');p[k]=v==='true';}
+   else if(k==='price')p[k]=Number(v);
+   else if(['shipping','tax','duties'].includes(k))p[k]=v.trim()?Number(v):null;
+   else if(v!==''||['type','gender'].includes(k)===false)p[k]=v;
+  });
+  return p;
+ })};
+}
 module.exports={compileCatalog,validateSnapshot,parseCsv,sha,groupsDigest,INPUT_FIELDS};

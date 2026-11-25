@@ -22,6 +22,13 @@
  ];
  const fits=[['semiwide',/세미\s*와이드|\bsemi[- ]?wide\b/i,'세미와이드','semi-wide'],['oversized',/오버\s*핏|오버사이즈|\boversized?\b/i,'오버핏','oversized'],['relaxed',/루즈|루스\s*핏|릴랙스|여유\s*(?:있는|로운|핏)|넉넉한|\brelaxed\b|\bloose\b|\broomy\b/i,'루즈핏','relaxed'],['wide',/와이드|\bwide\b/i,'와이드','wide'],['straight',/스트레이트|일자(?:핏)?|\bstraight\b/i,'스트레이트','straight'],['slim',/슬림|\bslim\b/i,'슬림','slim'],['regular',/레귤러|기본\s*핏|\bregular\b/i,'레귤러','regular']];
  const purposes=[['work',/출근|회사|오피스|\boffice\b|\bwork\b/i,'출근용','office','work'],['event',/하객|결혼식|격식|행사|\bwedding\b|\bevent\b/i,'하객용','occasion','event'],['sport',/운동|러닝|헬스|\bsport\b|\bworkout\b|\brunning\b/i,'운동용','workout','all'],['daily',/일상|데일리|평상복|\beveryday\b|\bdaily\b/i,'일상용','everyday','casual']];
+ const seasons=[
+  ['spring',/(?:^|[^가-힣])봄(?:철)?(?:용|옷)?(?:에(?:는)?|으?로)?(?=$|[^가-힣])|\bspring\b/i,'봄용','spring'],
+  ['summer',/(?:^|[^가-힣])여름(?:철)?(?:용|옷)?(?:에(?:는)?|으?로)?(?=$|[^가-힣])|\bsummer\b/i,'여름용','summer'],
+  ['autumn',/(?:^|[^가-힣])가을(?:철)?(?:용|옷)?(?:에(?:는)?|으?로)?(?=$|[^가-힣])|\b(?:autumn|fall)\b/i,'가을용','autumn'],
+  ['winter',/(?:^|[^가-힣])겨울(?:철)?(?:용|옷)?(?:에(?:는)?|으?로)?(?=$|[^가-힣])|\bwinter\b/i,'겨울용','winter']
+ ];
+ const SEASONS=Object.freeze(seasons.map(([code])=>code));
  const colors=[['black',/검정|검은|블랙|\bblack\b/i,'검정','black'],['navy',/네이비|남색|\bnavy\b/i,'네이비','navy'],['white',/흰(?:색)?|하얀|화이트|\bwhite\b/i,'흰색','white'],['beige',/베이지|\bbeige\b/i,'베이지','beige'],['grey',/회색|그레이|차콜|\bgr[ae]y\b|charcoal/i,'회색','grey']];
  function parse(text){if(typeof text!=='string'||!text.trim()||text.length>300)throw TypeError('invalid_query');
   const normalized=text.normalize('NFKC');if(/https?:|data:|blob:|@|<|base64|\bsk-[\w-]{12,}|\d{2,3}[- ]\d{3,4}[- ]\d{4}/i.test(normalized))throw TypeError('private_query');
@@ -38,19 +45,22 @@
   if(budget!==null&&/^\s*미만/.test(normalized.slice(amounts[0].index+amounts[0][0].length)))budget-=1;
   if(budget!==null&&(!Number.isSafeInteger(budget)||budget<=0||budget>100000000))throw TypeError('invalid_budget');
   const fit=fits.find(x=>x[1].test(normalized)),purpose=purposes.find(x=>x[1].test(normalized));
-  return {fit:fit?.[0]||'any',purpose:purpose?.[0]||'any',type:type?.[0]||'clothing',category,color:color?.[0]||'any',gender,budget,currency:'KRW',style:/미니멀|minimal/i.test(normalized)?'minimal':/클래식|classic/i.test(normalized)?'classic':/캐주얼|casual/i.test(normalized)?'casual':'all',occasion:purpose?.[4]||'all'};
+  const matchedSeasons=seasons.filter(x=>x[1].test(normalized));
+  if(matchedSeasons.length>1)throw TypeError('unsupported_season');
+  return {fit:fit?.[0]||'any',purpose:purpose?.[0]||'any',season:matchedSeasons[0]?.[0]||'any',type:type?.[0]||'clothing',category,color:color?.[0]||'any',gender,budget,currency:'KRW',style:/미니멀|minimal/i.test(normalized)?'minimal':/클래식|classic/i.test(normalized)?'classic':/캐주얼|casual/i.test(normalized)?'casual':'all',occasion:purpose?.[4]||'all'};
  }
  function garmentLabel(p,at){return (types.find(x=>x[0]===p.type)||categories.find(x=>x[0]===p.category))?.[at]||(at===2?'의류':'clothing');}
  function term(p,language='ko'){const type=types.find(x=>x[0]===p.type),color=colors.find(x=>x[0]===p.color);if(!['ko','en'].includes(language)||!['all','men','women'].includes(p.gender)||!['any',...colors.map(c=>c[0])].includes(p.color)||p.type!=='clothing'&&!type)throw TypeError('invalid_conditions');
   if(p.category!=null&&p.category!=='all'&&!categories.some(x=>x[0]===p.category))throw TypeError('invalid_conditions');
   const fit=fits.find(x=>x[0]===(p.fit||'any'));if(p.fit&&p.fit!=='any'&&!fit)throw TypeError('invalid_conditions');
   const purpose=purposes.find(x=>x[0]===(p.purpose||'any'));if(p.purpose&&p.purpose!=='any'&&!purpose)throw TypeError('invalid_conditions');
-  const at=language==='ko'?2:3;return [(language==='ko'?{men:'남성',women:'여성'}:{men:'men',women:'women'})[p.gender],color?.[at],fit?.[at],garmentLabel(p,at),purpose?.[at]].filter(Boolean).join(' ');
+  const season=seasons.find(x=>x[0]===p.season);if(p.season&&p.season!=='any'&&!season)throw TypeError('invalid_conditions');
+  const at=language==='ko'?2:3;return [(language==='ko'?{men:'남성',women:'여성'}:{men:'men',women:'women'})[p.gender],color?.[at],fit?.[at],garmentLabel(p,at),purpose?.[at],season?.[at]].filter(Boolean).join(' ');
  }
  function describe(p,language='ko'){
   term(p,language);
   const at=language==='ko'?2:3,unspecified=language==='ko'?'미지정':'Not specified',kind=garmentLabel(p,at);
-  return {kind:kind==='clothing'?'Clothing':kind,color:colors.find(x=>x[0]===p.color)?.[at]||unspecified,fit:fits.find(x=>x[0]===p.fit)?.[at]||unspecified,purpose:purposes.find(x=>x[0]===p.purpose)?.[at]||unspecified,collection:(language==='ko'?{men:'남성',women:'여성',all:'전체'}:{men:'Men',women:'Women',all:'All'})[p.gender]};
+  return {kind:kind==='clothing'?'Clothing':kind,color:colors.find(x=>x[0]===p.color)?.[at]||unspecified,fit:fits.find(x=>x[0]===p.fit)?.[at]||unspecified,purpose:purposes.find(x=>x[0]===p.purpose)?.[at]||unspecified,season:seasons.find(x=>x[0]===p.season)?.[at]||unspecified,collection:(language==='ko'?{men:'남성',women:'여성',all:'전체'}:{men:'Men',women:'Women',all:'All'})[p.gender]};
  }
  function bodySuggestions(p,{metrics,consent=false}={}){
   if(consent!==true)return [];term(p);
@@ -75,5 +85,5 @@
   {name:'쿠팡',searchTerm:query,searchUrl:'https://www.coupang.com/np/search?'+new URLSearchParams({q:query}),homeUrl:'https://www.coupang.com/'},
   {name:'유니클로',searchTerm:query,searchUrl:'https://www.uniqlo.com/kr/ko/search',homeUrl:'https://www.uniqlo.com/kr/ko/',manualSearch:true}
  ];}
- return Object.freeze({parse,term,links,describe,bodySuggestions});
+ return Object.freeze({parse,term,links,describe,bodySuggestions,SEASONS});
 });

@@ -25,7 +25,7 @@ jobs:
       - name: Offline unit, authorization, SQLite and privacy checks
         run: >-
           node --test
-          tests/body-analysis.cjs tests/proportion-recommendations.cjs tests/membership-policy.cjs
+          tests/body-analysis.cjs tests/proportion-recommendations.cjs tests/curated-recommendations.cjs tests/membership-policy.cjs
           tests/premium-backend.cjs tests/recommendation-engine.cjs
           tests/firebase-auth.cjs tests/localization-server.cjs
           tests/global-entitlements.cjs tests/global-schema.cjs

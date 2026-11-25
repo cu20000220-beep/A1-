@@ -15,6 +15,20 @@ test('official/feed adapters use explicit reviewed paths without fabricating pri
  const discovery=providerPayload();delete discovery.items[0].offer.image;assert.throws(()=>createSourceAdapter('official-api',providerConfig()).prepare(discovery),/mapped_field_missing/);
  const noPrice=providerPayload();noPrice.items[0].offer.price.amount='unknown';assert.throws(()=>createSourceAdapter('affiliate-feed',providerConfig()).prepare(noPrice),/invalid_candidate_price/);
 });
+test('provider adaptation preserves mapped null facts without publishing source rights',()=>{
+ const config=providerConfig(),record=providerPayload();
+ const adapter=createSourceAdapter('official-api',{
+  ...config,mapping:{...config.mapping,material:'offer.material',fit:'offer.fit',seasons:'offer.seasons'},
+  defaults:{...config.defaults,color:null}
+ });
+ Object.assign(record.items[0].offer,{material:null,fit:'wide',seasons:['autumn']});
+ record.items[0].offer.price.amount=null;
+ record.items[0].storageApproved=true;
+ const candidate=adapter.prepare(record).candidates.products[0];
+ assert.deepEqual([candidate.price,candidate.color,candidate.material,candidate.fit,candidate.seasons],[null,null,null,'wide',['autumn']]);
+ assert.equal(candidate.storageApproved,undefined);
+ assert.equal(candidate.permissionChecked,false);
+});
 test('unsafe mapping, source substitution, duplicates and incomplete records fail before output',()=>{
  for(const field of ['__proto__.x','offer.constructor.name','offer.prototype.value','offer.access_token','offer[0].price'])assert.throws(()=>createSourceAdapter('official-api',{...providerConfig(),mapping:{...providerConfig().mapping,name:field}}),/unsafe_mapping_path/);
  for(const target of ['approvalId','sourceKind','sourceUrl','permissionChecked','sourceVerified'])assert.throws(()=>createSourceAdapter('official-api',{...providerConfig(),mapping:{...providerConfig().mapping,[target]:'offer.id'}}),/unapproved_mapping_target/);

@@ -15,6 +15,7 @@
   const substitutions = [
     ['color', /^(?:색(?:상|깔)?(?:은|는)?\s*(?:상관없(?:어|어요)?|아무거나)|any color|no color preference)[.!?\s]*$/i],
     ['fit', /^(?:핏(?:은)?\s*(?:상관없(?:어|어요)?|아무거나)|any fit|no fit preference)[.!?\s]*$/i],
+    ['season', /^(?:계절(?:은)?\s*(?:상관없(?:어|어요)?|아무거나)|any season|no season preference)[.!?\s]*$/i],
     ['budget', /^(?:예산(?:은)?\s*(?:상관없(?:어|어요)?|제한\s*없(?:어|어요)?)|any budget|no budget limit)[.!?\s]*$/i]
   ];
 
@@ -34,7 +35,7 @@
     try {
       parsed = parseClothing(text);
     } catch (error) {
-      if (error.message !== 'unsupported_exclusion' || replace.length !== 2 || !replace.every(Boolean)) throw error;
+      if (!['unsupported_exclusion', 'unsupported_season'].includes(error.message) || replace.length !== 2 || !replace.every(Boolean)) throw error;
     }
     if (reset.test(text)) return { ...defaults, size: '' };
     const next = { ...defaults, ...previous };
@@ -79,9 +80,10 @@
       '상품 카드에서 체형 비율을 참고한 이유를 확인할 수 있습니다.': 'Check the product cards for any recommendation reasons based on your proportions.',
       '체형에 맞춰 정렬하려면 사진 분석 또는 직접 입력 후 체형 비율 사용을 선택해 주세요.': 'To rank by body proportions, analyze a photo or enter your measurements and allow their use.',
       '추천 후보 보기': 'See the matches',
-      '옷 종류, 색상, 핏, 용도 또는 예산을 말해 주세요. 예를 들어 “검정 슬랙스” 또는 “와이드핏으로”라고 물을 수 있습니다.': 'Ask about a clothing type, color, fit, occasion, or budget. For example, “black slacks” or “switch to wide fit.”',
+      '옷 종류, 색상, 핏, 계절, 용도 또는 예산을 말해 주세요. 예를 들어 “검정 슬랙스” 또는 “여름용으로”라고 물을 수 있습니다.': 'Ask about a clothing type, color, fit, season, occasion, or budget. For example, “black slacks” or “make it summer clothes.”',
       '연락처, 이메일, 사진, 링크 대신 의류 조건만 입력해 주세요.': 'Enter clothing preferences and omit contacts, email addresses, photos, and links.',
       '예산은 “5만원 이하”처럼 상한 금액 하나로 입력해 주세요.': 'Enter one upper budget, such as “50,000원 이하.”',
+      '찾는 계절을 한 가지 말해 주세요.': 'Choose one season for your search.',
       '현재 색상 조건은 검정, 네이비, 흰색, 베이지, 회색을 지원합니다. 이 중 하나를 골라 주세요.': 'Available color filters are black, navy, white, beige, and gray. Choose one of these colors.',
       '원하는 조건을 직접 알려 주세요. 예를 들어 “검정 말고 네이비”는 네이비로 바꿉니다.': 'State the desired option directly. For example, “navy instead of black” changes the color to navy.'
     };
@@ -148,10 +150,11 @@
           private_query: '연락처, 이메일, 사진, 링크 대신 의류 조건만 입력해 주세요.',
           unsupported_budget: '예산은 “5만원 이하”처럼 상한 금액 하나로 입력해 주세요.',
           invalid_budget: '예산은 “5만원 이하”처럼 상한 금액 하나로 입력해 주세요.',
+          unsupported_season: '찾는 계절을 한 가지 말해 주세요.',
           unsupported_color: '현재 색상 조건은 검정, 네이비, 흰색, 베이지, 회색을 지원합니다. 이 중 하나를 골라 주세요.',
           unsupported_exclusion: '원하는 조건을 직접 알려 주세요. 예를 들어 “검정 말고 네이비”는 네이비로 바꿉니다.'
         };
-        panel.append(element('p', errors[error.message] || '옷 종류, 색상, 핏, 용도 또는 예산을 말해 주세요. 예를 들어 “검정 슬랙스” 또는 “와이드핏으로”라고 물을 수 있습니다.'));
+        panel.append(element('p', errors[error.message] || '옷 종류, 색상, 핏, 계절, 용도 또는 예산을 말해 주세요. 예를 들어 “검정 슬랙스” 또는 “여름용으로”라고 물을 수 있습니다.'));
         return false;
       }
       const phrase = query.term(conditions, i18n.language);

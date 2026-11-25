@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "sources": [
+    {"id":"musinsa","market":"KR","homepage":"https://www.musinsa.com/","decision":"observed-facts","factHosts":["www.musinsa.com"],"evidence":["docs/validation/real-products/source-receipt.json"]},
+    {"id":"29cm","market":"KR","homepage":"https://www.29cm.co.kr/","decision":"observed-facts","factHosts":["www.29cm.co.kr"],"evidence":["docs/validation/real-products/source-receipt.json","docs/validation/public-beta/tenth-product-source.json"]},
+    {"id":"wconcept","market":"KR","homepage":"https://www.wconcept.co.kr/","decision":"pending","factHosts":[],"evidence":[]},
+    {"id":"naver-shopping","market":"KR","homepage":"https://shopping.naver.com/","decision":"pending","factHosts":[],"evidence":[]},
+    {"id":"coupang","market":"KR","homepage":"https://www.coupang.com/","decision":"pending","factHosts":[],"evidence":[]},
+    {"id":"zara","market":"global","homepage":"https://www.zara.com/","decision":"pending","factHosts":[],"evidence":[]},
+    {"id":"hm","market":"global","homepage":"https://www.hm.com/","decision":"pending","factHosts":[],"evidence":[]},
+    {"id":"uniqlo","market":"global","homepage":"https://www.uniqlo.com/","decision":"pending","factHosts":[],"evidence":[]},
+    {"id":"asos","market":"global","homepage":"https://www.asos.com/","decision":"pending","factHosts":[],"evidence":[]}
+  ]
+}

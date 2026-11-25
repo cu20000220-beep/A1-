@@ -241,9 +241,30 @@ async function verify(browser, width, height, lang) {
 
     await page.goto(origin + '/', { waitUntil: 'networkidle' });
     await page.evaluate(language => A1I18n.setLanguage(language), lang);
-    assert.equal(await page.locator('main>section').first().getAttribute('id'),'shopping-search');
+    assert.equal(await page.locator('#main-fitting-studio #ai-photo').count(),1);
     assert.equal(await page.locator('#shopping-search').isVisible(), true);
     assert.equal(await page.locator('#avatar-root').count(), 0);
+    if(lang==='ko'){
+      await search(page,'여름 티셔츠');
+      const summer=page.locator('#shopping-discovery [data-discovery-id]');
+      assert.deepEqual(await summer.evaluateAll(cards=>cards.map(card=>card.dataset.discoveryId).sort()),['musinsa-3765431','musinsa-996498']);
+      assert.match(await summer.first().innerText(),/여름.*반소매/);
+      await summer.first().locator('details summary').click();
+      assert.match(await summer.first().innerText(),/소재 미확인|소재 면/);
+      assert.ok((await summer.first().locator('[data-discovery-source]').getAttribute('href')).startsWith('https://www.musinsa.com/products/'));
+      await showFilters(page);
+      await page.locator('#shopping-season').selectOption('winter');
+      await waitForRecommendations(page);
+      assert.equal(await summer.count(),0);
+      await page.locator('#shopping-destination').selectOption('GB');
+      assert.equal(await page.locator('#shopping-discovery').isVisible(),false);
+      const hosts=await page.locator('#shopping-search-results a').evaluateAll(links=>links.map(a=>new URL(a.href).hostname));
+      assert.ok(hosts.includes('www.amazon.co.uk'));
+      assert.ok(hosts.every(host=>['www.amazon.co.uk','www.ebay.co.uk'].includes(host)));
+      await page.locator('#shopping-destination').selectOption('KR');
+      await page.locator('#shopping-season').selectOption('');
+      await search(page,'');
+    }
 
     const discovery = page.locator('#shopping-discovery');
     await page.locator('[data-shopping-preset="남성 검정 슬랙스 5만원 이하"]').click();

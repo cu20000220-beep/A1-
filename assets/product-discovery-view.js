@@ -24,6 +24,8 @@
   '현재 조건에 맞는 상품이 없습니다. 조건을 바꾸거나 판매처 검색을 이용하세요.':'No products match these conditions. Adjust your filters or use the retailer searches.',
   '추천 상품 정보가 없습니다. 판매처 검색에서 옷을 찾을 수 있습니다.':'Recommendation data is unavailable. Try the retailer searches.',
   '현재 조건에서 신체 비율과 연결할 수 있는 상품 특성이 확인되지 않았습니다. 찾는 옷이나 용도를 바꿔 물어보세요.':'No confirmed garment feature matches these proportions and filters. Try asking about a different garment or occasion.',
+  '공식 쇼핑몰 검색 보기':'Browse official retailer searches',
+  '가슴':'Chest','허리':'Waist','엉덩이':'Hips','안쪽 다리':'Inseam','어깨':'Shoulders','총장':'Length',
   '가격 미확인 · 예산 충족 여부 미확정':'Price unknown · budget match unconfirmed',
   '상품 정보를 불러오지 못했습니다. 다시 시도하거나 판매처 검색을 이용하세요.':'Product information could not load. Try again or use the retailer searches.',
   '상품 정보 다시 불러오기':'Reload product information',
@@ -34,6 +36,14 @@
   '복사한 상품 주소를 Safari 주소창에 붙여넣으세요.':'Paste the copied product address into the Safari address bar.',
   '자동 복사가 제한됐습니다. 아래 상품 주소를 길게 눌러 복사한 뒤 Safari에서 여세요.':'Automatic copying was restricted. Press and hold the product address below to copy it, then open it in Safari.',
   '페이지 표시 가격':'Observed page price','가격 미확인':'Price unknown','사이즈 정보 미확인':'Size information unknown','표시 사이즈 {sizes}':'Listed sizes {sizes}',
+  '확인 당시 가격':'Price at last observation',
+  '소재 미확인':'Material unconfirmed','실측 미확인':'Measurements unconfirmed','소재 {material}':'Material {material}',
+  '판매처 표시 핏 {fit}':'Listed fit {fit}','출처 상품 페이지':'Source product page',
+  '판매처의 {season} 표기':'Seller lists {season}',
+  '{season}에 비교할 특성 · 판매처의 {feature} 표기':'Compare for {season} using the listed feature {feature}',
+  '봄':'Spring','여름':'Summer','가을':'Autumn','겨울':'Winter',
+  '플리스':'Fleece','보온 안감':'Thermal lining','판매처 실측표 (cm)':'Seller measurements (cm)',
+  '세미와이드':'Semi-wide','오버사이즈':'Oversized','슬림핏':'Slim fit','레귤러핏':'Regular fit',
   '페이지 확인 {date}':'Page checked {date}','재고 미확인':'Stock unconfirmed','품절 표시 확인':'Observed as out of stock','페이지에 재고 표시':'Stock indicated on the product page',
   '상품 정보 및 출처':'Product details and source','추천 이유':'Why it matches','상품 종류 일치':'Clothing type matches','카테고리 일치':'Category matches','색상 일치':'Color matches','컬렉션 일치':'Collection matches','핏 표기 일치':'Listed fit matches','사이즈 표기 일치':'Listed size matches','페이지 표시 가격 기준 예산 범위':'Observed price within budget',
   '선택한 용도에 참고할 상품 특징':'Listed details related to your occasion',
@@ -132,13 +142,18 @@
   target.dataset.discoveryView='true';target.classList.add('product-discovery-view');
   let revision=0,disposed=false,last=null,lastProfile=null,reported=null;
   const heading=node('h3'),notice=node('p'),status=node('p'),imageStatus=node('p'),grid=node('div'),unknown=node('section'),retry=node('button');
+  const fallback=node('a');fallback.hidden=true;
+  const retailerSearch=document.querySelector('#shopping-search-results');
+  fallback.href=retailerSearch?'#shopping-search-results':'index.html#shopping-search';
+  fallback.addEventListener('click',()=>{const details=retailerSearch?.closest('details');if(details)details.open=true;});
+  I.setText(fallback,'공식 쇼핑몰 검색 보기');
   I.setText(heading,'의류 추천 후보');
   I.setText(notice,'공식 상품 페이지를 바탕으로 추천합니다. 현재 가격과 재고는 판매처에서 확인하세요.');
   notice.className='product-discovery-intro';
   status.setAttribute('role','status');status.className='product-discovery-status';grid.className='product-discovery-grid';unknown.className='product-discovery-unknown';
   retry.type='button';retry.hidden=true;I.setText(retry,'상품 정보 다시 불러오기');
   imageStatus.setAttribute('role','status');imageStatus.className='product-discovery-image-status';
-  target.replaceChildren(heading,notice,status,imageStatus,retry,grid,unknown);target.hidden=true;
+  target.replaceChildren(heading,notice,status,fallback,imageStatus,retry,grid,unknown);target.hidden=true;
   function card(row,token){
    const p=row.product,article=node('article');article.className='product-discovery-card';article.dataset.discoveryId=p.id;article.dataset.i18nIgnore='';
    const content=node('div');content.className='product-discovery-content';article.append(content);
@@ -146,7 +161,7 @@
    content.append(brand,node('h4',p.name));
    const price=node('p');price.className='product-discovery-price';
    if(p.price===null){price.dataset.unknown='true';price.textContent=I.t('가격 미확인');}
-   else price.append(node('strong',p.price.toLocaleString(I.locale)+' '+p.currency),node('span',I.t('페이지 표시 가격')));
+   else price.append(node('strong',p.price.toLocaleString(I.locale)+' '+p.currency),node('span',I.t(row.warnings.includes('observation_stale')?'확인 당시 가격':'페이지 표시 가격')));
    const stock=node('p',I.t(p.stock==='unknown'?'재고 미확인':p.stock==='out_of_stock'?'품절 표시 확인':'페이지에 재고 표시'));
    stock.className='product-discovery-stock';
    const checked=new Date(p.checkedAt),date=node('time',I.t('페이지 확인 {date}',{date:checked.toLocaleDateString(I.locale)}));date.dateTime=checked.toISOString();
@@ -154,6 +169,13 @@
    content.append(price,stock,sizes,date);
    const reasons=node('ul');reasons.className='product-discovery-reasons';reasons.setAttribute('aria-label',I.t('추천 이유'));
    for(const code of row.reasons)if(reasonLabels[code])reasons.append(node('li',I.t(reasonLabels[code])));
+   if(row.seasonEvidence){
+    const {season,basis,feature}=row.seasonEvidence;
+    const seasonName={spring:'봄',summer:'여름',autumn:'가을',winter:'겨울'}[season];
+    const featureName={short_sleeves:'반소매',cardigan_layer:'카디건',fleece:'플리스',thermal_lining:'보온 안감'}[feature];
+    if(seasonName&&basis==='source-label')reasons.append(node('li',I.t('판매처의 {season} 표기',{season:I.t(seasonName)})));
+    else if(seasonName&&featureName)reasons.append(node('li',I.t('{season}에 비교할 특성 · 판매처의 {feature} 표기',{season:I.t(seasonName),feature:I.t(featureName)})));
+   }
    if(reasons.children.length)content.append(reasons);
    const proportionReasons=(row.proportionReasons||[]).map(reason=>proportionText(reason,{evidence:true})).filter(Boolean);
    if(proportionReasons.length){
@@ -184,6 +206,22 @@
    for(const code of row.warnings)if(warningLabels[code]&&!visibleWarnings.has(code))warnings.append(node('li',I.t(warningLabels[code])));
    if(warnings.children.length)details.append(warnings);
    details.append(node('p',p.priceNote),node('p',p.sourceNote));
+   details.append(node('p',p.material?I.t('소재 {material}',{material:p.material}):I.t('소재 미확인')));
+   const fitName={semiwide:'세미와이드',oversized:'오버사이즈',relaxed:'여유핏',wide:'와이드핏',straight:'일자 실루엣',slim:'슬림핏',regular:'레귤러핏'}[p.fit];
+   if(fitName)details.append(node('p',I.t('판매처 표시 핏 {fit}',{fit:I.t(fitName)})));
+   if(p.sizeChart?.rows?.length){
+    const measurements=node('ul');
+    const measurementNames={chest:'가슴',waist:'허리',hips:'엉덩이',inseam:'안쪽 다리',shoulders:'어깨',length:'총장'};
+    for(const row of p.sizeChart.rows){
+     const values=Object.entries(row).filter(([key])=>key!=='size').map(([key,value])=>I.t(measurementNames[key])+' '+value.toLocaleString(I.locale));
+     measurements.append(node('li',[row.size,...values].join(' · ')));
+    }
+    details.append(node('p',I.t('판매처 실측표 (cm)')),measurements);
+   }else details.append(node('p',I.t('실측 미확인')));
+   const source=node('a',I.t('출처 상품 페이지'));
+   source.href=p.sourceUrl;source.rel='noopener noreferrer';source.referrerPolicy='no-referrer';source.dataset.discoverySource=p.id;
+   source.addEventListener('click',event=>{if(!event.isTrusted||disposed||token!==revision||!D.safeProductUrl(p.sourceUrl)||source.href!==p.sourceUrl)event.preventDefault();});
+   details.append(source);
    if(p.observedFeatures.length)details.append(node('p',p.observedFeatures.join(' · ')));
    const fittingNote=node('p',I.t('피팅 자료와 이용 조건 미확인'));fittingNote.dataset.discoveryFittingNote='';details.append(fittingNote);
    const copy=node('button',I.t('상품 링크 복사'));copy.type='button';copy.dataset.discoveryCopy=p.id;
@@ -231,8 +269,8 @@
    reported=null;
    target.hidden=false;target.dataset.state='loading';target.dataset.imageState='idle';
    delete target.dataset.count;delete target.dataset.snapshotCount;delete target.dataset.imageCount;
-   imageStatus.textContent='';grid.replaceChildren();unknown.replaceChildren();unknown.hidden=true;retry.hidden=true;I.setText(status,'상품 정보를 불러오는 중입니다.');
-   if(last.currency&&last.currency!=='KRW'){target.dataset.state='unsupported';I.setText(status,'추천 상품의 가격은 원화로 확인했습니다. KRW를 선택하거나 판매처 검색을 이용하세요.');return false;}
+   imageStatus.textContent='';grid.replaceChildren();unknown.replaceChildren();unknown.hidden=true;retry.hidden=true;fallback.hidden=true;I.setText(status,'상품 정보를 불러오는 중입니다.');
+   if(last.currency&&last.currency!=='KRW'){target.dataset.state='unsupported';fallback.hidden=false;I.setText(status,'추천 상품의 가격은 원화로 확인했습니다. KRW를 선택하거나 판매처 검색을 이용하세요.');return false;}
    try{
     const data=await load(refresh);if(disposed||token!==revision||!target.isConnected)return false;
     const result=D.search(data,last,{profile:lastProfile});
@@ -243,6 +281,7 @@
      products:Object.freeze(candidates.slice(0,3).map(row=>Object.freeze({name:row.product.name,proportionReasons:row.proportionReasons||[]})))
     });
     target.dataset.state='ready';target.dataset.count=String(candidates.length);target.dataset.snapshotCount=String(result.snapshotCount);
+    fallback.hidden=Boolean(candidates.length||budgetUnconfirmed.length);
     if(!result.snapshotCount)I.setText(status,'추천 상품 정보가 없습니다. 판매처 검색에서 옷을 찾을 수 있습니다.');
     else if(!candidates.length&&!budgetUnconfirmed.length)I.setText(status,requireProportionEvidence&&lastProfile?'현재 조건에서 신체 비율과 연결할 수 있는 상품 특성이 확인되지 않았습니다. 찾는 옷이나 용도를 바꿔 물어보세요.':'현재 조건에 맞는 상품이 없습니다. 조건을 바꾸거나 판매처 검색을 이용하세요.');
     else I.setText(status,budgetUnconfirmed.length?'추천 후보 {count}개 · 가격 확인 필요 {unknown}개':'추천 후보 {count}개',{count:candidates.length,unknown:budgetUnconfirmed.length});

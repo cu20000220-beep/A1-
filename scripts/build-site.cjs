@@ -17,6 +17,12 @@ const catalog=require('./lib/product-catalog.cjs').validateSnapshot(
 const discoveryFile = path.join(root, 'assets/observed-products.json');
 if (fs.statSync(discoveryFile).size > 1000000) throw Error('Product observations exceed 1 MB');
 const observations = JSON.parse(fs.readFileSync(discoveryFile, 'utf8'));
+require('../assets/product-discovery.js').validateSnapshot(observations);
+require('./lib/recommendation-source-review.cjs').validateSourceReview(
+  JSON.parse(fs.readFileSync(path.join(root, 'catalog/source-review.json'), 'utf8')),
+  observations,
+  file => fs.existsSync(path.join(root, file))
+);
 const {readBoundedFile,validateLocalCopies} = require('./lib/product-image-store.cjs');
 const imageManifestBytes = readBoundedFile(path.join(root,'assets/product-images.json'), 1000000);
 const imageManifest = JSON.parse(imageManifestBytes);
