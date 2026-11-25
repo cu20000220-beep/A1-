@@ -1,0 +1,209 @@
+/* The home workbench reuses the analysis and Nova controls from the studio. */
+#main-fitting-studio {
+  max-width: 1480px;
+  margin-inline: auto;
+  padding: clamp(32px, 5vw, 70px) clamp(16px, 5vw, 72px);
+  scroll-margin-top: 24px;
+}
+
+#main-fitting-studio .main-fitting-heading > :is(h1, h2) {
+  margin: 0 0 12px;
+  font-size: clamp(28px, 3vw, 44px);
+  font-weight: 550;
+  line-height: 1.22;
+  letter-spacing: -.035em;
+}
+
+#main-fitting-studio .main-fitting-heading > p {
+  max-width: 66ch;
+  margin: 0 0 clamp(18px, 3vw, 32px);
+  color: #58634d;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+#main-fitting-studio > :is(#ai-studio, #studio-3d-panel) {
+  min-width: 0;
+  margin: 0;
+  padding: clamp(16px, 2.2vw, 32px);
+  border: 1px solid #d4dbca;
+  background: #f8f9f4;
+}
+
+#main-fitting-studio > #studio-3d-panel {
+  margin-top: clamp(14px, 2vw, 28px);
+}
+
+#main-fitting-studio #ai-studio .section-heading {
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+#main-fitting-studio #ai-title,
+#main-fitting-studio #gltf-proof-root > :is(h2, h3) {
+  margin: 0;
+  font-size: clamp(22px, 2vw, 30px);
+  font-weight: 550;
+  line-height: 1.35;
+}
+
+#main-fitting-studio #ai-studio .ai-badge {
+  margin-top: 0;
+  white-space: normal;
+}
+
+#main-fitting-studio .ai-layout > *,
+#main-fitting-studio #gltf-proof-root .workspace > *,
+#main-fitting-studio #main-fitting-lab {
+  min-width: 0;
+}
+
+#main-fitting-studio #ai-studio .ai-form {
+  gap: 4px;
+  padding: clamp(14px, 2vw, 26px);
+}
+
+#main-fitting-studio #ai-studio .upload-zone {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#main-fitting-studio #ai-photo {
+  width: 100%;
+  min-width: 0;
+}
+
+#main-fitting-studio #ai-studio .avatar-reference-consent {
+  gap: 9px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+#main-fitting-studio #ai-studio :is(#ai-analyze-fit, #ai-analyze, #avatar-open-default) {
+  min-height: 46px;
+  white-space: normal;
+  line-height: 1.5;
+}
+
+#main-fitting-studio #avatar-open-default {
+  margin-top: 8px;
+  border: 1px solid #adb89f;
+  background: #fff;
+  color: #35492c;
+}
+
+#main-fitting-studio #studio-3d-panel #gltf-canvas {
+  height: clamp(340px, 65vh, 610px);
+}
+
+#main-fitting-studio #studio-3d-panel #gltf-proof-root > .eyebrow {
+  margin-top: 0;
+}
+
+#main-fitting-studio #studio-3d-panel #gltf-proof-root > .lead {
+  margin-top: 10px;
+}
+
+#main-fitting-studio #studio-3d-panel .panel {
+  overflow-wrap: anywhere;
+}
+
+#main-fitting-studio #studio-3d-panel .panel :is(button, select) {
+  min-height: 44px;
+}
+
+#main-fitting-studio #studio-3d-panel :is(.panel, .natural-photo-actions) button {
+  white-space: normal;
+}
+
+#main-fitting-studio #studio-3d-panel .panel button[aria-pressed="true"] {
+  border-color: #788968;
+  background: #e5ebdc;
+  color: #30402a;
+}
+
+#main-fitting-studio :is(button, input, select, canvas):focus-visible {
+  outline: 2px solid #425c34;
+  outline-offset: 2px;
+}
+
+#main-fitting-studio #gltf-canvas:focus-visible {
+  outline-offset: -3px;
+}
+
+#main-fitting-studio #main-fitting-lab > #lab-root {
+  max-width: none;
+  margin-block: clamp(14px, 2vw, 28px) 0;
+}
+
+@media (min-width: 1260px) {
+  #main-fitting-studio:has(> #ai-studio + #studio-3d-panel:not([hidden])) {
+    display: grid;
+    grid-template-columns: minmax(260px, .35fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 16px clamp(18px, 2vw, 30px);
+  }
+
+  #main-fitting-studio:has(> #ai-studio + #studio-3d-panel:not([hidden])) > * {
+    grid-column: 1 / -1;
+  }
+
+  #main-fitting-studio:has(> #ai-studio + #studio-3d-panel:not([hidden])) > #ai-studio {
+    grid-column: 1;
+  }
+
+  #main-fitting-studio:has(> #ai-studio + #studio-3d-panel:not([hidden])) > #studio-3d-panel {
+    grid-column: 2;
+    margin-top: 0;
+    padding: 18px;
+  }
+
+  #main-fitting-studio:has(> #ai-studio + #studio-3d-panel:not([hidden])) #ai-studio .section-heading {
+    display: block;
+  }
+
+  #main-fitting-studio:has(> #ai-studio + #studio-3d-panel:not([hidden])) #ai-studio .ai-badge {
+    display: inline-block;
+    margin-top: 8px;
+  }
+
+  #main-fitting-studio:has(> #ai-studio + #studio-3d-panel:not([hidden])) #ai-studio .ai-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #main-fitting-studio:has(> #ai-studio + #studio-3d-panel:not([hidden])) #ai-studio .ai-output canvas {
+    max-height: 280px;
+  }
+
+  #main-fitting-studio:has(> #ai-studio + #studio-3d-panel:not([hidden])) #studio-3d-panel .workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(190px, 232px);
+    gap: 16px;
+  }
+
+  #main-fitting-studio:has(> #ai-studio + #studio-3d-panel:not([hidden])) #studio-3d-panel .panel {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 720px) {
+  #main-fitting-studio #ai-studio .ai-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #main-fitting-studio #ai-studio .ai-output canvas {
+    max-height: 360px;
+  }
+}
+
+@media (max-width: 480px) {
+  #main-fitting-studio #studio-3d-panel #gltf-canvas {
+    height: clamp(345px, 62vh, 500px);
+  }
+
+  #main-fitting-studio #studio-3d-panel .natural-photo-actions {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+  }
+}

@@ -33,7 +33,16 @@
   if(token!==revision)return;
   // A public item ID is the only cross-page handoff. No private pixels/ratios.
   if(!document.querySelector('#ai-form')){location.assign('/#'+(kind==='observed'?'fit-observed-product':'fit-product')+'='+encodeURIComponent(id));return;}
-  if(!document.querySelector('#lab-root')){const template=await window.A1LabTemplates.load('product');if(token!==revision)return;template.querySelector('#ai-studio')?.remove();document.querySelector('#ai-studio').after(document.importNode(template,true));}
+  if(!document.querySelector('#lab-root')){
+   const template=await window.A1LabTemplates.load('product');if(token!==revision)return;
+   if(!document.querySelector('#lab-root')){
+    const lab=document.importNode(template,true);
+    lab.querySelector('#ai-studio')?.remove();
+    const mount=document.querySelector('#main-fitting-lab');
+    if(mount)mount.append(lab);
+    else document.querySelector('#ai-studio').after(lab);
+   }
+  }
   if(token!==revision)return;window.A1LabTemplates.initialize('product',document.querySelector('#lab-root'));
   selected=Object.freeze({...product});clearTimeout(timer);timer=setTimeout(clear,Math.max(1,Math.min(2147483647,product.expiresAt-Date.now()+1)));
   document.dispatchEvent(new CustomEvent('a1:catalog-fitting-selected',{detail:{id}}));

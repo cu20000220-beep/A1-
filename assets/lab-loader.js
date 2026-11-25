@@ -5,7 +5,7 @@
  const preview=Boolean(window.A1Preview),experience=window.A1Preview||(window.A1PublicLocal?.mode==='server-public-local'?window.A1PublicLocal:null)||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null);
  if(!experience||!window.A1I18n||window.A1LabTemplates)return;
  if(!preview){document.removeEventListener('a1:public-local-ready',initialize);document.removeEventListener('a1:public-beta-ready',initialize);}
- const I=window.A1I18n,config={avatar:{path:'/avatar-lab',root:'#avatar-root',init:'initializeAvatarLab'},natural:{path:'/gltf-proof',root:'#gltf-proof-root'},product:{path:'/product-lab',root:'#lab-root',init:'initializeProductLab'}};
+ const I=window.A1I18n,config={avatar:{path:'/avatar-lab',root:'#avatar-root',init:'initializeAvatarLab'},natural:{path:'/gltf-proof',root:'#gltf-proof-root'},studio:{path:'/assets/fitting-studio-view',root:'#studio-3d-view',fallback:'/fitting-studio'},product:{path:'/product-lab',root:'#lab-root',init:'initializeProductLab'}};
  const messages={
  REQUEST:'화면 요청이 차단되었거나 연결되지 않았습니다. 다시 시도하거나 독립 연구실을 Safari에서 여세요.',
  TIMEOUT:'화면 요청 시간이 초과됐습니다. 연결을 확인하고 다시 시도해주세요.',
@@ -45,7 +45,7 @@
   const box=document.createElement('span');box.id=status.id+'-actions';box.className='lab-recovery';
   const diagnostic=document.createElement('small');diagnostic.textContent='A1-LAB-'+code+(Number.isInteger(e?.status)?' / HTTP '+e.status:'');
   const button=document.createElement('button');button.type='button';const reload=['INIT','SCRIPT','WEBGL'].includes(code);I.setText(button,reload?'새로고침 · 사진은 다시 선택':'다시 시도');button.addEventListener('click',reload?()=>location.reload():retry);
-  const link=document.createElement('a');link.href=config[kind].path;link.referrerPolicy='no-referrer';I.setText(link,'독립 연구실 열기');
+  const link=document.createElement('a');link.href=config[kind].fallback||config[kind].path;link.referrerPolicy='no-referrer';I.setText(link,'독립 연구실 열기');
   const note=document.createElement('span');I.setText(note,'독립 화면에는 사진·분석값을 전달하지 않습니다. 앱 안에서 제한되면 이 링크 주소를 복사해 Safari 주소창에 붙여넣으세요.');box.append(diagnostic,button,link,note);status.after(box);
  }
  window.A1LabTemplates=Object.freeze({load,initialize:initializeTemplate,failure,hideFailure});

@@ -74,6 +74,8 @@ const publicEntries = [
   'avatar-lab.html',
   'gltf-proof.html',
   'fitting-studio.html',
+  'assets/fitting-studio-view.html',
+  'assets/main-fitting-studio.css',
   'assets/fitting-studio.css',
   'assets/fitting-studio.js',
   'assets/fitting-studio-3d.js',

@@ -76,7 +76,7 @@ async function prepare(browser, profile, { delayedPath } = {}) {
     }
     if (url.pathname === delayedPath) { noticeDelay(); await deferred; }
     const relative = url.pathname === '/' || url.pathname === '/index' ? 'index.html'
-      : ['/product-lab', '/gltf-proof', '/fitting-studio'].includes(url.pathname) ? url.pathname.slice(1) + '.html' : url.pathname.slice(1);
+      : ['/product-lab', '/gltf-proof', '/fitting-studio', '/assets/fitting-studio-view'].includes(url.pathname) ? url.pathname.slice(1) + '.html' : url.pathname.slice(1);
     const file = path.resolve(root, relative); assert.ok(file.startsWith(root + path.sep));
     if (relative === 'favicon.ico' && !fs.existsSync(file)) { await route.fulfill({ status: 204, body: '' }); return; }
     assert.ok(fs.existsSync(file), 'every actual requested deployment asset exists: ' + relative);
@@ -507,8 +507,8 @@ async function verifyStudioProportions(browser) {
       console.log(prefix + ': personalized Nova 3D, wearable styles, actual 3D/2D pixels, transforms/compare, privacy/delete passed.');
       await trial.context.close();
     }
-    for (const [name, delayedPath, revoke] of replacementOnly || profileOnly ? [] : [['delete-during-template-load', '/gltf-proof', false],
-      ['revoke-during-template-load', '/gltf-proof', true], ['delete-during-glb-load', '/assets/nova-avatar/avatar.glb', false]]) {
+    for (const [name, delayedPath, revoke] of replacementOnly || profileOnly ? [] : [['delete-during-template-load', '/assets/fitting-studio-view', false],
+      ['revoke-during-template-load', '/assets/fitting-studio-view', true], ['delete-during-glb-load', '/assets/nova-avatar/avatar.glb', false]]) {
       const delayed = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' }, { delayedPath });
       await analyze(delayed.page); await delayed.page.locator('#avatar-reference-consent').check(); await delayed.page.locator('#lab-open-avatar').click();
       await delayed.seenDelay;
@@ -532,7 +532,7 @@ async function verifyStudioProportions(browser) {
       'assets/proportion-recommendations.js', 'assets/product-discovery.js', 'assets/product-discovery-view.js',
       'assets/natural-avatar/asset-manifest.json', 'assets/natural-avatar/sample.glb',
       'assets/nova-avatar/asset-manifest.json', 'assets/nova-avatar/avatar.glb',
-      'assets/fitting-studio-3d.js', 'assets/fitting-studio-photo.js', 'assets/fitting-studio-photo.css', 'assets/product-lab.js', 'assets/ai-studio.js',
+      'assets/fitting-studio-3d.js', 'assets/fitting-studio-view.html', 'assets/main-fitting-studio.css', 'assets/fitting-studio-photo.js', 'assets/fitting-studio-photo.css', 'assets/product-lab.js', 'assets/ai-studio.js',
       'index.html', 'product-lab.html', 'fitting-studio.html', '_headers']
       .filter(file => fs.existsSync(path.join(root, file))).map(file => [file, sha(fs.readFileSync(path.join(root, file)))]));
     fs.writeFileSync(path.join(out, 'browser-result.json'), JSON.stringify(report, null, 2));

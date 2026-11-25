@@ -8,6 +8,8 @@
  document.removeEventListener('a1:public-local-ready',initialize);
  button.dataset.naturalBridge = 'true';
  const I = window.A1I18n, T = window.A1LabTemplates;
+ const workbench=document.querySelector('#main-fitting-studio');
+ const mainMount=workbench?.querySelector('#studio-3d-mount');
  I.register({
   '내 체형으로 3D 피팅하기': 'Try clothes on my 3D avatar',
   '사진상 체형 비율을 이 기기에서 3D 아바타와 의류 추천에 사용합니다. 분석 후 두 화면을 자동으로 엽니다.': 'Use estimated body proportions on this device to shape the 3D avatar and recommend clothes. Open both after analysis.',
@@ -35,10 +37,16 @@
   '기본 3D 아바타를 표시합니다.': 'Displaying the default 3D avatar.',
   '선택한 신체 비율을 반영했습니다. 상의를 바꿔 핏을 비교해보세요.': 'The selected body proportions are applied. Change the top to compare how it fits.',
   '3D 아바타를 준비하고 있습니다.': 'Preparing the 3D avatar.',
+  '내 사진으로 3D 피팅': '3D fitting with my photo',
+  '사진을 분석한 뒤 이 화면에서 아바타에 의상을 입혀보세요.': 'Analyze a photo, then try clothes on your avatar on this page.',
   '비율을 적용하지 못해 기본 3D 아바타를 표시합니다.': 'The proportions could not be applied. The default 3D avatar is displayed.',
   '3D 모델을 표시하지 못했습니다. 3D 화면의 안내로 재시도하거나 로컬 2D 피팅을 이용하세요.': 'The 3D model could not be displayed. Follow its recovery instructions or use local 2D fitting.',
   '연구실 실행 코드를 받지 못했습니다. 새로고침해주세요. [A1-LAB-SCRIPT]': 'The lab code did not load. Reload this page. [A1-LAB-SCRIPT]'
  });
+ if(workbench){
+  I.setText(workbench.querySelector('#main-fitting-title'),'내 사진으로 3D 피팅');
+  I.setText(workbench.querySelector('#main-fitting-intro'),'사진을 분석한 뒤 이 화면에서 아바타에 의상을 입혀보세요.');
+ }
  I.setText(button, '내 체형으로 3D 피팅하기');
  const label = document.createElement('label'); label.className = 'avatar-reference-consent';
  const consent = document.createElement('input'); consent.type = 'checkbox'; consent.id = 'avatar-reference-consent';
@@ -127,11 +135,13 @@
  }
  async function fitting() {
   try {
-   viewerObserver?.disconnect();
    // Close the tall 3D panel before revealing the following photo controls so
    // a layout shift cannot scroll the selected 2D view out of the viewport.
-   if (window.A1FittingStudio3D) await window.A1FittingStudio3D.close();
-   else { const panel = document.querySelector('#studio-3d-panel'); if (panel) panel.hidden = true; signal('a1:gltf-suspend'); }
+   if (!workbench) {
+    viewerObserver?.disconnect();
+    if (window.A1FittingStudio3D) await window.A1FittingStudio3D.close();
+    else { const panel = document.querySelector('#studio-3d-panel'); if (panel) panel.hidden = true; signal('a1:gltf-suspend'); }
+   }
    // Reuse the same document's cropped analysis canvas. No image is copied to
    // an event, URL, storage, new window, iframe or server.
    if (window.A1StudioPhotoFitting) { if (await window.A1StudioPhotoFitting.open() === false) throw Error('missing_fitting'); }
@@ -200,12 +210,19 @@
   if (window.A1FittingStudio3D) { await window.A1FittingStudio3D.open({look:'nova'}); return document.querySelector('#gltf-proof-root'); }
   let root = document.querySelector('#gltf-proof-root');
   if (!root) {
-   const template = await T.load('natural');
+   const template = await T.load(mainMount?'studio':'natural');
    if (!activeRequest) throw Object.assign(Error('cancelled'),{code:'CANCELLED'});
    root = document.querySelector('#gltf-proof-root');
    if (!root) {
-    const panel = document.createElement('section'); panel.id = 'studio-3d-panel'; panel.className = 'section'; panel.hidden = true;
-    root = document.importNode(template,true); root.querySelector('#gltf-look').value='nova'; panel.append(root); document.querySelector('#ai-studio').after(panel);
+    const view = document.importNode(template,true);
+    if(mainMount){
+     root=view.querySelector('#gltf-proof-root');
+     if(!root)throw Object.assign(Error('viewer_template'),{code:'TEMPLATE'});
+     mainMount.append(view);
+    }else{
+     const panel = document.createElement('section'); panel.id = 'studio-3d-panel'; panel.className = 'section'; panel.hidden = true;
+     root=view; panel.append(root); document.querySelector('#ai-studio').after(panel);
+    }
    }
   }
   await import('./gltf-proof.js');
@@ -257,8 +274,8 @@
    };
    viewerObserver?.disconnect(); viewerObserver = new MutationObserver(syncStatus);
    viewerObserver.observe(root, {attributes:true,attributeFilter:['data-load-state','data-body-fit']}); syncStatus();
-   reveal(root.querySelector('.workspace'));
-  } catch (error) { if (token === navigation && current === revision) T.failure('natural',target,error,() => open(useReference)); }
+   reveal(root.querySelector(workbench?'.stage':'.workspace'));
+  } catch (error) { if (token === navigation && current === revision) T.failure(mainMount?'studio':'natural',target,error,() => open(useReference,selection)); }
  }
  button.addEventListener('click', () => {
   if (metrics && !result.hidden) consent.checked=true;
@@ -281,6 +298,13 @@
  }
  window.A1AvatarRecommendation = Object.freeze({
   sampleFor,
+  async showRecommendations() {
+   if(!valid(metrics)||result.hidden)return;
+   if(studioMeasurements?.current()&&chatTarget&&!chatTarget.hidden){reveal(chatTarget);return;}
+   consent.checked=true;
+   await open(true);
+   if(activeRequest?.useReference&&chatTarget&&!chatTarget.hidden)reveal(chatTarget);
+  },
   openRecommendation(product, value, scope) {
    const style = sampleFor(product), profile = checkedProfile(value);
    if (style && profile) return open(false, { ...style, name:product.name, profile, scope });

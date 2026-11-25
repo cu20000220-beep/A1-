@@ -25,6 +25,7 @@ test('style sheets bind the actual image bytes and grid to an explicitly synthet
 });
 test('studio confines its optional real 3D asset reads to this origin and packages explicit local resources', () => {
   const html = fs.readFileSync(path.join(root, 'fitting-studio.html'), 'utf8');
+  const view = fs.readFileSync(path.join(root, 'assets/fitting-studio-view.html'), 'utf8');
   const headers = fs.readFileSync(path.join(root, '_headers'), 'utf8');
   const policy = headers.match(/^\/fitting-studio\*\n\s+Content-Security-Policy:\s*([^\r\n]+)/m)?.[1];
   assert.ok(policy);
@@ -34,12 +35,16 @@ test('studio confines its optional real 3D asset reads to this origin and packag
   assert.ok(scriptTokens.every(token => ["'self'", "'wasm-unsafe-eval'"].includes(token)), 'only the existing local analysis WASM permission may accompany self');
   assert.match(policy, /(?:^|;)\s*img-src 'self' blob:(?:;|$)/);
   assert.match(policy, /(?:^|;)\s*frame-ancestors 'none'(?:;|$)/);
-  assert.doesNotMatch(html, /<iframe\b/i);
+  assert.doesNotMatch(html, /<iframe\b|id="gltf-proof-root"/i);
   assert.doesNotMatch(html, /\son\w+\s*=|<script(?![^>]*\bsrc=)[^>]*>/i);
+  assert.match(view, /id="studio-3d-view"/);
+  assert.match(view, /id="gltf-proof-root"/);
+  assert.match(view, /<option value="nova" selected>/);
+  assert.doesNotMatch(view, /<(?:iframe|script)\b|\son\w+\s*=/i);
   for (const tag of html.matchAll(/<(?:script|link|img)\b[^>]*\b(?:src|href)="([^"]+)"/g)) {
     assert.match(tag[1], /^assets\/[a-z0-9/_.-]+$/i);
     assert.equal(fs.statSync(path.join(root, tag[1])).isFile(), true);
   }
   const build = fs.readFileSync(path.join(root, 'scripts/build-site.cjs'), 'utf8');
-  for (const entry of ['fitting-studio.html','assets/fitting-studio.css','assets/fitting-studio.js','assets/fitting-studio-3d.css','assets/fitting-studio-3d.js','assets/fitting-studio-photo.js','assets/fitting-studio-photo.css','assets/studio']) assert.ok(build.includes("'" + entry + "'"));
+  for (const entry of ['fitting-studio.html','assets/fitting-studio.css','assets/fitting-studio.js','assets/fitting-studio-3d.css','assets/fitting-studio-3d.js','assets/fitting-studio-view.html','assets/fitting-studio-photo.js','assets/fitting-studio-photo.css','assets/studio']) assert.ok(build.includes("'" + entry + "'"));
 });

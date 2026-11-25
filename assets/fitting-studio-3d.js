@@ -4,11 +4,10 @@
   const images = document.querySelector('#studio-root');
   const panel = document.querySelector('#studio-3d-panel');
   const mount = document.querySelector('#studio-3d-mount');
-  const template = document.querySelector('#studio-3d-template');
   const status = document.querySelector('#studio-3d-status');
   const retry = document.querySelector('#studio-3d-retry');
   const I = window.A1I18n;
-  if (!modes || !images || !panel || !mount || !template || !status || !retry || !I) return;
+  if (!modes || !images || !panel || !mount || !status || !retry || !I) return;
 
   I.register({
     '미리보기 방식': 'Preview mode',
@@ -19,6 +18,7 @@
     '실제 3D 인체 샘플을 준비하고 있습니다.': 'Preparing the actual 3D human sample.',
     '기본 3D 인체를 불러옵니다. 사진 분석에서 동의하면 이 기기에서 추정한 비율을 3D 체형에 적용할 수 있습니다.': 'Start with a sample 3D body. With consent in photo analysis, estimated proportions can shape the avatar on this device.',
     '3D 피팅은 연결이 확인되면 열립니다.': '3D fitting opens once access is confirmed.',
+    '3D 피팅 화면을 받지 못했습니다. 다시 불러오기를 눌러주세요.': 'The 3D fitting view could not load. Choose Reload to try again.',
     '3D 뷰어 파일을 읽지 못했습니다. 페이지를 새로고침하거나 기존 3D 화면에서 열어주세요.': 'The 3D viewer files could not load. Reload this page or open the existing 3D viewer.',
     '실제 3D 인체를 회전하고 확대해보세요.': 'Rotate and zoom the actual 3D human.',
     '3D 인체를 읽지 못했습니다. 아래 다시 불러오기를 사용하거나 기존 3D 화면에서 열어주세요.': 'The 3D human could not load. Use Reload below or open the existing 3D viewer.',
@@ -73,13 +73,23 @@
   async function ensureViewer(initialLook) {
     if (loaded) return;
     if (loading) return loading;
-    if (!viewer()) {
-      mount.append(template.content.cloneNode(true));
-      if (initialLook === 'nova') mount.querySelector('#gltf-look').value = initialLook;
-    }
     loading = (async () => {
-      await import('./gltf-proof.js');
-      if (!window.A1GltfProof) throw Error('viewer_not_started');
+      if (!viewer()) {
+        const view = await window.A1LabTemplates.load('studio');
+        if (mode !== 'three') return;
+        const fragment = document.importNode(view, true);
+        const look = fragment.querySelector('#gltf-look');
+        if (!fragment.querySelector('#gltf-proof-root') || !look) throw Error('viewer_markup_invalid');
+        if (initialLook === 'nova') look.value = initialLook;
+        mount.append(fragment);
+      }
+      try {
+        await import('./gltf-proof.js');
+        if (!window.A1GltfProof) throw Error('viewer_not_started');
+      } catch (error) {
+        importFailed = true;
+        throw error;
+      }
       loaded = true;
       observer = new MutationObserver(sync);
       observer.observe(viewer(), { attributes: true, attributeFilter: ['data-load-state'] });
@@ -107,11 +117,12 @@
       if (viewerState() === 'disposed') event('a1:gltf-resume');
       sync();
     } catch {
-      importFailed = true;
       if (mode !== 'three') return;
       panel.dataset.state = 'error';
-      message('3D 뷰어 파일을 읽지 못했습니다. 페이지를 새로고침하거나 기존 3D 화면에서 열어주세요.');
-      I.setText(retry, '페이지 새로고침'); retry.hidden = false;
+      message(importFailed ? '3D 뷰어 파일을 읽지 못했습니다. 페이지를 새로고침하거나 기존 3D 화면에서 열어주세요.'
+        : '3D 피팅 화면을 받지 못했습니다. 다시 불러오기를 눌러주세요.');
+      I.setText(retry, importFailed ? '페이지 새로고침' : '3D 다시 불러오기');
+      retry.hidden = false;
     }
   }
 
@@ -148,7 +159,7 @@
     // An explicit page reload is honest recovery; no automatic import loop.
     if (importFailed) { location.reload(); return; }
     const inner = mount.querySelector('#gltf-retry');
-    if (inner) inner.click();
+    if (inner) inner.click(); else void choose('three');
   });
   panel.addEventListener('click', e => {
     if (e.target.closest('#gltf-front,#gltf-side,#gltf-back,#gltf-left,#gltf-right,#gltf-zoom-in,#gltf-zoom-out')) requestAnimationFrame(revealCanvas);

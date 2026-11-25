@@ -59,8 +59,8 @@ function deployedPolicy() {
   assert.ok(matched, 'the new public page must have its own deployed CSP');
   return matched[1];
 }
-async function prepare(browser, profile, { blocked = false } = {}) {
-  let blockSheet = blocked;
+async function prepare(browser, profile, { blocked = false, blockedView = false } = {}) {
+  let blockSheet = blocked, blockView = blockedView;
   const context = await browser.newContext({ viewport: { width: profile.width, height: profile.height },
     hasTouch: profile.touch, isMobile: profile.touch, deviceScaleFactor: 1,
     locale: profile.lang === 'ko' ? 'ko-KR' : 'en-US' });
@@ -73,12 +73,17 @@ async function prepare(browser, profile, { blocked = false } = {}) {
     if (url.protocol === 'blob:') { await route.continue(); return; }
     for (const [key, value] of url.searchParams) { assert.equal(key, 'v'); assert.match(value, /^[a-z0-9-]+$/i); }
     if (url.pathname === '/fitting-studio.html') { await route.fulfill({ status: 308, headers: { Location: '/fitting-studio' }, body: '' }); return; }
-    const relative = url.pathname === '/fitting-studio' ? 'fitting-studio.html' : url.pathname.slice(1);
+    let relative = url.pathname === '/fitting-studio' ? 'fitting-studio.html' : url.pathname.slice(1);
+    if (url.pathname === '/assets/fitting-studio-view') {
+      assert.equal(request.isNavigationRequest(), false, 'shared markup loads in the same document');
+      relative += '.html';
+    }
     assert.ok(relative === 'fitting-studio.html' || relative === 'favicon.ico' || relative.startsWith('assets/'));
     const full = path.resolve(root, relative); assert.ok(full.startsWith(root + path.sep));
     requests.push(url.pathname);
     if (relative === 'favicon.ico' && !fs.existsSync(full)) { await route.fulfill({ status: 204, body: '' }); return; }
     if (blockSheet && relative === 'assets/studio/male-sheet.png') { await route.abort('failed'); return; }
+    if (blockView && relative === 'assets/fitting-studio-view.html') { await route.fulfill({ status: 503, body: '' }); return; }
     assert.ok(fs.existsSync(full), 'requested public asset exists: ' + relative);
     await route.fulfill({ body: fs.readFileSync(full), contentType: mime[path.extname(relative)] || 'application/octet-stream',
       headers: relative === 'fitting-studio.html' ? { 'Content-Security-Policy': deployedPolicy() } : {} });
@@ -103,7 +108,8 @@ async function prepare(browser, profile, { blocked = false } = {}) {
     await page.locator('[data-language-select]').selectOption(profile.lang);
     assert.equal(await page.locator('html').getAttribute('lang'), profile.lang);
   }
-  return { context, page, requests, errors, consoleErrors, violations, unblockSheet() { blockSheet = false; } };
+  return { context, page, requests, errors, consoleErrors, violations,
+    unblockSheet() { blockSheet = false; }, unblockView() { blockView = false; } };
 }
 async function truthAndLinks(page, lang) {
   const text = await page.locator('#studio-root').innerText();
@@ -187,11 +193,13 @@ async function truthAndLinks(page, lang) {
       await context.close();
     }
     const three = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' });
+    assert.equal(three.requests.includes('/assets/fitting-studio-view'), false, 'the image studio remains lazy');
     await three.page.locator('[data-studio-mode="three"]').click();
     await three.page.waitForFunction(() => window.A1GltfProof?.snapshot().state === 'ready', null, { timeout: 30000 });
     const actual = await three.page.evaluate(() => A1GltfProof.snapshot());
     assert.equal(actual.look, 'nova', 'the first ordinary 3D entry renders the Nova avatar');
     assert.equal(await three.page.locator('#gltf-look').inputValue(), 'nova');
+    assert.equal(three.requests.filter(file => file === '/assets/fitting-studio-view').length, 1);
     assert.ok(three.requests.includes('/assets/nova-avatar/avatar.glb'));
     assert.equal(three.requests.includes('/assets/natural-avatar/sample.glb'), false);
     assert.equal(actual.bones, 73); assert.ok(actual.memoryTextures > 10); assert.ok(actual.triangles > 15000);
@@ -224,6 +232,20 @@ async function truthAndLinks(page, lang) {
     assert.deepEqual(three.errors, []); assert.deepEqual(three.consoleErrors, []); assert.deepEqual(three.violations, []);
     reports.push({ actualInline3D: true, look: actual.look, bones: actual.bones, triangles: actual.triangles, viewFrames, cleanup: stopped, requests: three.requests });
     await three.context.close();
+    const viewFailure = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' }, { blockedView: true });
+    await viewFailure.page.locator('[data-studio-mode="three"]').click();
+    await viewFailure.page.waitForSelector('#studio-3d-retry:visible');
+    assert.match(await viewFailure.page.locator('#studio-3d-status').innerText(), /다시 불러오기/);
+    assert.equal(await viewFailure.page.locator('#gltf-proof-root').count(), 0);
+    assert.equal(viewFailure.requests.includes('/assets/gltf-proof.js'), false, 'a failed template does not start the viewer import');
+    viewFailure.unblockView();
+    await viewFailure.page.locator('#studio-3d-retry').click();
+    await viewFailure.page.waitForFunction(() => window.A1GltfProof?.snapshot().state === 'ready', null, { timeout: 30000 });
+    assert.equal(viewFailure.requests.filter(file => file === '/fitting-studio').length, 1, 'template recovery keeps the existing document');
+    assert.equal(viewFailure.requests.filter(file => file === '/assets/fitting-studio-view').length, 2);
+    assert.deepEqual(viewFailure.errors, []); assert.deepEqual(viewFailure.violations, []);
+    reports.push({ failureMode: 'studioMarkupUnavailable', manualRecovery: true, requests: viewFailure.requests });
+    await viewFailure.context.close();
     for (const recoveryAction of ['retry', 'reset']) {
     const failure = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' }, { blocked: true });
     await failure.page.waitForFunction(() => document.querySelector('#studio-root')?.dataset.state === 'error', null, { timeout: 15000 });
@@ -249,7 +271,7 @@ async function truthAndLinks(page, lang) {
     reports.push({ failureMode: 'modelSheetBlocked', recoveryAction, status: failureStatus, manualRecovery: true, requests: failure.requests });
     await failure.context.close();
     }
-    const sources = ['fitting-studio.html', 'assets/fitting-studio.js', 'assets/fitting-studio.css', 'assets/fitting-studio-3d.js', 'assets/fitting-studio-3d.css', 'assets/gltf-proof.js', 'assets/nova-avatar/avatar.glb', 'assets/studio/hero.png', 'assets/studio/male-sheet.png', 'assets/studio/female-sheet.png'];
+    const sources = ['fitting-studio.html', 'assets/fitting-studio.js', 'assets/fitting-studio.css', 'assets/fitting-studio-3d.js', 'assets/fitting-studio-3d.css', 'assets/fitting-studio-view.html', 'assets/lab-loader.js', 'assets/gltf-proof.js', 'assets/nova-avatar/avatar.glb', 'assets/studio/hero.png', 'assets/studio/male-sheet.png', 'assets/studio/female-sheet.png'];
     fs.writeFileSync(path.join(out, 'browser-result.json'), JSON.stringify({ sourceHashes: Object.fromEntries(sources.map(file => [file, sha(fs.readFileSync(path.join(root, file)))])),
       reports, environment: { browser: 'Linux Chromium', nativeIpadSafari: false },
       scope: 'Generated 2D style images and a separate, actual stock 3D model rendered in the same page. No personalized photo fitting, exact sizing, image-to-3D reconstruction, retail stock or native iPad Safari certification.' }, null, 2) + '\n');

@@ -28,7 +28,7 @@
   const links = [
     ['home', '홈', 'index.html'],
     ['clothes', '옷 찾기', 'index.html#shopping-search'],
-    ['fitting', '스타일·피팅', 'fitting-studio.html'],
+    ['fitting', '스타일·피팅', 'index.html#main-fitting-studio'],
     ['studio', 'AI 스타일 스튜디오', 'index.html#ai-studio'],
     ['shopping', '글로벌 쇼핑', 'global.html#shopping'],
     ['stylist', 'AI 스타일리스트', 'stylist.html'],
@@ -48,7 +48,9 @@
   for (const mount of document.querySelectorAll('[data-site-navigation]')) {
     if (mount.childElementCount) continue;
     for (const [name, label, href] of links) {
-      const link = document.createElement('a'); link.href = href; link.dataset.siteLink = name;
+      const link = document.createElement('a');
+      link.href = document.querySelector('#main-fitting-studio') && href.startsWith('index.html#') ? href.slice('index.html'.length) : href;
+      link.dataset.siteLink = name;
       I.setText(link,window.A1Preview&&name==='stylist'?'무료 스타일 상담':label); mount.append(link);
       link.addEventListener('click', event => {
         const target = new URL(link.href);

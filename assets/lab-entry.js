@@ -23,6 +23,7 @@
  const nav=document.createElement('section');nav.id='lab-entry';nav.className='lab-entry';nav.hidden=true;
  const note=document.createElement('p');I.setText(note,'기기에서 체형 맞춤 추천과 3D 예시 의상, 허가된 상품 사진의 2D 피팅을 이용할 수 있습니다.');nav.append(note);
  const status=document.createElement('p');status.id='lab-entry-status';status.setAttribute('role','status');
+ const fittingLab=document.querySelector('#main-fitting-lab');
  let metrics=null,pending=null,revision=0;
  async function open(target){
   if(!['#lab-preferences','#lab-comparison','#lab-fitting','#lab-local-photo-fitting'].includes(target)||!preview&&!['#lab-preferences','#lab-local-photo-fitting'].includes(target))return;
@@ -34,7 +35,12 @@
    if(!document.querySelector('#lab-root')){
     if(!pending)pending=T.load('product').finally(()=>{pending=null;});
     const template=await pending;if(token!==revision||needsAnalysis&&(!metrics||result.hidden))return;
-    if(!document.querySelector('#lab-root')){template.querySelector('#ai-studio')?.remove();document.querySelector('#ai-studio').after(document.importNode(template,true));}
+    if(!document.querySelector('#lab-root')){
+     const lab=document.importNode(template,true);
+     lab.querySelector('#ai-studio')?.remove();
+     if(fittingLab)fittingLab.append(lab);
+     else document.querySelector('#ai-studio').after(lab);
+    }
    }
    T.initialize('product',document.querySelector('#lab-root'));
    if(token!==revision||needsAnalysis&&(!metrics||result.hidden))return;
@@ -44,7 +50,14 @@
  }
  window.A1LabNavigation=Object.freeze({open});
  for(const [id,label,target]of [['recommend','내 체형에 맞는 의류 추천 보기','#lab-preferences'],['compare','추천 의류 비교하기','#lab-comparison'],['fitting','내 사진으로 가상 피팅하기 · 2D 시험','#lab-local-photo-fitting']]){
-  const b=document.createElement('button');b.id='lab-open-'+id;b.type='button';b.className='dark-button';I.setText(b,preview?label:{recommend:'공식 상품 후보 보기',compare:'가격 비교 · 검증 자료 준비 중',fitting:'내 사진 2D 미리보기'}[id]);if(!preview&&id==='compare')b.disabled=true;b.addEventListener('click',()=>open(target));nav.append(b);
+  const b=document.createElement('button');b.id='lab-open-'+id;b.type='button';b.className='dark-button';
+  const integratedRecommendation=Boolean(fittingLab&&id==='recommend');
+  I.setText(b,preview||integratedRecommendation?label:{recommend:'공식 상품 후보 보기',compare:'가격 비교 · 검증 자료 준비 중',fitting:'내 사진 2D 미리보기'}[id]);
+  if(!preview&&id==='compare')b.disabled=true;
+  b.addEventListener('click',()=>{
+   if(integratedRecommendation&&window.A1AvatarRecommendation)return window.A1AvatarRecommendation.showRecommendations();
+   return open(target);
+  });nav.append(b);
  }
  const avatar=document.createElement('button');avatar.type='button';avatar.id='lab-open-avatar';I.setText(avatar,'3D 아바타 · 무료 시각적 미리보기');nav.append(avatar,status);result.querySelector('.ai-result-copy').append(nav);
  document.addEventListener('a1:analysis-ready',e=>{revision++;if(!M.validMetrics(e.detail?.metrics))return;metrics={...e.detail.metrics};nav.hidden=false;});

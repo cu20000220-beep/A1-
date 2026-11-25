@@ -17,7 +17,7 @@ const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.glb':'model/gltf-binary','.wasm':'application/wasm'};
 const tracked=['assets/approved-products.json','catalog/source-approvals.json','assets/observed-products.json','assets/product-images.json'];
 const sources=['assets/local-fashion-core.js','assets/public-beta-bootstrap.js','assets/preview-experience.js','assets/shopping-search.js','assets/product-discovery-view.js','assets/catalog-fitting.js','assets/lab-entry.js','assets/lab-loader.js','assets/product-lab.js','assets/stylist.js','assets/ai-studio.js','index.html','stylist.html','product-lab.html','functions/api/policy.js','functions/api/stylist.js','server/free-beta.mjs','server/ai-stylist.mjs','scripts/build-site.cjs','scripts/lib/catalog-public-headers.cjs','assets/photos/coat.jpg',...tracked];
-sources.push('fitting-studio.html','gltf-proof.html','assets/avatar-photo-bridge.js','assets/fitting-studio-3d.js','assets/gltf-proof.js','assets/natural-avatar-fit.js','assets/nova-avatar/avatar.glb','assets/proportion-controls.js','assets/proportion-recommendations.js','assets/shopping-conversation.js');
+sources.push('fitting-studio.html','gltf-proof.html','assets/fitting-studio-view.html','assets/main-fitting-studio.css','assets/avatar-photo-bridge.js','assets/fitting-studio-3d.js','assets/gltf-proof.js','assets/natural-avatar-fit.js','assets/nova-avatar/avatar.glb','assets/proportion-controls.js','assets/proportion-recommendations.js','assets/shopping-conversation.js','assets/site-navigation.js');
 function instrumentPage({realPose}){
  const create=URL.createObjectURL.bind(URL),revoke=URL.revokeObjectURL.bind(URL);window.__betaUrls=new Set();window.__betaSelections=0;window.__betaReady=0;window.__localReady=0;window.__betaFetches=[];window.__betaPolicyResponses=[];
  URL.createObjectURL=blob=>{const url=create(blob);__betaUrls.add(url);return url;};URL.revokeObjectURL=url=>{__betaUrls.delete(url);revoke(url);};
@@ -53,8 +53,8 @@ function privateGarmentFixture(){
    imageUrl,delivery:'local-copy',sha256,bytes,width,height,imageKind:'unverified',checkedAt:now}]
  }};
 }
-async function prepare(browser,handlers,{width=820,lang='ko',entry='/',host=origin,policyMode='true',serverFlag=policyMode==='false'?'false':'true',tamper=false,late=false,realPose=false,imageFixture=null}={}){
- const context=await browser.newContext({viewport:{width,height:1180},hasTouch:true,isMobile:true,locale:lang==='ko'?'ko-KR':'en-US',serviceWorkers:'block'});
+async function prepare(browser,handlers,{width=820,height=1180,touch=true,lang='ko',entry='/',host=origin,policyMode='true',serverFlag=policyMode==='false'?'false':'true',tamper=false,late=false,realPose=false,imageFixture=null}={}){
+ const context=await browser.newContext({viewport:{width,height},hasTouch:touch,isMobile:touch,locale:lang==='ko'?'ko-KR':'en-US',serviceWorkers:'block'});
  const calls=[],errors=[],routeErrors=[],violations=[],apiResponses=[],stats={databaseCalls:0,forbiddenBindingReads:0};
  const env=environment(serverFlag,stats),privateEnv=environment('false',stats);privateEnv.A1_FREE_BETA_MODE=serverFlag;
  let release,notice;const gate=new Promise(r=>release=r),seen=new Promise(r=>notice=r);
@@ -92,7 +92,8 @@ async function prepare(browser,handlers,{width=820,lang='ko',entry='/',host=orig
    if(imageFixture&&url.pathname==='/'+imageManifestPath){assert.equal(url.search,'');await route.fulfill({json:imageFixture.manifest});return;}
    if(imageFixture&&url.pathname===imageFixture.imageUrl){assert.equal(url.search,'');await route.fulfill({contentType:'image/jpeg',body:imageFixture.raster});return;}
    if(url.pathname.endsWith('.html')){await route.fulfill({status:308,headers:{Location:url.pathname.slice(0,-5)},body:''});return;}
-   const relative=url.pathname==='/'?'index.html':/^\/(?:stylist|product-lab|fitting-studio|gltf-proof|global|account)$/.test(url.pathname)?url.pathname.slice(1)+'.html':url.pathname.slice(1),file=path.resolve(dist,relative);
+   const htmlRoute=/^\/(?:stylist|product-lab|fitting-studio|gltf-proof|global|account|assets\/fitting-studio-view)$/.test(url.pathname);
+   const relative=url.pathname==='/'?'index.html':url.pathname.slice(1)+(htmlRoute?'.html':''),file=path.resolve(dist,relative);
    assert.ok(file.startsWith(dist+path.sep));if(relative==='favicon.ico'&&!fs.existsSync(file)){await route.fulfill({status:204,body:''});return;}
    assert.ok(fs.existsSync(file),'built static resource exists: '+relative);await route.fulfill({contentType:mime[path.extname(file)]||'application/octet-stream',body:fs.readFileSync(file),headers:staticHeaders(url.pathname)});
   }catch(error){routeErrors.push(error.message);await route.abort('blockedbyclient').catch(()=>{});}
@@ -129,6 +130,7 @@ async function assertLocalGuards(page){
  assert.equal(await page.locator('[data-lab-product],[data-lab-select],[data-avatar-garment],[data-lab-catalog-compare],[data-lab-offer-compare]').count(),0);assert.equal(await page.locator('#lab-fit-result').isVisible(),false);assert.equal(await page.locator('#lab-comparison').isVisible(),false);
  for(const surface of ['A1PublicLocal','A1PublicBeta'])assert.equal(await page.evaluate(name=>Object.keys(window[name]).some(key=>/member|entitle|authorize|plan|subscription/i.test(key)),surface),false);
  assert.equal(await page.locator('#avatar-root,#gltf-proof-root').count(),0);
+ assert.equal(await page.locator('#main-fitting-studio #main-fitting-lab #lab-local-photo-fitting').count(),1);
 }
 function networkClean(trial){
  assert.deepEqual(trial.routeErrors,[]);assert.deepEqual(trial.errors,[]);assert.deepEqual(trial.violations,[]);assert.equal(trial.stats.databaseCalls,0);assert.equal(trial.stats.forbiddenBindingReads,0);
@@ -138,22 +140,75 @@ async function sendStylist(page){await page.locator('#stylist-message').fill(que
 async function anonymousPrivateRequest(page,resource='watchlist'){return page.evaluate(async resource=>{const r=await fetch('/api/global/'+resource,{credentials:'same-origin',headers:{'X-A1-Free-Beta-Mode':'true','X-Plan':'PREMIUM'}});return{status:r.status,data:await r.json()};},resource);}
 async function assertFailClosed(trial){await assertNoPreview(trial.page);assert.equal(await trial.page.evaluate(()=>typeof A1PublicBeta),'undefined');assert.equal(await trial.page.evaluate(()=>typeof A1PublicLocal),'undefined');assert.equal(await trial.page.locator('#shopping-search').isVisible(),false);assert.equal(await trial.page.locator('#lab-entry').count(),0);assert.deepEqual(await trial.page.evaluate(()=>[__localReady,__betaReady]),[0,0]);}
 
-async function verifyPhotoToAvatar(trial){
+function assertEmbeddedTransport(trial,initialUrl){
+ assert.equal(trial.page.url(),initialUrl,'photo fitting stays on the homepage at the same URL');
+ assert.deepEqual(trial.calls.filter(call=>call.navigation).map(call=>call.url),[trial.host+'/']);
+ assert.equal(trial.context.pages().length,1);
+ assert.ok(!trial.calls.some(call=>/^\/(?:fitting-studio|gltf-proof)(?:\.html)?(?:\/|$)/.test(new URL(call.url).pathname)),
+  'the embedded studio does not fetch a standalone page or a proof HTML template');
+}
+
+async function startEmbeddedPhoto(trial,{throughNavigation=false}={}){
  const {page}=trial;
  await ready(page,{free:false});
- await page.waitForSelector('#shopping-search:visible');
- const analysisConsent=page.locator('#avatar-reference-consent'),avatar=page.locator('#gltf-proof-root');
+ if(throughNavigation){
+  await page.locator('[data-site-link=fitting]').click();
+  await page.waitForURL(trial.host+'/#main-fitting-studio');
+ }
+ const studio=page.locator('#main-fitting-studio'),photo=studio.locator('#ai-studio');
+ const panel=studio.locator('#studio-3d-panel'),avatar=panel.locator('#gltf-proof-root');
+ const analysisConsent=photo.locator('#avatar-reference-consent'),initialUrl=page.url();
+ assert.equal(await studio.isVisible(),true);
+ assert.equal(await photo.count(),1);
+ assert.equal(await panel.count(),1,'the live viewer panel belongs to the homepage studio before analysis');
+ assert.equal(await page.locator('#ai-photo').count(),1);
+ assert.equal(await photo.locator('#ai-photo').isVisible(),true);
  assert.equal(await analysisConsent.isChecked(),false);
- assert.equal(await avatar.count(),0);
- await page.locator('#ai-photo').setInputFiles(path.join(dist,'assets/photos/man.jpg'));
- await page.locator('#ai-analyze-fit').click();
+ assert.equal(await avatar.isVisible(),false);
+ assert.ok(!trial.calls.some(call=>new URL(call.url).pathname==='/assets/fitting-studio-view'));
+ assert.ok(!trial.calls.some(call=>new URL(call.url).pathname.endsWith('.glb')),'no model download before the visitor starts fitting');
+ await photo.locator('#ai-photo').setInputFiles(path.join(dist,'assets/photos/man.jpg'));
+ await photo.locator('#ai-analyze-fit').click();
  await page.waitForFunction(()=>{
   const frame=window.A1GltfProof?.snapshot();
-  return frame?.state==='ready'&&frame.look==='nova'&&frame.bodyFitted&&frame.renderCount>0;
- },null,{timeout:30000});
+  return frame?.state==='ready'&&frame.look==='nova'&&frame.bodyFitted&&frame.bodyFitAxes.length>0&&frame.renderCount>0;
+ },null,{timeout:90000});
+ await page.waitForFunction(()=>{
+  const rect=document.querySelector('#main-fitting-studio #gltf-canvas')?.getBoundingClientRect();
+  if(!rect||rect.width<=0||rect.height<=0)return false;
+  const visibleHeight=Math.min(rect.bottom,innerHeight)-Math.max(rect.top,0);
+  return rect.left>=0&&rect.right<=innerWidth+1&&visibleHeight>=Math.min(220,rect.height/2);
+ },null,{timeout:8000}).catch(async error=>{
+  const layout=await page.evaluate(()=>({viewport:[innerWidth,innerHeight],scrollY,
+   canvas:document.querySelector('#main-fitting-studio #gltf-canvas')?.getBoundingClientRect().toJSON()}));
+  console.error('Embedded avatar viewport:',layout);
+  await page.screenshot({path:path.join(out,'PRIVATE-embedded-visibility-failure-'+layout.viewport[0]+'.png')});
+  throw error;
+ });
  assert.equal(await analysisConsent.isChecked(),true);
  assert.equal(await avatar.isVisible(),true);
  assert.equal(await page.evaluate(()=>__betaSelections),1);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ assert.equal(trial.calls.filter(call=>new URL(call.url).pathname==='/assets/fitting-studio-view').length,1);
+ assertEmbeddedTransport(trial,initialUrl);
+ return {studio,photo,panel,avatar,analysisConsent,initialUrl};
+}
+
+async function resetEmbeddedPhoto(page,{photo,avatar,analysisConsent}){
+ await photo.locator('#ai-clear').click();
+ assert.equal(await avatar.isVisible(),false);
+ assert.equal(await page.locator('#avatar-recommendation-results').isVisible(),false);
+ assert.equal(await analysisConsent.isChecked(),false);
+ assert.equal(await photo.locator('#ai-clean-canvas').evaluate(canvas=>canvas.width*canvas.height),1);
+ assert.equal(await page.evaluate(()=>window.A1GltfProof.snapshot().bodyFitted),false);
+ assert.equal(await page.evaluate(()=>__betaUrls.size),0);
+}
+
+async function verifyPhotoToAvatar(trial){
+ const {page}=trial;
+ await page.waitForSelector('#shopping-search:visible');
+ const embedded=await startEmbeddedPhoto(trial,{throughNavigation:true});
+ const {avatar,initialUrl}=embedded;
  const results=page.locator('#avatar-recommendation-results'),cards=results.locator('[data-discovery-id]'),canvas=avatar.locator('#gltf-canvas');
  await page.waitForSelector('#avatar-recommendation-results[data-state="ready"]:visible');
  assert.equal(await cards.first().getAttribute('data-discovery-id'),'musinsa-4644434','reported shoulder ratio drives the first result');
@@ -202,11 +257,8 @@ async function verifyPhotoToAvatar(trial){
  assert.deepEqual(await page.evaluate(()=>Object.keys(sessionStorage)),[]);
  assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),['a1-fashion:language']);
 
- await page.locator('#ai-clear').click();
- assert.equal(await avatar.isVisible(),false);
- assert.equal(await results.isVisible(),false);
- assert.equal(await analysisConsent.isChecked(),false);
- assert.equal(await page.evaluate(()=>window.A1GltfProof.snapshot().bodyFitted),false);
+ await resetEmbeddedPhoto(page,embedded);
+ assertEmbeddedTransport(trial,initialUrl);
  networkClean(trial);
 }
 
@@ -224,23 +276,39 @@ async function verifyOfficialStudio(trial){
 
 async function verifyRealInference(trial){
  const {page}=trial;
- await ready(page,{free:false});
  const vendor=()=>trial.calls.filter(call=>new URL(call.url).pathname.startsWith('/assets/vendor/mediapipe/'));
  assert.equal(vendor().length,0);
- await page.locator('#ai-photo').setInputFiles(path.join(dist,'assets/photos/man.jpg'));
- await page.locator('#ai-analyze-fit').click();
- await page.waitForFunction(()=>{
-  const frame=window.A1GltfProof?.snapshot();
-  return frame?.state==='ready'&&frame.look==='nova'&&frame.bodyFitted&&frame.bodyFitAxes.length>0&&frame.renderCount>0;
- },null,{timeout:90000});
+ const embedded=await startEmbeddedPhoto(trial);
  assert.ok(vendor().some(call=>new URL(call.url).pathname.endsWith('/pose_landmark_lite.tflite')));
  assert.ok(vendor().some(call=>new URL(call.url).pathname.endsWith('.wasm')));
- await page.waitForSelector('#avatar-recommendation-results[data-state="ready"]:visible');
- assert.ok(await page.locator('#avatar-recommendation-results [data-discovery-id]').count()>0);
- await page.locator('#gltf-canvas').screenshot({path:path.join(out,'PRIVATE-production-real-inference-3d.png')});
- await page.locator('#ai-clear').click();
- assert.equal(await page.locator('#gltf-proof-root').isVisible(),false);
- assert.equal(await page.evaluate(()=>__betaUrls.size),0);
+ await embedded.avatar.locator('#avatar-recommendation-results[data-state="ready"]').waitFor();
+ assert.ok(await embedded.avatar.locator('#avatar-recommendation-results [data-discovery-id]').count()>0);
+ await embedded.avatar.locator('#gltf-canvas').screenshot({path:path.join(out,'PRIVATE-production-real-inference-3d.png')});
+ await resetEmbeddedPhoto(page,embedded);
+ assertEmbeddedTransport(trial,embedded.initialUrl);
+ networkClean(trial);
+}
+
+async function verifyMobileConsent(trial){
+ const {page}=trial,embedded=await startEmbeddedPhoto(trial),{photo,avatar,analysisConsent,initialUrl}=embedded;
+ await page.screenshot({path:path.join(out,'PRIVATE-production-mobile-studio-viewport.png')});
+ const results=avatar.locator('#avatar-recommendation-results');
+ await avatar.locator('#avatar-recommendation-results[data-state="ready"]').waitFor();
+ const originalPhoto=await photo.locator('#ai-clean-canvas').evaluate(canvas=>canvas.toDataURL());
+ await avatar.locator('#avatar-proportion-consent').uncheck();
+ await page.waitForFunction(()=>window.A1GltfProof?.snapshot().bodyFitted===false);
+ assert.equal(await analysisConsent.isChecked(),false);
+ assert.equal(await results.isVisible(),false);
+ assert.equal(await avatar.locator('#avatar-conversation').isVisible(),false);
+ assert.equal(await photo.locator('#ai-clean-canvas').evaluate(canvas=>canvas.toDataURL()),originalPhoto,'withdrawal preserves the existing local analysis for a later choice');
+ await analysisConsent.check();
+ await photo.locator('#lab-open-avatar').click();
+ await page.waitForFunction(()=>window.A1GltfProof?.snapshot().bodyFitted===true);
+ await avatar.locator('#avatar-recommendation-results[data-state="ready"]').waitFor();
+ assert.equal(await page.evaluate(()=>__betaSelections),1);
+ await avatar.locator('#gltf-canvas').screenshot({path:path.join(out,'PRIVATE-production-mobile-3d.png')});
+ await resetEmbeddedPhoto(page,embedded);
+ assertEmbeddedTransport(trial,initialUrl);
  networkClean(trial);
 }
 async function verifyExpiredImages(trial){
@@ -294,13 +362,17 @@ async function verifyExpiredImages(trial){
    networkClean(trial);report.cases.push({name:'production-policy-search-photo-metadata-select-consent-same-photo-2d-compare-delete',profile,actualFactCandidates:2,changedPixels,separateConsent:true,bodySelections:1,globalMemberGrant:false,privateRasterOnly:true,passed:true});await trial.context.close();
   }
   {const trial=await prepare(browser,handlers,{entry:'/stylist'}),{page}=trial;await ready(page);await sendStylist(page);await page.waitForFunction(()=>document.querySelector('[data-stylist-public-beta] [data-stylist-discovery]')?.dataset.state==='ready');assert.equal(await page.locator('[data-stylist-discovery] [data-discovery-id]').count(),2);const post=trial.apiResponses.find(row=>row.path==='/api/stylist'&&row.method==='POST');assert.equal(post.status,200);assert.equal(post.data.mode,'DEMO');assert.equal(post.data.freeBetaMode,true);assert.deepEqual(post.data.products,[]);assert.equal(post.data.usage,null);assert.equal(post.data.comparison,null);assert.deepEqual(post.data.discounts,[]);assert.equal(await page.locator('.stylist-product').count(),0);await page.locator('#stylist-clear').click();assert.equal(await page.locator('[data-stylist-discovery]').count(),0);networkClean(trial);report.cases.push({name:'production-anonymous-actual-server-DEMO-then-separate-public-facts',frontendDemoFallback:false,passed:true});await trial.context.close();}
-  {const trial=await prepare(browser,handlers,{policyMode:'false',width:960});
+  {const profile={width:1366,height:900,touch:false},trial=await prepare(browser,handlers,{...profile,policyMode:'false'});
    await verifyPhotoToAvatar(trial);
-   report.cases.push({name:'production-local-photo-automatic-personalized-nova-evidence-ranked-outfit-and-instant-dialogue',serverFreeBeta:false,realGeometry:true,privatePoseFixture:true,manualProportionsRerank:true,sampleOutfit:true,localFollowUps:true,passed:true});
+   report.cases.push({name:'production-homepage-embedded-desktop-studio-photo-automatic-nova-evidence-ranked-outfit-and-dialogue',profile,serverFreeBeta:false,samePage:true,standaloneHtmlRequests:0,realGeometry:true,privatePoseFixture:true,manualProportionsRerank:true,sampleOutfit:true,localFollowUps:true,passed:true});
    await trial.context.close();}
-  {const trial=await prepare(browser,handlers,{policyMode:'false',width:960,realPose:true});
+  {const profile={width:820,height:1180,touch:true},trial=await prepare(browser,handlers,{...profile,policyMode:'false',realPose:true});
    await verifyRealInference(trial);
-   report.cases.push({name:'production-local-real-mediapipe-inference-automatically-renders-personalized-nova-and-clothes',realInference:true,realGeometry:true,passed:true});
+   report.cases.push({name:'production-homepage-embedded-tablet-studio-real-mediapipe-automatically-renders-personalized-nova-and-clothes',profile,samePage:true,standaloneHtmlRequests:0,realInference:true,realGeometry:true,passed:true});
+   await trial.context.close();}
+  {const profile={width:390,height:844,touch:true},trial=await prepare(browser,handlers,{...profile,policyMode:'false'});
+   await verifyMobileConsent(trial);
+   report.cases.push({name:'production-homepage-embedded-phone-studio-withdraw-and-reapply-consent-with-the-same-photo-then-reset',profile,samePage:true,standaloneHtmlRequests:0,photoSelections:1,passed:true});
    await trial.context.close();}
   {const trial=await prepare(browser,handlers,{entry:'/fitting-studio',policyMode:'false'});
    await verifyOfficialStudio(trial);
