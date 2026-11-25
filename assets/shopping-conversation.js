@@ -73,6 +73,7 @@
       '{amount}원 이하': 'up to ₩{amount}',
       '판매처에서 확인한 상품을 비교하고 있습니다.': 'Checking clothes against verified retailer listings.',
       '조건에 맞는 추천 후보 {count}개를 찾았습니다.': 'Found {count} clothing options for these conditions.',
+      '판매 여부 미확인 · 공식 상품 페이지 {count}개를 참고할 수 있습니다.': 'Availability unconfirmed · {count} official product pages are available for reference.',
       '가격 확인이 필요한 후보가 {count}개 있습니다.': '{count} options still need a price check.',
       '현재 확인된 상품 중 이 조건과 맞는 후보가 없습니다. 색상이나 핏을 바꾸거나 다른 종류를 요청해 보세요.': 'The verified listings have no matches for these conditions. Try a different color, fit, or clothing type.',
       '상품 자료를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.': 'The retailer listings are unavailable. Please try again.',
@@ -178,15 +179,16 @@
         i18n.setText(pending, '상품 자료를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.');
         return false;
       }
-      const count = result.count || 0, unconfirmed = result.unconfirmed || 0;
+      const count = result.count || 0, unconfirmed = result.unconfirmed || 0, references = result.referenceCount || 0;
       if (count) i18n.setText(pending, '조건에 맞는 추천 후보 {count}개를 찾았습니다.', { count });
+      else if (references) i18n.setText(pending, '판매 여부 미확인 · 공식 상품 페이지 {count}개를 참고할 수 있습니다.', { count: references });
       else if (unconfirmed) pending.remove();
       else i18n.setText(pending, '현재 확인된 상품 중 이 조건과 맞는 후보가 없습니다. 색상이나 핏을 바꾸거나 다른 종류를 요청해 보세요.');
       if (unconfirmed) panel.append(element('p', '가격 확인이 필요한 후보가 {count}개 있습니다.', { count: unconfirmed }));
-      if (hasProfile && (count || unconfirmed)) panel.append(element('p', '상품 카드에서 체형 비율을 참고한 이유를 확인할 수 있습니다.'));
+      if (hasProfile && (count || unconfirmed || references)) panel.append(element('p', '상품 카드에서 체형 비율을 참고한 이유를 확인할 수 있습니다.'));
       else if (!hasProfile && wantsBody) panel.append(element('p', '체형에 맞춰 정렬하려면 사진 분석 또는 직접 입력 후 체형 비율 사용을 선택해 주세요.'));
       const topChoice = Array.isArray(result.products) ? result.products[0] : null;
-      if (count && typeof topChoice?.name === 'string') {
+      if ((count || references) && typeof topChoice?.name === 'string') {
         const name = element('strong');
         name.textContent = topChoice.name;
         const reasons = Array.isArray(topChoice.proportionReasons) ? topChoice.proportionReasons : [];
@@ -198,7 +200,7 @@
           panel.append(detail);
         }
       }
-      if (count || unconfirmed) {
+      if (count || unconfirmed || references) {
         const link = element('a', '추천 후보 보기');
         link.href = '#' + resultId;
         panel.append(link);

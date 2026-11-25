@@ -12,12 +12,15 @@ const previewOrigin='https://public-beta-private.a1fashion.pages.dev';
 const out=process.env.A1_PUBLIC_BETA_EVIDENCE||'/workspace/work/public-beta-flow';fs.mkdirSync(out,{recursive:true});
 const trials=[];
 const id='musinsa-1168906',query='남성 검정 슬랙스 5만원 이하';
+const sellerUrl='https://www.musinsa.com/products/1168906';
 const imageManifestPath='assets/product-images.json';
+const observationsPath='assets/observed-products.json';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.glb':'model/gltf-binary','.wasm':'application/wasm'};
 const tracked=['assets/approved-products.json','catalog/source-approvals.json','assets/observed-products.json','assets/product-images.json'];
 const sources=['assets/local-fashion-core.js','assets/public-beta-bootstrap.js','assets/preview-experience.js','assets/shopping-search.js','assets/product-discovery-view.js','assets/catalog-fitting.js','assets/lab-entry.js','assets/lab-loader.js','assets/product-lab.js','assets/stylist.js','assets/ai-studio.js','index.html','stylist.html','product-lab.html','functions/api/policy.js','functions/api/stylist.js','server/free-beta.mjs','server/ai-stylist.mjs','scripts/build-site.cjs','scripts/lib/catalog-public-headers.cjs','assets/photos/coat.jpg',...tracked];
 sources.push('fitting-studio.html','gltf-proof.html','assets/fitting-studio-view.html','assets/main-fitting-studio.css','assets/avatar-photo-bridge.js','assets/fitting-studio-3d.js','assets/gltf-proof.js','assets/natural-avatar-fit.js','assets/nova-avatar/avatar.glb','assets/proportion-controls.js','assets/proportion-recommendations.js','assets/shopping-conversation.js','assets/site-navigation.js');
+sources.push('assets/product-discovery.js','assets/product-images.js');
 function instrumentPage({realPose}){
  const create=URL.createObjectURL.bind(URL),revoke=URL.revokeObjectURL.bind(URL);window.__betaUrls=new Set();window.__betaSelections=0;window.__betaReady=0;window.__localReady=0;window.__betaFetches=[];window.__betaPolicyResponses=[];
  URL.createObjectURL=blob=>{const url=create(blob);__betaUrls.add(url);return url;};URL.revokeObjectURL=url=>{__betaUrls.delete(url);revoke(url);};
@@ -45,9 +48,13 @@ function environment(flag,stats){
 function privateGarmentFixture(){
  const raster=fs.readFileSync(path.join(dist,'assets/photos/coat.jpg'));
  const {bytes,width,height,sha256}=require('../scripts/lib/product-image-file.cjs').inspectProductImage(raster);
- const product=JSON.parse(fs.readFileSync(path.join(dist,'assets/observed-products.json'),'utf8')).products.find(row=>row.id===id);
+ const observations=JSON.parse(fs.readFileSync(path.join(dist,observationsPath),'utf8'));
+ const product=observations.products.find(row=>row.id===id);
  const imageUrl='/assets/catalog-images/'+id+'.jpg',now=Date.now();
- return {raster,imageUrl,manifest:{
+ // Synthetic stock and image permission never replace the published data.
+ observations.observedAt=now;
+ Object.assign(product,{stock:'in_stock',checkedAt:now});
+ return {raster,imageUrl,observations,manifest:{
   version:1,authorization:{basis:'operator-attestation',reference:'private-browser-fixture',recordedAt:now,validUntil:now+3600000,display:true,local2DFitting:true,externalProcessing:false},
   products:[{id,productUrl:product.productUrl,sourceImageUrl:'https://image.msscdn.net/thumbnails/images/goods_img/20000101/1/private-fixture.jpg?w=100',
    imageUrl,delivery:'local-copy',sha256,bytes,width,height,imageKind:'unverified',checkedAt:now}]
@@ -61,6 +68,7 @@ async function prepare(browser,handlers,{width=820,height=1180,touch=true,lang='
  if(tamper)await context.addCookies([{name:'A1_FREE_BETA_MODE',value:'true',url:host},{name:'paid',value:'true',url:host},{name:'plan',value:'PREMIUM',url:host}]);
  const imageManifest=imageFixture?.manifest||JSON.parse(fs.readFileSync(path.join(dist,imageManifestPath),'utf8'));
  const allowedImages=new Set(imageManifest.products.map(row=>row.imageUrl));
+ let garmentDeliveryBlocked=false,garmentPermissionRevoked=false;
  await context.route('**/*',async route=>{
   const request=route.request(),url=new URL(request.url());calls.push({url:url.href,method:request.method(),postData:request.postData(),navigation:request.isNavigationRequest()});
   try{
@@ -89,8 +97,16 @@ async function prepare(browser,handlers,{width=820,height=1180,touch=true,lang='
     await route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:text});return;
    }
    assert.equal(request.method(),'GET');for(const[key,value]of url.searchParams){assert.equal(key,'v');assert.match(value,/^[a-z0-9-]+$/i);}
-   if(imageFixture&&url.pathname==='/'+imageManifestPath){assert.equal(url.search,'');await route.fulfill({json:imageFixture.manifest});return;}
-   if(imageFixture&&url.pathname===imageFixture.imageUrl){assert.equal(url.search,'');await route.fulfill({contentType:'image/jpeg',body:imageFixture.raster});return;}
+   if(imageFixture&&url.pathname==='/'+observationsPath){assert.equal(url.search,'');await route.fulfill({json:imageFixture.observations});return;}
+   if(imageFixture&&url.pathname==='/'+imageManifestPath){
+    assert.equal(url.search,'');await route.fulfill({json:garmentPermissionRevoked?{version:1,authorization:null,products:[]}:imageFixture.manifest});return;
+   }
+   if(imageFixture&&url.pathname===imageFixture.imageUrl){
+    assert.equal(url.search,'');
+    if(garmentDeliveryBlocked)await route.abort('blockedbyclient');
+    else await route.fulfill({contentType:'image/jpeg',body:imageFixture.raster});
+    return;
+   }
    if(url.pathname.endsWith('.html')){await route.fulfill({status:308,headers:{Location:url.pathname.slice(0,-5)},body:''});return;}
    const htmlRoute=/^\/(?:stylist|product-lab|fitting-studio|gltf-proof|global|account|assets\/fitting-studio-view)$/.test(url.pathname);
    const relative=url.pathname==='/'?'index.html':url.pathname.slice(1)+(htmlRoute?'.html':''),file=path.resolve(dist,relative);
@@ -101,7 +117,8 @@ async function prepare(browser,handlers,{width=820,height=1180,touch=true,lang='
  await context.addInitScript(instrumentPage,{realPose});
  if(tamper)await context.addInitScript(()=>{window.A1_FREE_BETA_MODE=true;window.freeBetaMode=true;localStorage.setItem('A1_FREE_BETA_MODE','true');localStorage.setItem('plan','PREMIUM');});
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.exposeFunction('recordBetaCsp',v=>violations.push(v));await page.addInitScript(()=>document.addEventListener('securitypolicyviolation',e=>window.recordBetaCsp(e.effectiveDirective)));
- const trial={page,context,calls,errors,routeErrors,violations,apiResponses,stats,seen,release,host};trials.push(trial);
+ const trial={page,context,calls,errors,routeErrors,violations,apiResponses,stats,seen,release,host,
+  blockGarmentDelivery(){garmentDeliveryBlocked=true;},revokeGarmentPermission(){garmentPermissionRevoked=true;}};trials.push(trial);
  await page.goto(host+entry,{waitUntil:'domcontentloaded'});
  if(host===origin&&!late&&policyMode!=='timeout')await page.waitForFunction(()=>__betaPolicyResponses.some(row=>row.credentials==='omit'));
  await page.evaluate(value=>A1I18n.setLanguage(value),lang);
@@ -117,10 +134,17 @@ async function ready(page,{free=true}={}){
 async function search(page){await page.locator('#shopping-query').fill(query);await page.locator('#shopping-search-form button').click();await page.waitForFunction(()=>document.querySelector('#shopping-discovery')?.dataset.state==='ready');assert.equal(await page.locator('#shopping-discovery [data-discovery-id]').count(),2);}
 async function analyze(page){await page.locator('#ai-photo').setInputFiles(path.join(dist,'assets/photos/man.jpg'));await page.locator('#ai-analyze').click();await page.waitForFunction(()=>!document.querySelector('#ai-result').hidden);}
 function card(page){return page.locator('#shopping-discovery [data-discovery-id="'+id+'"]');}
-async function select(page){const button=card(page).locator('[data-discovery-fit="'+id+'"]');await button.scrollIntoViewIfNeeded();await page.waitForFunction(id=>{const e=document.querySelector('#shopping-discovery [data-discovery-fit="'+id+'"]');return e&&!e.disabled;},id);await button.click();await page.waitForSelector('#lab-garment-photo-figure:not([hidden])');
+async function finishOutline(page){
  const preview=page.locator('#lab-garment-photo-preview'),bounds=await preview.boundingBox();
  for(const [x,y] of [[.15,.15],[.85,.15],[.8,.85],[.2,.85]])await preview.click({position:{x:x*bounds.width,y:y*bounds.height}});
  await page.locator('#lab-garment-outline-apply').click();
+}
+async function select(page){
+ const product=card(page);
+ await product.scrollIntoViewIfNeeded();
+ await product.locator('[data-discovery-fit="'+id+'"]').click();
+ await page.waitForSelector('#lab-garment-photo-figure:not([hidden])');
+ await finishOutline(page);
 }
 async function assertLocalGuards(page){
  assert.equal(await page.locator('#lab-open-compare').isDisabled(),true);assert.equal(await page.locator('#lab-open-avatar').isDisabled(),false);
@@ -215,10 +239,13 @@ async function verifyPhotoToAvatar(trial){
  assert.match(await cards.first().locator('[data-proportion-reasons]').innerText(),/어깨와 골반|여유핏/);
  assert.equal(await cards.first().locator('[data-discovery-buy]').getAttribute('href'),'https://www.musinsa.com/products/4644434');
  const fittedFrame=sha(await canvas.screenshot());
- await cards.first().locator('[data-avatar-sample="musinsa-4644434"]').click();
+ assert.equal(await results.locator('[data-avatar-sample]').count(),0,'retail product cards never substitute a 3D garment');
+ assert.match(await avatar.locator('#gltf-garment-title').innerText(),/3D 예시 의상/);
+ const sample=avatar.locator('#gltf-garment');
+ await sample.selectOption('relaxed-trousers');
  await page.waitForFunction(()=>{const frame=window.A1GltfProof?.snapshot();return frame?.bodyFitted&&frame.garment==='relaxed-trousers';});
  const trouserFrame=sha(await canvas.screenshot());
- assert.notEqual(trouserFrame,fittedFrame,'the recommended trouser silhouette renders on the fitted body');
+ assert.notEqual(trouserFrame,fittedFrame,'the independent sample renders on the fitted body');
 
  const measurements=avatar.locator('#avatar-proportion-input');
  await measurements.locator('summary').click();
@@ -231,10 +258,9 @@ async function verifyPhotoToAvatar(trial){
  const measuredFrame=sha(await canvas.screenshot());
  assert.notEqual(measuredFrame,trouserFrame,'correcting the profile updates the actual body render');
 
- await cards.first().locator('[data-avatar-sample="'+cardigan+'"]').click();
+ assert.equal(await cards.first().locator('[data-avatar-sample]').count(),0);
+ await sample.selectOption('navy');
  await page.waitForFunction(()=>{const frame=window.A1GltfProof?.snapshot();return frame?.bodyFitted&&frame.garment==='navy';});
- assert.match(await page.locator('#avatar-selected-recommendation').innerText(),/가디건/);
- assert.match(await page.locator('#avatar-selected-recommendation').innerText(),/3D 예시 의상/);
  assert.notEqual(sha(await canvas.screenshot()),measuredFrame,'selecting an admissible sample changes its visible garment');
  await canvas.screenshot({path:path.join(out,'PRIVATE-production-personalized-3d.png')});
 
@@ -245,6 +271,7 @@ async function verifyPhotoToAvatar(trial){
  await input.fill('검정 슬랙스');await send.click();
  await page.waitForFunction(()=>{const ids=[...document.querySelectorAll('#avatar-recommendation-results [data-discovery-id]')].map(card=>card.dataset.discoveryId);return ids.length===2&&ids.includes('musinsa-1168906')&&ids.includes('musinsa-4644434');});
  await replies.getByText(/검정.*슬랙스/).first().waitFor();
+ await replies.getByText(/판매 여부 미확인.*공식 상품 페이지/).first().waitFor();
  await input.fill('와이드핏으로');await send.click();
  await page.waitForFunction(id=>{const cards=document.querySelectorAll('#avatar-recommendation-results [data-discovery-id]');return cards.length===1&&cards[0].dataset.discoveryId===id;},id);
  await replies.getByText(/와이드/).first().waitFor();
@@ -316,12 +343,71 @@ async function verifyExpiredImages(trial){
  await ready(page);await search(page);
  await page.waitForSelector('#shopping-discovery[data-image-state="ready"][data-image-count="0"]');
  assert.match(await card(page).innerText(),/49,900/);
- assert.equal(await card(page).locator('[data-discovery-buy]').getAttribute('href'),'https://www.musinsa.com/products/1168906');
+ assert.equal(await card(page).locator('[data-discovery-buy]').getAttribute('href'),sellerUrl);
+ const status=card(page).locator('[data-discovery-fit-state]');
+ assert.equal(await status.isVisible(),true);
+ assert.match(await status.getAttribute('data-discovery-fit-state'),/^(?:stock|rights)-unconfirmed$/);
+ assert.equal(await card(page).locator('[data-avatar-sample]').count(),0);
  assert.equal(await page.locator('#shopping-discovery .product-discovery-media,#shopping-discovery [data-discovery-fit]').count(),0);
  await page.evaluate(id=>A1CatalogFitting.openObserved(id),id);
  assert.equal(await page.evaluate(()=>A1CatalogFitting.current()),null);
- assert.match(await page.locator('#catalog-fitting-status').innerText(),/이용 권한이 확인되지/);
+ assert.match(await page.locator('#catalog-fitting-status').innerText(),/판매 여부|이용 권한/);
  assert.ok(calls.every(call=>new URL(call.url).origin===host));
+ networkClean(trial);
+}
+async function verifyRecommendedProduct2D(trial,imageFixture){
+ const {page}=trial,embedded=await startEmbeddedPhoto(trial),{studio,photo,avatar,initialUrl}=embedded;
+ const item=avatar.locator('#avatar-recommendation-results [data-discovery-id="'+id+'"]');
+ const action=item.locator('[data-discovery-fit="'+id+'"]');
+ const lab=studio.locator('#main-fitting-lab #lab-local-photo-fitting');
+ const result=lab.locator('#lab-local-photo-result');
+ await item.scrollIntoViewIfNeeded();
+ await item.locator('[data-discovery-fit-state="available"]').waitFor();
+ assert.equal(await item.locator('[data-avatar-sample]').count(),0);
+ assert.equal(await item.locator('[data-discovery-buy]').getAttribute('href'),sellerUrl);
+ assert.equal(await item.locator('[data-discovery-source]').getAttribute('href'),sellerUrl);
+ const originalPhoto=await photo.locator('#ai-clean-canvas').evaluate(canvas=>canvas.toDataURL());
+ await action.click();
+ await lab.locator('#lab-garment-photo-figure:not([hidden])').waitFor();
+ const original=lab.locator('#lab-retailer-original-image');
+ assert.equal(await original.evaluate(image=>image.currentSrc),new URL(imageFixture.imageUrl,trial.host).href);
+ const selected=await page.evaluate(()=>A1CatalogFitting.current());
+ assert.equal(selected.id,id);
+ assert.equal(selected.stock,'in_stock');
+ assert.equal(selected.productUrl,sellerUrl);
+ assert.equal(selected.fittingImageUrl,imageFixture.imageUrl);
+ assert.equal(await lab.locator('[data-selected-catalog-buy="'+id+'"]').getAttribute('href'),sellerUrl);
+ assert.equal(await lab.locator('#lab-local-photo-consent').isChecked(),false);
+ assert.equal(await result.isVisible(),false);
+ await finishOutline(page);
+ await lab.locator('#lab-local-photo-consent').check();
+ await lab.locator('#lab-local-photo-fit').click();
+ await result.waitFor();
+ assert.equal(await result.locator('[data-result-catalog-buy="'+id+'"]').getAttribute('href'),sellerUrl);
+ assert.notEqual(await lab.locator('#lab-local-photo-canvas').evaluate(canvas=>canvas.toDataURL()),originalPhoto);
+ assert.equal(await photo.locator('#ai-clean-canvas').evaluate(canvas=>canvas.toDataURL()),originalPhoto);
+ assert.equal(await page.evaluate(()=>__betaSelections),1);
+ await result.screenshot({path:path.join(out,'PRIVATE-production-recommended-product-local-2d.png')});
+
+ await lab.locator('#lab-local-photo-clear').click();
+ trial.blockGarmentDelivery();
+ await action.click();
+ const failed=lab.locator('#lab-selected-catalog[data-image-state="request-error"]');
+ await failed.waitFor();
+ assert.equal(await result.isVisible(),false);
+ assert.equal(await lab.locator('#lab-garment-photo-figure').isVisible(),false);
+ assert.equal(await page.evaluate(()=>window.A1GltfProof.snapshot().garment),'source');
+ assert.equal(await item.locator('[data-discovery-buy]').getAttribute('href'),sellerUrl);
+
+ trial.revokeGarmentPermission();
+ await page.evaluate(productId=>A1CatalogFitting.openObserved(productId),id);
+ assert.equal(await page.evaluate(()=>A1CatalogFitting.current()),null);
+ assert.match(await page.locator('#catalog-fitting-status').innerText(),/이용 권한|피팅을 준비하지 못했습니다/);
+ assert.equal(await result.isVisible(),false);
+ assert.equal(await item.locator('[data-avatar-sample]').count(),0);
+ assert.ok(trial.calls.every(call=>new URL(call.url).origin===trial.host));
+ await resetEmbeddedPhoto(page,embedded);
+ assertEmbeddedTransport(trial,initialUrl);
  networkClean(trial);
 }
 (async()=>{
@@ -331,14 +417,14 @@ async function verifyExpiredImages(trial){
  const authorization=JSON.parse(sourceImages).authorization,expired=authorization!==null&&authorization.validUntil<=Date.now();
  if(expired)assert.deepEqual(JSON.parse(builtImages),{version:1,authorization:null,products:[]},'run build-site with the current clock to remove expired merchant images');
  else assert.deepEqual(builtImages,sourceImages,'run build-site before testing: '+imageManifestPath);
- const imageFixture=expired?privateGarmentFixture():null;
+ const imageFixture=privateGarmentFixture();
  const before=Object.fromEntries(tracked.map(file=>[file,sha(fs.readFileSync(path.join(root,file)))]));
  const sourceHashes=Object.fromEntries(sources.map(file=>[file,sha(fs.readFileSync(path.join(root,file)))]));
  const distHashes=Object.fromEntries(['index.html','stylist.html','product-lab.html','assets/local-fashion-core.js','assets/public-beta-bootstrap.js',imageManifestPath,'_headers'].map(file=>[file,sha(fs.readFileSync(path.join(dist,file)))]));
  const handlers={policy:await import(pathToFileURL(path.join(root,'functions/api/policy.js'))),stylist:await import(pathToFileURL(path.join(root,'functions/api/stylist.js'))),membership:await import(pathToFileURL(path.join(root,'functions/api/membership.js'))),global:await import(pathToFileURL(path.join(root,'functions/api/global/_shared.js')))};
  let providerCalls=0;const originalFetch=globalThis.fetch;globalThis.fetch=async()=>{providerCalls++;throw Error('PRIVATE provider/auth/network trap');};
  const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
- const report={actualProductionContact:false,allBrowserRequestsIntercepted:true,realRetailerPixels:false,realRetailerDownloadVerified:false,realCdnCorsVerified:false,merchantAcceptanceVerified:false,nativeIpadSafari:false,analysisModes:['deterministic fixture','bundled local MediaPipe'],merchantImageAuthorizationExpired:expired,privateRasterFixture:imageFixture?'dist/assets/photos/coat.jpg served only to isolated 2D browser contexts from a synthetic same-origin image manifest':'dist/assets/photos/coat.jpg served to isolated browser contexts at exact manifest CDN references',actualPolicyHandler:true,actualStylistHandler:true,cases:[]};
+ const report={actualProductionContact:false,allBrowserRequestsIntercepted:true,realRetailerPixels:false,realRetailerDownloadVerified:false,realCdnCorsVerified:false,merchantAcceptanceVerified:false,nativeIpadSafari:false,analysisModes:['deterministic fixture','bundled local MediaPipe'],merchantImageAuthorizationExpired:expired,privateRasterFixture:'dist/assets/photos/coat.jpg served only to isolated 2D browser contexts from a synthetic same-origin image manifest and synthetic fresh stock for one product ID',actualPolicyHandler:true,actualStylistHandler:true,cases:[]};
  try{
   if(expired){
    const trial=await prepare(browser,handlers);
@@ -347,9 +433,9 @@ async function verifyExpiredImages(trial){
   }
   for(const profile of[{width:820,lang:'ko'},{width:390,lang:'en'}]){
    const trial=await prepare(browser,handlers,{...profile,imageFixture}),{page}=trial;await ready(page);await search(page);
-   assert.match(await card(page).innerText(),/49,900/);assert.match(await card(page).innerText(),profile.lang==='ko'?/재고 미확인/:/Stock (?:unknown|unconfirmed)/i);assert.equal(await card(page).locator('[data-discovery-buy]').getAttribute('href'),'https://www.musinsa.com/products/1168906');
+   assert.match(await card(page).innerText(),/49,900/);assert.equal(await card(page).locator('[data-discovery-buy]').getAttribute('href'),sellerUrl);
    await analyze(page);const body=await page.locator('#ai-clean-canvas').evaluate(c=>c.toDataURL());await select(page);await assertLocalGuards(page);
-   const selected=await page.evaluate(()=>A1CatalogFitting.current());assert.equal(selected.id,id);assert.equal(selected.stock,'unknown');assert.equal(selected.sourceKind,'operator-authorized-observation');assert.equal(selected.authorizationBasis,'operator-attestation');assert.equal(await page.evaluate(()=>__betaSelections),1);assert.equal(await page.locator('#ai-clean-canvas').evaluate(c=>c.toDataURL()),body);assert.equal(await page.locator('#lab-local-photo-consent').isChecked(),false);
+   const selected=await page.evaluate(()=>A1CatalogFitting.current());assert.equal(selected.id,id);assert.equal(selected.stock,'in_stock');assert.equal(selected.sourceKind,'operator-authorized-observation');assert.equal(selected.authorizationBasis,'operator-attestation');assert.equal(await page.evaluate(()=>__betaSelections),1);assert.equal(await page.locator('#ai-clean-canvas').evaluate(c=>c.toDataURL()),body);assert.equal(await page.locator('#lab-local-photo-consent').isChecked(),false);
    await page.locator('#lab-local-photo-fit').click();assert.equal(await page.locator('#lab-local-photo-result').isVisible(),false);await page.locator('#lab-local-photo-consent').check();await page.locator('#lab-local-photo-fit').click();await page.waitForSelector('#lab-local-photo-result:visible');
    const changedPixels=await page.evaluate(()=>{const a=document.querySelector('#ai-clean-canvas'),b=document.querySelector('#lab-local-photo-canvas'),x=a.getContext('2d').getImageData(0,0,a.width,a.height-50).data,y=b.getContext('2d').getImageData(0,0,b.width,b.height-50).data;let count=0;for(let i=0;i<x.length;i+=4)if(Math.abs(x[i]-y[i])+Math.abs(x[i+1]-y[i+1])+Math.abs(x[i+2]-y[i+2])>40)count++;return count;});assert.ok(changedPixels>1000);
    const fitted=await page.locator('#lab-local-photo-canvas').evaluate(c=>c.toDataURL());await page.locator('#lab-local-photo-before').check();assert.notEqual(await page.locator('#lab-local-photo-canvas').evaluate(c=>c.toDataURL()),fitted);await page.locator('#lab-local-photo-before').uncheck();
@@ -364,7 +450,7 @@ async function verifyExpiredImages(trial){
   {const trial=await prepare(browser,handlers,{entry:'/stylist'}),{page}=trial;await ready(page);await sendStylist(page);await page.waitForFunction(()=>document.querySelector('[data-stylist-public-beta] [data-stylist-discovery]')?.dataset.state==='ready');assert.equal(await page.locator('[data-stylist-discovery] [data-discovery-id]').count(),2);const post=trial.apiResponses.find(row=>row.path==='/api/stylist'&&row.method==='POST');assert.equal(post.status,200);assert.equal(post.data.mode,'DEMO');assert.equal(post.data.freeBetaMode,true);assert.deepEqual(post.data.products,[]);assert.equal(post.data.usage,null);assert.equal(post.data.comparison,null);assert.deepEqual(post.data.discounts,[]);assert.equal(await page.locator('.stylist-product').count(),0);await page.locator('#stylist-clear').click();assert.equal(await page.locator('[data-stylist-discovery]').count(),0);networkClean(trial);report.cases.push({name:'production-anonymous-actual-server-DEMO-then-separate-public-facts',frontendDemoFallback:false,passed:true});await trial.context.close();}
   {const profile={width:1366,height:900,touch:false},trial=await prepare(browser,handlers,{...profile,policyMode:'false'});
    await verifyPhotoToAvatar(trial);
-   report.cases.push({name:'production-homepage-embedded-desktop-studio-photo-automatic-nova-evidence-ranked-outfit-and-dialogue',profile,serverFreeBeta:false,samePage:true,standaloneHtmlRequests:0,realGeometry:true,privatePoseFixture:true,manualProportionsRerank:true,sampleOutfit:true,localFollowUps:true,passed:true});
+   report.cases.push({name:'production-homepage-embedded-desktop-studio-photo-automatic-nova-evidence-ranked-outfit-and-dialogue',profile,serverFreeBeta:false,samePage:true,standaloneHtmlRequests:0,realGeometry:true,privatePoseFixture:true,manualProportionsRerank:true,separateExampleWardrobe:true,localFollowUps:true,passed:true});
    await trial.context.close();}
   {const profile={width:820,height:1180,touch:true},trial=await prepare(browser,handlers,{...profile,policyMode:'false',realPose:true});
    await verifyRealInference(trial);
@@ -373,6 +459,10 @@ async function verifyExpiredImages(trial){
   {const profile={width:390,height:844,touch:true},trial=await prepare(browser,handlers,{...profile,policyMode:'false'});
    await verifyMobileConsent(trial);
    report.cases.push({name:'production-homepage-embedded-phone-studio-withdraw-and-reapply-consent-with-the-same-photo-then-reset',profile,samePage:true,standaloneHtmlRequests:0,photoSelections:1,passed:true});
+   await trial.context.close();}
+  {const profile={width:820,height:1180,touch:true},trial=await prepare(browser,handlers,{...profile,policyMode:'false',imageFixture});
+   await verifyRecommendedProduct2D(trial,imageFixture);
+   report.cases.push({name:'production-homepage-recommended-product-exact-source-on-device-2d-and-failures-with-no-3d-substitute',profile,samePage:true,authorizedPrivateFixture:true,matchingOfficialLinks:true,deliveryFailureBlocked:true,permissionRecheckBlocked:true,passed:true});
    await trial.context.close();}
   {const trial=await prepare(browser,handlers,{entry:'/fitting-studio',policyMode:'false'});
    await verifyOfficialStudio(trial);

@@ -10,6 +10,7 @@
  I.register({
   '선택한 상품으로 사진 미리보기':'Preview this product on my photo',
   '선택한 상품의 이미지 미리보기 이용 권한이 확인되지 않았습니다.':'Image-preview permission for this product has not been verified.',
+  '선택한 상품의 현재 판매 여부를 확인할 수 없어 피팅할 수 없습니다.':'Fitting is unavailable because current stock for this product could not be confirmed.',
   '선택한 상품을 준비하지 못했습니다. 다시 선택해주세요.':'The selected product could not be prepared. Select it again.',
   '선택한 상품은 유지했습니다. 먼저 사진을 선택하고 분석한 뒤 이미지 사용에 동의해주세요.':'Your product is selected. Choose and analyze a photo, then consent to image use.',
   '판매처에서 이 상품 구매하기':'Buy this product at the seller',
@@ -44,6 +45,7 @@
    }
   }
   if(token!==revision)return;window.A1LabTemplates.initialize('product',document.querySelector('#lab-root'));
+  if(product.expiresAt<=Date.now())throw Error('rights');
   selected=Object.freeze({...product});clearTimeout(timer);timer=setTimeout(clear,Math.max(1,Math.min(2147483647,product.expiresAt-Date.now()+1)));
   document.dispatchEvent(new CustomEvent('a1:catalog-fitting-selected',{detail:{id}}));
   const ready=Boolean(document.querySelector('#ai-result')&&!document.querySelector('#ai-result').hidden),target=document.querySelector(ready?'#lab-local-photo-fitting':'#ai-form');target?.scrollIntoView({block:'start'});
@@ -65,10 +67,14 @@
   if(typeof id!=='string'||!/^[A-Za-z0-9_.:-]{1,160}$/.test(id))return;
   clear();const token=revision;controller=new AbortController();const active=controller,deadline=setTimeout(()=>active.abort(),10000);
   try{
-   if(!window.A1ProductImages)throw Error('catalog');
+   const D=window.A1ProductDiscovery,P=window.A1ProductImages;
+   if(!D||!P)throw Error('catalog');
    const [observations,images]=await Promise.all([publicJson('/assets/observed-products.json',active),publicJson('/assets/product-images.json',active)]);
-   const product=window.A1ProductImages.fittingProduct(images,observations,id);if(!product)throw Error('rights');
-   if(token!==revision||active.signal.aborted)return;selectedObservation=observations;selectedImages=images;
+   if(token!==revision||active.signal.aborted)return;
+   const observation=D.validateSnapshot(observations).find(row=>row.id===id);
+   if(!D.currentlyAvailable(observation)){status('선택한 상품의 현재 판매 여부를 확인할 수 없어 피팅할 수 없습니다.');return;}
+   const product=P.fittingProduct(images,observations,id);if(!product)throw Error('rights');
+   selectedObservation=observations;selectedImages=images;
    await showProduct(product,id,token,'observed');
   }catch(error){if(token===revision)status(error.message==='rights'?'선택한 상품의 이미지 미리보기 이용 권한이 확인되지 않았습니다.':'선택한 상품을 준비하지 못했습니다. 다시 선택해주세요.');}
   finally{clearTimeout(deadline);}

@@ -13,7 +13,13 @@ const auditedManifest=published();
 const auditedAt=Math.max(observations().observedAt,auditedManifest.authorization.recordedAt,...auditedManifest.products.map(entry=>entry.checkedAt));
 assert.ok(auditedAt<auditedManifest.authorization.validUntil);
 const validateManifest=(data,facts,options={now:auditedAt})=>M.validateManifest(data,facts,options);
+const displayProduct=(data,facts,id,options={now:auditedAt})=>M.displayProduct(data,facts,id,options);
 const fittingProduct=(data,facts,id,options={now:auditedAt})=>M.fittingProduct(data,facts,id,options);
+function stockFixture(id,stock='in_stock',checkedAt=auditedAt){
+ const facts=observations();facts.observedAt=Math.max(facts.observedAt,checkedAt);
+ Object.assign(facts.products.find(row=>row.id===id),{stock,checkedAt});
+ return facts;
+}
 test('published images bind operator authorization to actual product pages and any local copy to its real bytes',()=>{
  const data=published(),facts=observations(),entries=validateManifest(data,facts);assert.ok(entries.length>=9);assert.ok(D.validateSnapshot(facts).length>=10);
  assert.equal(data.authorization.basis,'operator-attestation');assert.equal(data.authorization.externalProcessing,false);
@@ -21,12 +27,33 @@ test('published images bind operator authorization to actual product pages and a
  assert.equal(validateLocalCopies(path.resolve(__dirname,'..'),entries).length,entries.filter(entry=>entry.delivery==='local-copy').length);
  assert.equal(entries.some(e=>e.id.startsWith('uniqlo-')),false,'an ambiguous color must never receive another variant image');
 });
-test('fitting selection keeps unknown stock and prices and never turns a photo reference into an approved supplier feed',()=>{
- const data=raw(),facts=observations(),p=fittingProduct(data,facts,'musinsa-1168906');assert.ok(p);assert.equal(p.stock,'unknown');assert.equal(p.authorizationBasis,'operator-attestation');assert.equal(p.sourceKind,'operator-authorized-observation');assert.equal(p.price,49900);assert.equal(p.fittingImageUrl,p.imageUrl);assert.equal(Object.hasOwn(p,'sourceVerified'),false);
- const unknown=fittingProduct(data,facts,'29cm-3423465');assert.equal(unknown.price,null);assert.equal(unknown.stock,'unknown');assert.equal(JSON.parse(fs.readFileSync(require.resolve('../assets/approved-products.json'))).products.length,0);
+test('authorized original display keeps unknown stock and prices but cannot grant fitting eligibility',()=>{
+ const data=raw(),facts=observations(),id='musinsa-1168906',p=displayProduct(data,facts,id);
+ assert.ok(p);assert.equal(p.stock,'unknown');assert.equal(p.authorizationBasis,'operator-attestation');assert.equal(p.sourceKind,'operator-authorized-observation');assert.equal(p.price,49900);assert.equal(Object.hasOwn(p,'fittingImageUrl'),false);assert.equal(Object.hasOwn(p,'sourceVerified'),false);
+ const unknown=displayProduct(data,facts,'29cm-3423465');assert.equal(unknown.price,null);assert.equal(unknown.stock,'unknown');
+ assert.equal(fittingProduct(data,facts,id),null);assert.equal(fittingProduct(data,facts,'29cm-3423465'),null);
+ assert.equal(JSON.parse(fs.readFileSync(require.resolve('../assets/approved-products.json'))).products.length,0);
+});
+test('fitting resolves the original image of the exact fresh in-stock item only while both windows are valid',()=>{
+ const data=raw(),id='musinsa-1168906',facts=stockFixture(id),photo=data.products.find(entry=>entry.id===id);
+ const p=fittingProduct(data,facts,id);assert.ok(p);assert.equal(p.stock,'in_stock');assert.equal(p.id,id);
+ assert.equal(p.productUrl,photo.productUrl);assert.equal(p.fittingImageUrl,photo.imageUrl);
+ assert.equal(p.expiresAt,Math.min(auditedAt+24*3600000,data.authorization.validUntil));
+ assert.equal(fittingProduct(data,facts,'29cm-3423465'),null);
+ const now=auditedAt,expiredStock=stockFixture(id,'in_stock',now-24*3600000);
+ assert.ok(displayProduct(data,expiredStock,id));assert.equal(fittingProduct(data,expiredStock,id),null);
+ assert.ok(fittingProduct(data,stockFixture(id,'in_stock',now-24*3600000+1),id));
+ const until=now+1000;
+ const shortGrant={...data,authorization:{...data.authorization,validUntil:until}};
+ assert.equal(fittingProduct(shortGrant,facts,id).expiresAt,until);
+ assert.equal(displayProduct(shortGrant,facts,id,{now:until}),null);
+ assert.equal(fittingProduct(shortGrant,facts,id,{now:until}),null);
 });
 test('missing, changed and duplicate product identities cannot acquire a fitting image',()=>{
- for(const mutate of [d=>d.products[0].id='missing',d=>d.products[0].productUrl='https://www.musinsa.com/products/9999999',d=>d.products.push({...d.products[0]})]){const d=raw();mutate(d);assert.throws(()=>validateManifest(d,observations()));assert.equal(fittingProduct(d,observations(),'musinsa-1168906'),null);}
+ const id='musinsa-1168906',facts=stockFixture(id);
+ for(const mutate of [d=>d.products[0].id='missing',d=>d.products[0].productUrl='https://www.musinsa.com/products/9999999',d=>d.products.push({...d.products[0]})]){
+  const data=raw();mutate(data);assert.throws(()=>validateManifest(data,facts));assert.equal(displayProduct(data,facts,id),null);assert.equal(fittingProduct(data,facts,id),null);
+ }
  assert.equal(fittingProduct(raw(),observations(),'missing'),null);
 });
 test('remote image paths allow only the exact two CDN schemas and bounded non-private transforms',()=>{
@@ -44,9 +71,10 @@ test('local copies require a product-bound safe path and complete bounded byte e
  for(const patch of [{imageUrl:'/assets/catalog-images/other-product.jpg'},{imageUrl:'/assets/catalog-images/../private.jpg'},{bytes:6000001},{width:30000001},{sha256:null}]){const changed=structuredClone(d);Object.assign(changed.products[0],patch);assert.throws(()=>validateManifest(changed,observations()));}
 });
 test('expired or future authorizations do not expose fitting and never override sold-out status',()=>{
- const d=raw(),facts=observations();assert.equal(fittingProduct(d,facts,d.products[0].id,{now:d.authorization.validUntil}),null);
+ const d=raw(),id=d.products[0].id,facts=stockFixture(id,'in_stock',d.authorization.validUntil-1000);
+ assert.equal(fittingProduct(d,facts,id,{now:d.authorization.validUntil}),null);
  const future=structuredClone(d);future.authorization.recordedAt=auditedAt+60000;assert.throws(()=>validateManifest(future,facts));
- facts.products.find(p=>p.id===d.products[0].id).stock='out_of_stock';assert.equal(fittingProduct(d,facts,d.products[0].id),null);
+ const soldOut=stockFixture(id,'out_of_stock');assert.ok(displayProduct(d,soldOut,id));assert.equal(fittingProduct(d,soldOut,id),null);
 });
 test('an explicitly empty published manifest needs no current authorization and cannot grant image access',()=>{
  const empty={version:1,authorization:null,products:[]},facts=observations(),now=auditedManifest.authorization.validUntil;

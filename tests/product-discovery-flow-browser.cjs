@@ -6,9 +6,9 @@ const root=path.resolve(__dirname,'..'),origin='https://discovery-flow.a1fashion
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.jpg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml'};
 function fixture(){const now=Date.now()-1000;const base={brand:'PRIVATE TEST FACT',retailerName:'PRIVATE TEST ONLY',type:'slacks',category:'bottoms',color:'black',gender:'men',fit:'relaxed',price:44900,currency:'KRW',priceKind:'page-observation',priceNote:'Private synthetic test observation; never published.',sizes:['M'],checkedAt:now,stock:'unknown',imageUrl:null,imageRights:'unverified',fittingRights:'unverified',sourceNote:'PRIVATE ROUTE FIXTURE ONLY',observedFeatures:['PRIVATE TEST']};const rows=[
  {id:'SYNTHETIC-OBSERVATION-1',name:'PRIVATE TEST BLACK SLACKS',productUrl:'https://www.musinsa.com/products/1168906'},
- {id:'SYNTHETIC-OBSERVATION-2',name:'PRIVATE TEST UNKNOWN PRICE',productUrl:'https://www.musinsa.com/products/4644434',price:null,priceKind:'unconfirmed'},
+ {id:'SYNTHETIC-OBSERVATION-2',name:'PRIVATE TEST UNKNOWN PRICE',productUrl:'https://www.musinsa.com/products/4644434',price:null,priceKind:'unconfirmed',stock:'in_stock',checkedAt:now-25*60*60*1000},
  {id:'SYNTHETIC-OBSERVATION-3',name:'PRIVATE TEST OVER BUDGET',productUrl:'https://www.29cm.co.kr/products/3423465',price:160000},
- {id:'SYNTHETIC-OBSERVATION-4',name:'PRIVATE TEST WHITE SHIRT',productUrl:'https://www.29cm.co.kr/products/3487996',type:'shirt',category:'tops',color:'white',price:15900}
+ {id:'SYNTHETIC-OBSERVATION-4',name:'PRIVATE TEST WHITE SHIRT',productUrl:'https://www.29cm.co.kr/products/3487996',type:'shirt',category:'tops',color:'white',price:15900,stock:'in_stock'}
  ];return{version:1,observedAt:now,products:rows.map(p=>({...base,...p,sourceUrl:p.productUrl}))};}
 function csp(relative){if(relative!=='stylist.html')return undefined;return fs.readFileSync(path.join(root,'_headers'),'utf8').split('/stylist*\n')[1].split('\n\n')[0].match(/Content-Security-Policy:\s*(.*)/)[1];}
 async function prepare(browser,profile,{mode='normal',published=false,delayed=false}={}){
@@ -34,13 +34,17 @@ async function sendStylist(page,text){await page.locator('#stylist-message').fil
 try{
  for(const profile of[{width:820,lang:'ko'},{width:390,lang:'en'}]){
   const trial=await prepare(browser,profile),{page}=trial;await page.goto(origin+'/',{waitUntil:'networkidle'});await page.evaluate(l=>A1I18n.setLanguage(l),profile.lang);
-  await searchMain(page,'남성 검정 슬랙스 5만원 이하');const section=page.locator('#shopping-discovery');assert.equal(await section.locator('[data-discovery-id]').count(),2);assert.equal(await section.locator('.product-discovery-grid').first().locator('[data-discovery-id]').count(),1);assert.equal(await section.locator('.product-discovery-unknown [data-discovery-id]').count(),1);
-  assert.equal(await section.locator('img').count(),0);assert.equal(await section.locator('[data-catalog-fit],[data-avatar-garment]').count(),0);assert.match(await section.innerText(),/44,900/);assert.match(await section.innerText(),profile.lang==='ko'?/재고 미확인/:/Stock (?:unknown|unconfirmed)/);assert.match(await section.innerText(),profile.lang==='ko'?/예산 충족 여부 미확정/:/budget match unconfirmed/);
+  await searchMain(page,'남성 검정 슬랙스 5만원 이하');const section=page.locator('#shopping-discovery'),references=section.locator('[data-discovery-references]');
+  assert.equal(await section.locator('[data-discovery-id]').count(),2);
+  assert.equal(await references.locator('[data-sale-state="unconfirmed"]').count(),2);
+  assert.equal(await section.locator('[data-sale-state="available"]').count(),0);
+  assert.match(await references.locator('[data-discovery-budget-unconfirmed]').innerText(),profile.lang==='ko'?/예산 충족 여부 미확정/:/budget match unconfirmed/);
+  assert.equal(await section.locator('img').count(),0);assert.equal(await section.locator('[data-discovery-fit],[data-catalog-fit],[data-avatar-garment],[data-avatar-sample]').count(),0);assert.match(await section.innerText(),/44,900/);assert.match(await section.innerText(),profile.lang==='ko'?/재고 미확인/:/Stock (?:unknown|unconfirmed)/);
   const link=section.locator('[data-discovery-buy="SYNTHETIC-OBSERVATION-1"]');assert.equal(await link.getAttribute('href'),'https://www.musinsa.com/products/1168906');assert.equal(await link.getAttribute('referrerpolicy'),'no-referrer');
   await link.evaluate(a=>{a.href='https://www.musinsa.com/products/9999999';});await link.click();assert.equal(new URL(page.url()).origin,origin,'tampering must not navigate');await link.evaluate(a=>{a.href='https://www.musinsa.com/products/1168906';});await link.evaluate(a=>a.click());assert.equal(new URL(page.url()).origin,origin,'synthetic clicks must not navigate');
   await page.locator('#shopping-query').fill('010-1234-5678 연락처');await page.locator('#shopping-search-form button').click();assert.equal(await section.isVisible(),false);assert.equal(await section.locator('[data-discovery-id]').count(),0,'invalid input must erase old candidates');
   await searchMain(page,'여성 흰색 셔츠 3만원 이하');assert.equal(await section.locator('[data-discovery-id]').count(),0,'collection mismatch does not broaden search');
-  await searchMain(page,'남성 흰색 셔츠 3만원 이하');assert.equal(await section.locator('[data-discovery-id]').count(),1);assert.match(await section.innerText(),/WHITE SHIRT/);
+  await searchMain(page,'남성 흰색 셔츠 3만원 이하');assert.equal(await section.locator('[data-discovery-id][data-sale-state="available"]').count(),1);assert.equal(await references.isVisible(),false);assert.match(await section.innerText(),/WHITE SHIRT/);
   await page.locator('#shopping-currency').evaluate(el=>{const details=el.closest('details');if(details)details.open=true;});await page.locator('#shopping-currency').selectOption('USD');await page.waitForFunction(()=>['unsupported','cleared'].includes(document.querySelector('#shopping-discovery').dataset.state));assert.equal(await section.locator('[data-discovery-id]').count(),0,'no invented currency conversion');
   await page.locator('#shopping-currency').selectOption('KRW');await searchMain(page,'남성 검정 슬랙스 5만원 이하');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await section.screenshot({path:path.join(out,'main-'+profile.lang+'-'+profile.width+'.png')});
   assert.equal(trial.calls.filter(u=>new URL(u).pathname==='/assets/observed-products.json').length,1,'one static metadata GET per page, no search payload requests');

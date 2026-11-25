@@ -384,11 +384,11 @@ async function verifyStudioProportions(browser) {
       results.push({ name, frame, firstCandidate: expectedFirst });
     }
     assert.equal(new Set(results.map(result => result.frame)).size, profiles.length);
-    const sample = page.locator('#avatar-recommendation-results [data-avatar-sample="29cm-4145774"]');
-    await sample.click();
+    assert.equal(await page.locator('#avatar-recommendation-results [data-avatar-sample]').count(), 0);
+    await page.locator('#gltf-garment').selectOption('navy');
     await page.waitForFunction(() => A1GltfProof.snapshot().garment === 'navy');
-    assert.match(await page.locator('#avatar-selected-recommendation').innerText(), /가디건/);
-    await capture3D(page, 'profile-recommended-navy');
+    assert.match(await page.locator('#gltf-garment-title').innerText(), /3D 예시 의상/);
+    await capture3D(page, 'profile-independent-navy-sample');
     await measures.locator('#avatar-proportion-consent').uncheck();
     await readyAvatar(page);
     assert.equal(await measures.locator('[data-proportion-field=armCm]').inputValue(), '');
@@ -396,7 +396,7 @@ async function verifyStudioProportions(browser) {
     assert.deepEqual(trial.errors, []);
     assert.deepEqual(trial.violations, []);
     assert.deepEqual(trial.merchantNavigations, []);
-    console.log('Nova measurements: five distinct rendered bodies and first recommendations; linked sample and revocation passed.');
+    console.log('Nova measurements: five distinct rendered bodies and first product references; separate 3D sample and consent withdrawal passed.');
     return { name: 'nova-manual-proportion-recommendations', passed: true, results };
   } finally { await trial.context.close(); }
 }

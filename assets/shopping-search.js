@@ -107,9 +107,9 @@
  const node=(tag,text)=>{const n=document.createElement(tag);if(text)n.textContent=text;return n;},tx=(s,t)=>I.setText($(s),t);
 
  const discoveryTarget=$('#shopping-discovery');
- const discoveryView=window.A1ProductDiscoveryView.create(discoveryTarget,{sampleScope:'shopping',requireProportionEvidence:true});
+ const discoveryView=window.A1ProductDiscoveryView.create(discoveryTarget,{requireProportionEvidence:true});
  const proportionControl=window.A1ProportionControls?.create($('#shopping-proportion-input'),$('#shopping-analysis-consent'),()=>{
-  window.A1AvatarRecommendation?.revokeRecommendation('shopping');renderCatalog();
+  renderCatalog();
  });
  const defaultConditions=()=>({...Q.parse('의류'),currency:$('#shopping-currency').value});
  const activeConditions=()=>conditions||defaultConditions();
@@ -326,7 +326,7 @@
  $('#shopping-analysis-consent').addEventListener('change',()=>{
   $('#shopping-style-advice').replaceChildren();
   if($('#shopping-analysis-consent').checked)proportionControl?.render();
-  else{conversation?.clear();proportionControl?.clearManual();window.A1AvatarRecommendation?.revokeRecommendation('shopping');restoreBodyQuery();}
+  else{conversation?.clear();proportionControl?.clearManual();restoreBodyQuery();}
   renderCatalog();
  });
  document.addEventListener('a1:language-changed',()=>{render();renderCatalog();if($('#shopping-style-advice').children.length)advice();});

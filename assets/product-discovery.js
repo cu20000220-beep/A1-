@@ -212,5 +212,9 @@
   }
   return Object.freeze({candidates:Object.freeze(candidates.sort(rank).map(item=>item.row)),budgetUnconfirmed:Object.freeze(budgetUnconfirmed.sort(rank).map(item=>item.row)),excluded:Object.freeze(excluded),snapshotCount:products.length});
  }
- return Object.freeze({validateSnapshot,search,safeProductUrl});
+ function currentlyAvailable(product,{now=Date.now()}={}){
+  return Number.isSafeInteger(now)&&product?.stock==='in_stock'&&Number.isSafeInteger(product.checkedAt)
+   &&product.checkedAt>0&&product.checkedAt<=now&&now-product.checkedAt<24*3600000;
+ }
+ return Object.freeze({validateSnapshot,search,safeProductUrl,currentlyAvailable});
 });

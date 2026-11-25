@@ -4,6 +4,7 @@
  if(typeof module==='object'&&module.exports)module.exports=factory(require('./product-discovery.js'),true);
  else root.A1ProductImages=factory(root.A1ProductDiscovery);
 })(globalThis,(D,server=false)=>{
+ const stockWindowMs=24*60*60*1000;
  const fail=code=>{throw TypeError(code);};
  const fields=(v,allowed)=>{if(!v||typeof v!=='object'||Array.isArray(v)||Object.keys(v).some(k=>!allowed.includes(k)))fail('product_image_fields');};
  const time=(v,now)=>{if(!Number.isSafeInteger(v)||v<=0||v>now)fail('product_image_time');return v;};
@@ -44,12 +45,19 @@
   if(validUntil!==null&&validUntil<=now)fail('product_image_authorization_expired');
   return entries;
  }
- function fittingProduct(manifest,observations,id,{now=Date.now()}={}){
-  try{const images=validateManifest(manifest,observations,{now}),image=images.find(e=>e.id===id),product=D.validateSnapshot(observations,{now}).find(p=>p.id===id);if(!image||!product||product.stock==='out_of_stock')return null;
-   return Object.freeze({...product,imageUrl:image.imageUrl,fittingImageUrl:image.imageUrl,imageKind:image.imageKind,delivery:image.delivery,expiresAt:manifest.authorization.validUntil,sourceKind:'operator-authorized-observation',authorizationBasis:'operator-attestation'});
+ function displayProduct(manifest,observations,id,{now=Date.now()}={}){
+  try{const images=validateManifest(manifest,observations,{now}),image=images.find(e=>e.id===id),product=D.validateSnapshot(observations,{now}).find(p=>p.id===id);if(!image||!product)return null;
+   return Object.freeze({...product,imageUrl:image.imageUrl,imageKind:image.imageKind,delivery:image.delivery,expiresAt:manifest.authorization.validUntil,sourceKind:'operator-authorized-observation',authorizationBasis:'operator-attestation'});
   }catch{return null;}
+ }
+ function fittingProduct(manifest,observations,id,{now=Date.now()}={}){
+  const product=displayProduct(manifest,observations,id,{now});
+  if(!product||D.currentlyAvailable?.(product,{now})!==true)return null;
+  const expiresAt=Math.min(product.expiresAt,product.checkedAt+stockWindowMs);
+  if(expiresAt<=now)return null;
+  return Object.freeze({...product,fittingImageUrl:product.imageUrl,expiresAt});
  }
  // Structural inspection is available to the Node packager. The browser
  // receives only image validators that also enforce current authorization.
- return Object.freeze({validateManifest,fittingProduct,safeRemoteImageUrl,...(server?{inspectManifest}:{})});
+ return Object.freeze({validateManifest,displayProduct,fittingProduct,safeRemoteImageUrl,...(server?{inspectManifest}:{})});
 });

@@ -48,6 +48,15 @@ test('dates and duplicate identities are validated; old quotes stay explicitly s
  assert.ok(D.search(snapshot([row({checkedAt:now-2*86400000})]),'슬랙스',{now}).candidates[0].warnings.includes('observation_stale'));
 });
 
+test('only recent, explicit stock evidence confirms current product availability',()=>{
+ const available=row({stock:'in_stock',checkedAt:now-24*3600000+1});
+ assert.equal(D.currentlyAvailable(available,{now}),true);
+ for(const patch of [{stock:'unknown'},{stock:'out_of_stock'},{checkedAt:now-24*3600000},{checkedAt:now+1},{checkedAt:0}]){
+  assert.equal(D.currentlyAvailable({...available,...patch},{now}),false);
+ }
+ assert.equal(D.currentlyAvailable(undefined,{now}),false);
+});
+
 test('known category, collection, color and fit mismatches are not silently relaxed',()=>{
  const rows=[row(),row({id:'PRIVATE-WOMEN',productUrl:'https://www.29cm.co.kr/products/2',sourceUrl:'https://www.29cm.co.kr/products/2',gender:'women'}),row({id:'PRIVATE-NAVY',productUrl:'https://www.musinsa.com/products/3',sourceUrl:'https://www.musinsa.com/products/3',color:'navy'}),row({id:'PRIVATE-SLIM',productUrl:'https://www.musinsa.com/products/4',sourceUrl:'https://www.musinsa.com/products/4',fit:'slim'}),row({id:'PRIVATE-UNKNOWN',productUrl:'https://www.musinsa.com/products/5',sourceUrl:'https://www.musinsa.com/products/5',gender:'unknown',fit:'any'})];
  const result=D.search(snapshot(rows),'남성 검정 와이드 슬랙스 5만원 이하',{now});

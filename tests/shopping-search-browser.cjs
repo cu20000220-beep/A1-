@@ -314,8 +314,11 @@ async function verify(browser, width, height, lang) {
     assert.deepEqual(await ids(discovery), [], 'an explicitly described pajama top is not workwear');
 
     await search(page, '여성 네이비 가디건 10만원 이하');
-    const priceUnconfirmed = discovery.locator('.product-discovery-unknown');
-    assert.deepEqual(await ids(priceUnconfirmed), ['29cm-4145774']);
+    const references = discovery.locator('[data-discovery-references]');
+    assert.deepEqual(await ids(references), ['29cm-4145774']);
+    assert.equal(await references.locator('[data-discovery-id]').getAttribute('data-sale-state'), 'unconfirmed');
+    assert.match(await references.locator('[data-discovery-budget-unconfirmed]').innerText(), lang === 'ko' ? /예산 충족 여부 미확정/ : /budget match unconfirmed/);
+    assert.equal(await references.locator('[data-discovery-fit],[data-avatar-sample]').count(), 0);
     assert.equal(await discovery.getAttribute('data-count'), '0', 'an unknown price cannot be counted as within budget');
 
     await search(page, '남성 검정 코트 5만원 이하');
