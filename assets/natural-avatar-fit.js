@@ -100,15 +100,21 @@ function makeDeformation(frame, scales, legShift) {
   const hipDelta = (scales.hipScale ?? 1) - 1;
   const waistDelta = (scales.waistScale ?? 1) - 1;
   const armDelta = (scales.armScale ?? 1) - 1;
+  const shoulderDistance = clamp(halfWidth * (scales.shoulderScale - 1), -.025, .025);
   return (point, target, ease, armWeights) => {
     const { x, y, z } = point;
     const torso = (y - hip.y) / torsoHeight;
     const offsetX = x - shoulder.x;
-    // The centre of the neckline and the exact head/neck seam stay in place.
-    // Fabric and exposed skin at a matching point get the same deformation.
-    const shoulderWeight = smoothStep(-.32, .9, torso) * (1 - smoothStep(.96, 1.07, torso));
-    const offsetWidth = halfWidth * clamp((Math.abs(offsetX) / halfWidth - .60) / .40, 0, 1);
-    const shoulderShift = Math.sign(offsetX) * offsetWidth * shoulderWeight * (scales.shoulderScale - 1);
+    // Fade across the whole deltoid cap and keep the centre of the collar
+    // anchored. Continue the shoulder displacement along that arm, tapering
+    // toward the wrist so the sleeve retains a continuous outer contour.
+    const collar = smoothStep(.90, 1.35, torso);
+    const lateral = smoothStep(.38 + .18 * collar, 1.15, Math.abs(offsetX) / halfWidth);
+    const shoulderBand = smoothStep(-.15, .76, torso) * (1 - smoothStep(1.03, 1.43, torso));
+    const arm = smoothStep(.12, .85, offsetX > 0 ? armWeights[0] : armWeights[1]);
+    const armBand = arm * (.70 + .30 * smoothStep(-.25, .70, torso));
+    const shoulderWeight = shoulderBand + (1 - shoulderBand) * armBand;
+    const shoulderShift = Math.sign(offsetX) * lateral * shoulderWeight * shoulderDistance;
     const legWeight = smoothStep(ankle.y, hip.y, y) * (1 - smoothStep(.02, .86, torso));
     target.set(x + shoulderShift, y + legShift * legWeight, z);
 
@@ -235,7 +241,8 @@ export function createNaturalFit(model, metrics, { topVertices, relaxed = false,
   const legLimit = frame.torsoHeight * (hasLengthCues ? .19 : .15);
   const legShift = clamp(legSpan * (scales.legScale - 1), -legLimit, legLimit);
   const deform = makeDeformation(frame, scales, legShift);
-  const useArmWeights = frame.arms.length > 0 || (scales.hipScale ?? 1) !== 1 || (scales.waistScale ?? 1) !== 1;
+  const useArmWeights = scales.shoulderScale !== 1 || frame.arms.length > 0 ||
+    (scales.hipScale ?? 1) !== 1 || (scales.waistScale ?? 1) !== 1;
   const sourceBody = model.getObjectByName('AvatarBody');
   const combinedOutfit = model.getObjectByName('outfit');
   const outfitNames = combinedOutfit ? ['outfit'] : ['outfit_top', 'outfit_bottom', 'outfit_shoes'];

@@ -81,7 +81,6 @@ function openProof() {
   document.removeEventListener('a1:public-local-ready', openProof);
   // Keep the standalone technical baseline on Preview. The public 3D
   // entry and the embedded fitting screen begin with the same Nova model.
-  if (!preview) root.querySelector('#gltf-look').value = 'nova';
   root.hidden = false;
   const unavailable = document.querySelector('#gltf-unavailable');
   if (unavailable) unavailable.hidden = true;
@@ -125,7 +124,7 @@ function startProof() {
   credit.append(creator,' · ',license,' · ',modifications);root.querySelector('footer')?.prepend(credit);
   const controlsElements = [...root.querySelectorAll('button:not(#gltf-retry),select,input')];
   const textured = () => look === 'natural' || look === 'nova';
-  let drawCalls = 0, triangles = 0, skinPose = false, garment = 'source', materialMode = 'standard', look = 'natural';
+  let drawCalls = 0, triangles = 0, skinPose = false, garment = 'source', materialMode = 'standard', look = 'nova';
   const shirts = { 'LAB-A': 'ExampleTshirtA', 'LAB-B': 'ExampleTshirtB', 'LAB-C': 'ExampleTshirtC' };
   function status(message) { I.setText($('#gltf-status'), message); I.setText($('#gltf-canvas-state'), message); }
   function setState(value) { state = value; root.dataset.loadState = value; $('#gltf-canvas-state').hidden = value === 'ready'; controlsElements.forEach(el => { el.disabled = value !== 'ready'; }); }
@@ -336,7 +335,7 @@ function startProof() {
   async function initialize() {
     if (!canOpen()) return;
     const token = ++generation; clean(); disposed = false; setState('loading');
-    look = ['nova','natural','reference','humanoid'].includes($('#gltf-look').value) ? $('#gltf-look').value : 'natural';
+    look = ['nova','natural','reference','humanoid'].includes($('#gltf-look').value) ? $('#gltf-look').value : 'nova';
     frameSamples = []; renderCount = 0; skinPose = false; garment = textured() ? requestedSample : 'none'; materialMode = 'standard';
     portrait=false;fullView=null;portraitButton.setAttribute('aria-pressed','false');I.setText(portraitButton,'상의 핏 자세히 보기');
     $('#gltf-garment').value = garment; $('#gltf-material').value = materialMode; $('#gltf-skin-proof').checked = false;

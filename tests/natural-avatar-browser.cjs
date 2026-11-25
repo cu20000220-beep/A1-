@@ -90,8 +90,8 @@ async function prepare(browser, profile, { production = false, localFashionEnabl
   await page.exposeFunction('recordNaturalCsp', value => violations.push(value));
   await page.addInitScript(() => document.addEventListener('securitypolicyviolation', event => window.recordNaturalCsp(event.effectiveDirective)));
   await page.goto(base + '/gltf-proof', { waitUntil: 'networkidle' });
-  if (!production && !blocked) {
-    await ready(page, 'natural');
+  if (!production) {
+    await ready(page, 'nova');
     await page.locator('[data-language-select]').selectOption(profile.lang);
     assert.equal(await page.locator('html').getAttribute('lang'), profile.lang);
   }
@@ -122,8 +122,18 @@ async function touchAndPinch(page) {
     for (const profile of [{ width: 1280, height: 900, touch: false, lang: 'ko' },
       { width: 820, height: 1180, touch: true, lang: 'ko' }, { width: 1180, height: 820, touch: true, lang: 'en' }]) {
       const trial = await prepare(browser, profile), { page, context } = trial;
-      const prefix = profile.lang + '-' + profile.width, initial = await snapshot(page);
-      assert.equal(initial.look, 'natural', 'licensed textured stock human is the default');
+      const prefix = profile.lang + '-' + profile.width, defaultLook = await snapshot(page);
+      assert.equal(defaultLook.look, 'nova', 'the standalone Preview opens with the same Nova avatar as the Studio');
+      assert.equal(defaultLook.bones, 73);
+      assert.ok(defaultLook.memoryTextures > 10);
+      assert.deepEqual(trial.requests.filter(p => p.endsWith('.glb')), ['/assets/nova-avatar/avatar.glb']);
+      await page.locator('#gltf-front').click();
+      const nova = await capture(page, prefix + '-nova-front');
+      assert.ok(nova.colours > 800 && nova.chromatic > 100);
+      await page.locator('#gltf-look').selectOption('natural');
+      await ready(page, 'natural');
+      const initial = await snapshot(page);
+      assert.ok(trial.requests.includes('/assets/natural-avatar/sample.glb'), 'the older comparison only loads after selection');
       assert.equal(initial.naturalProfile, true);
       assert.equal(initial.bones, 73, 'the real source skeleton is retained');
       assert.ok(initial.skinnedMeshes >= 10, 'body, head, eyes, hair and outfit really load');
@@ -184,7 +194,7 @@ async function touchAndPinch(page) {
       await ready(page, 'natural');
       assert.equal((await snapshot(page)).bones, 73);
       assert.deepEqual(trial.errors, []); assert.deepEqual(trial.consoleErrors, []); assert.deepEqual(trial.violations, []);
-      reports.push({ profile, initial, active, frames, reference, basic, pose, requests: trial.requests,
+      reports.push({ profile, defaultLook, nova, initial, active, frames, reference, basic, pose, requests: trial.requests,
         errors: trial.errors, consoleErrors: trial.consoleErrors, violations: trial.violations });
       console.log(`Natural avatar ${prefix}: real textured body/head, 73 bones, front/side/back, reference/garment boundaries, controls, cleanup and privacy passed.`);
       await context.close();
@@ -215,10 +225,12 @@ async function touchAndPinch(page) {
     assert.deepEqual(publicLocal.errors, []); assert.deepEqual(publicLocal.violations, []);
     reports.push({ publicLocalNova: true, trousers, requests: publicLocal.requests }); await publicLocal.context.close();
     const blocked = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' }, { blocked: true });
+    await blocked.page.locator('#gltf-look').selectOption('natural');
     await blocked.page.waitForFunction(() => document.querySelector('#gltf-proof-root').dataset.loadState === 'error');
+    assert.equal((await snapshot(blocked.page)).look, 'natural', 'the selected comparison fails explicitly');
     assert.match(await blocked.page.locator('#gltf-status').innerText(), /모델|model|load/i);
     assert.equal(await blocked.page.locator('#gltf-retry').isEnabled(), true);
-    assert.ok(blocked.requests.filter(p => p === '/assets/natural-avatar/sample.glb').length <= 1);
+    assert.deepEqual(blocked.requests.filter(p => p.endsWith('.glb')), ['/assets/nova-avatar/avatar.glb', '/assets/natural-avatar/sample.glb']);
     assert.deepEqual(blocked.errors, []); assert.deepEqual(blocked.violations, []);
     reports.push({ failureMode: 'naturalModelBlocked', requests: blocked.requests, status: await blocked.page.locator('#gltf-status').innerText() });
     await blocked.context.close();

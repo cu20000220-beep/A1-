@@ -32,18 +32,18 @@ const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
   const page=await context.newPage();page.on('pageerror',e=>result.pageErrors.push(e.message));page.on('console',m=>{if(m.type()==='error')result.consoleErrors.push(m.text());});
   await page.goto(origin+'/gltf-proof',{waitUntil:'networkidle'});await page.waitForFunction(()=>window.A1GltfProof?.snapshot().state==='ready',null,{timeout:25000});
   result.initial=await page.evaluate(()=>A1GltfProof.snapshot());result.frames=[];
+  assert.equal(result.initial.look,'nova');assert.equal(result.initial.bones,73);
+  assert.deepEqual(result.requests.filter(item=>item.path.endsWith('.glb')).map(item=>item.path),['/assets/nova-avatar/avatar.glb']);
+  assert.equal(await page.locator('#gltf-garment').isDisabled(),true);
   for(const view of ['front','side','back']){await page.locator('#gltf-'+view).click();const bytes=await page.locator('#gltf-canvas').screenshot();fs.writeFileSync(path.join(out,'live-'+view+'.png'),bytes);result.frames.push({view,sha256:hash(bytes)});}
   assert.equal(new Set(result.frames.map(v=>v.sha256)).size,3);
-  if(result.initial.look==='natural'){
-   assert.equal(result.initial.bones,73);assert.equal(await page.locator('#gltf-garment').isDisabled(),true);
-   const pbr=hash(await page.locator('#gltf-canvas').screenshot());await page.locator('#gltf-material').selectOption('basic');
-   assert.notEqual(hash(await page.locator('#gltf-canvas').screenshot()),pbr);await page.locator('#gltf-material').selectOption('standard');
-   await page.locator('#gltf-look').selectOption('reference');await page.waitForFunction(()=>A1GltfProof.snapshot().state==='ready'&&A1GltfProof.snapshot().look==='reference');
-   result.naturalOutfitIsFixed=true;
-  }
+  const pbr=hash(await page.locator('#gltf-canvas').screenshot());await page.locator('#gltf-material').selectOption('basic');
+  assert.notEqual(hash(await page.locator('#gltf-canvas').screenshot()),pbr);await page.locator('#gltf-material').selectOption('standard');
+  await page.locator('#gltf-look').selectOption('natural');await page.waitForFunction(()=>A1GltfProof.snapshot().state==='ready'&&A1GltfProof.snapshot().look==='natural');
+  assert.equal(await page.locator('#gltf-garment').isDisabled(),true);result.naturalOutfitIsFixed=true;
+  await page.locator('#gltf-look').selectOption('reference');await page.waitForFunction(()=>A1GltfProof.snapshot().state==='ready'&&A1GltfProof.snapshot().look==='reference');
   const variants=[];for(const id of ['LAB-A','LAB-B','LAB-C']){await page.locator('#gltf-garment').selectOption(id);const bytes=await page.locator('#gltf-canvas').screenshot();variants.push(hash(bytes));}assert.equal(new Set(variants).size,3);result.legacyGarmentChanges=true;
-  if(result.initial.look==='natural'){await page.locator('#gltf-look').selectOption('natural');await page.waitForFunction(()=>A1GltfProof.snapshot().state==='ready'&&A1GltfProof.snapshot().look==='natural');}
-  else await page.locator('#gltf-garment').selectOption('LAB-A');
+  await page.locator('#gltf-look').selectOption('nova');await page.waitForFunction(()=>A1GltfProof.snapshot().state==='ready'&&A1GltfProof.snapshot().look==='nova');
   await page.locator('#gltf-front').click();await page.screenshot({path:path.join(out,'live-overview.png'),fullPage:true});
   assert.deepEqual(result.pageErrors,[]);assert.deepEqual(result.consoleErrors,[]);result.passed=true;await context.close();
  }catch(error){result.error=error.message;process.exitCode=1;}

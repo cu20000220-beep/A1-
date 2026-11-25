@@ -219,3 +219,44 @@ test('Nova trouser samples change only the leg silhouette and keep the original 
     Object.values(previews).forEach(preview => preview.dispose());
   }
 });
+
+test('narrow shoulder fit keeps the outer cap continuous into the sleeve', () => {
+  const neutral = fit(model, null);
+  const narrow = fit(model, null, {
+    profile: P.build({legTorsoRatio: 1.8}, {shoulderWidthCm: 34, hipWidthCm: 41})
+  });
+  try {
+    const source = neutral.outfit.geometry;
+    const target = narrow.outfit.geometry;
+    const positions = source.getAttribute('position');
+    const fittedPositions = target.getAttribute('position');
+    const normals = source.getAttribute('normal');
+    const fittedNormals = target.getAttribute('normal');
+    const hip = jointY('LeftUpLeg');
+    const torso = jointY('LeftArm') - hip;
+    const cap = [];
+    const shoulder = [];
+    const originalNormal = new Vector3();
+    const fittedNormal = new Vector3();
+    let minNormalAgreement = 1;
+    for (let i = 0; i < positions.count; i++) {
+      const x = positions.getX(i);
+      const level = (positions.getY(i) - hip) / torso;
+      if (Math.abs(x) < .125 || level < .84 || level > 1.13) continue;
+      const inward = Math.abs(x) - Math.abs(fittedPositions.getX(i));
+      if (level >= 1.04 && level <= 1.12) cap.push(inward);
+      if (level >= .92 && level <= .99) shoulder.push(inward);
+      originalNormal.fromBufferAttribute(normals, i);
+      fittedNormal.fromBufferAttribute(fittedNormals, i);
+      minNormalAgreement = Math.min(minNormalAgreement, originalNormal.dot(fittedNormal));
+    }
+    assert.ok(cap.length > 20 && shoulder.length > 20);
+    const mean = values => values.reduce((sum, value) => sum + value, 0) / values.length;
+    assert.ok(mean(shoulder) > .012, 'the measured profile still narrows the shoulder');
+    assert.ok(mean(cap) > mean(shoulder) * .70, 'the adjustment persists across the shoulder cap');
+    assert.ok(minNormalAgreement > Math.cos(Math.PI / 12), 'shoulder normals stay within 15° of the stock contour');
+  } finally {
+    neutral.dispose();
+    narrow.dispose();
+  }
+});

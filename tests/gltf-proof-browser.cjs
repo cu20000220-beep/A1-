@@ -32,14 +32,21 @@ async function prepare(browser,profile,{modelBlocked=false,noWebgl=false,product
   const request=route.request(),url=new URL(request.url());
   const allowedOrigin=production?'https://a1fashion.pages.dev':origin;
   assert.equal(url.origin,allowedOrigin,'no photos, body values or API calls may leave the static isolated page');
-  assert.equal(request.method(),'GET');assert.ok(!url.pathname.startsWith('/api/'),'Preview API isolation remains in force');
+  assert.equal(request.method(),'GET');
+  if(production&&url.pathname==='/api/policy'){
+   assert.equal(url.search,'');assert.equal(await request.headerValue('cookie'),null);
+   requests.push(url.pathname);
+   await route.fulfill({json:{freeBetaMode:false,billingEnabled:false,accountRequiredForSaving:true,localFashionEnabled:false}});
+   return;
+  }
+  assert.ok(!url.pathname.startsWith('/api/'),'Preview API isolation remains in force');
   for(const[key,value]of url.searchParams){assert.equal(key,'v');assert.match(value,/^[a-z0-9-]+$/i);}
   requests.push(url.pathname);
   if(url.pathname==='/gltf-proof.html'){await route.fulfill({status:308,headers:{Location:'/gltf-proof'+url.search},body:''});return;}
   const relative=url.pathname==='/gltf-proof'?'gltf-proof.html':url.pathname.slice(1);
   assert.ok(relative==='gltf-proof.html'||relative==='favicon.ico'||relative.startsWith('assets/'),'only static application resources are requested');
   const full=path.resolve(root,relative);assert.ok(full.startsWith(root+path.sep),'no escaped static path');
-  if(modelBlocked&&['assets/gltf-proof/avatar.glb','assets/natural-avatar/sample.glb'].includes(relative)){await route.abort('failed');return;}
+  if(modelBlocked&&relative==='assets/nova-avatar/avatar.glb'){await route.abort('failed');return;}
   if(relative==='favicon.ico'&&!fs.existsSync(full)){await route.fulfill({status:204,body:''});return;}
   assert.ok(fs.existsSync(full),'requested static file exists: '+relative);
   await route.fulfill({body:fs.readFileSync(full),contentType:mime[path.extname(relative)]||'application/octet-stream',headers:relative==='gltf-proof.html'?{'Content-Security-Policy':policy()}: {}});
@@ -78,6 +85,8 @@ function percentile(rows,p){if(!rows.length)return null;const sorted=[...rows].s
  try{
   for(const profile of [{width:1280,height:900,touch:false,lang:'ko'},{width:820,height:1180,touch:true,lang:'ko'},{width:1180,height:820,touch:true,lang:'en'}]){
    const trial=await prepare(browser,profile),{page,context,requests,errors,consoleErrors,violations}=trial;
+   const defaultLook=await readSnapshot(page);assert.equal(defaultLook.look,'nova');
+   assert.deepEqual(requests.filter(request=>request.endsWith('.glb')),['/assets/nova-avatar/avatar.glb']);
    await page.locator('#gltf-look').selectOption('reference');
    await page.waitForFunction(()=>A1GltfProof.snapshot().state==='ready'&&A1GltfProof.snapshot().look==='reference');
    const initial=await readSnapshot(page);assert.equal(initial.state,'ready');assert.ok(initial.skinnedMeshes>=2,'glTF must load real skinned body and separate clothing');assert.ok(initial.bones>=2);assert.ok(initial.triangles>1000,'actual human/garment geometry must draw');assert.ok(initial.drawCalls>=2);
@@ -104,20 +113,26 @@ function percentile(rows,p){if(!rows.length)return null;const sorted=[...rows].s
    if(disposed.memoryTextures!==undefined)assert.equal(disposed.memoryTextures,0,'all model textures freed');
    await page.locator('#gltf-retry').click();await page.waitForFunction(()=>document.querySelector('#gltf-proof-root').dataset.loadState==='ready');assert.ok((await readSnapshot(page)).triangles>1000,'manual retry reloads real model');
    assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);assert.deepEqual(violations,[]);
-   reports.push({profile,initial,variants,frames,fullRotationRadians:total,cpuRenderSubmissionP50Ms:percentile(samples,.5),cpuRenderSubmissionP95Ms:percentile(samples,.95),requests,errors,consoleErrors,violations});
+   reports.push({profile,defaultLook,initial,variants,frames,fullRotationRadians:total,cpuRenderSubmissionP50Ms:percentile(samples,.5),cpuRenderSubmissionP95Ms:percentile(samples,.95),requests,errors,consoleErrors,violations});
    console.log(`glTF ${profile.lang} ${profile.width}x${profile.height}: real body/clothes/skin/material pixels, full360, ${profile.touch?'touch+pinch':'mouse'}, delete/retry and privacy passed.`);await context.close();
   }
   for(const mode of ['modelBlocked','noWebgl']){
    const trial=await prepare(browser,{width:820,height:1180,touch:true,lang:'ko'},{[mode]:true});
    await trial.page.waitForFunction(()=>document.querySelector('#gltf-proof-root').dataset.loadState==='error');
-   const status=await trial.page.locator('#gltf-status').innerText();assert.match(status,mode==='noWebgl'?/WebGL\s*2|WebGL2/i:/GLB|모델|model|load/i);assert.equal(await trial.page.locator('#gltf-retry').isEnabled(),true);assert.ok(trial.requests.filter(request=>request==='/assets/gltf-proof/avatar.glb').length<=1,'no automatic retry loop');assert.deepEqual(trial.errors,[]);assert.deepEqual(trial.violations,[]);
+   const status=await trial.page.locator('#gltf-status').innerText();assert.match(status,mode==='noWebgl'?/WebGL\s*2|WebGL2/i:/GLB|모델|model|load/i);
+   assert.equal(await trial.page.locator('#gltf-retry').isEnabled(),true);
+   assert.deepEqual(trial.requests.filter(request=>request.endsWith('.glb')),mode==='modelBlocked'?['/assets/nova-avatar/avatar.glb']:[],'no retry loop or implicit model fallback');
+   assert.deepEqual(trial.errors,[]);assert.deepEqual(trial.violations,[]);
    reports.push({failureMode:mode,status,requests:trial.requests,errors:trial.errors,consoleErrors:trial.consoleErrors});await trial.context.close();
   }
   const lost=await prepare(browser,{width:820,height:1180,touch:true,lang:'ko'});
   const lossSupported=await canvas(lost.page).evaluate(c=>{const gl=c.getContext('webgl2'),extension=gl?.getExtension('WEBGL_lose_context');if(!extension)return false;window.__gltfLossExtension=extension;extension.loseContext();return true;});
   assert.equal(lossSupported,true,'test must actually lose a real WebGL context');await lost.page.waitForFunction(()=>document.querySelector('#gltf-proof-root').dataset.loadState==='error');assert.match(await lost.page.locator('#gltf-status').innerText(),/WebGL|컨텍스트|context|그래픽|GPU/i);assert.deepEqual(lost.errors,[]);reports.push({failureMode:'actualWebglContextLoss',status:await lost.page.locator('#gltf-status').innerText(),requests:lost.requests});await lost.context.close();
-  const production=await prepare(browser,{width:820,height:1180,touch:true,lang:'ko'},{production:true});assert.ok(!production.requests.includes('/assets/gltf-proof/avatar.glb'),'Production cannot activate isolated proof model');const state=await production.page.locator('#gltf-proof-root').getAttribute('data-load-state');assert.notEqual(state,'ready');reports.push({productionBlocked:true,requests:production.requests,state});await production.context.close();
-  const sources=['gltf-proof.html','assets/gltf-proof.js','assets/gltf-proof.css','assets/gltf-proof/avatar.glb','assets/gltf-proof/asset-manifest.json'];
+  const production=await prepare(browser,{width:820,height:1180,touch:true,lang:'ko'},{production:true});
+  assert.deepEqual(production.requests.filter(request=>request.startsWith('/api/')),['/api/policy']);
+  assert.ok(!production.requests.some(request=>request.endsWith('.glb')),'the public policy must enable the viewer before it loads a model');
+  const state=await production.page.locator('#gltf-proof-root').getAttribute('data-load-state');assert.equal(state,'blocked');reports.push({productionBlocked:true,requests:production.requests,state});await production.context.close();
+  const sources=['gltf-proof.html','assets/gltf-proof.js','assets/gltf-proof.css','assets/gltf-proof/avatar.glb','assets/gltf-proof/asset-manifest.json','assets/nova-avatar/avatar.glb','assets/nova-avatar/asset-manifest.json'];
   fs.writeFileSync(path.join(out,'browser-result.json'),JSON.stringify({sourceHashes:Object.fromEntries(sources.map(file=>[file,sha(fs.readFileSync(path.join(root,file)))])),reports,environment:{browser:'Linux Chromium with SwiftShader',nativeIpadSafari:false,webkitInstalled:fs.existsSync(webkit.executablePath())},limits:'Existing CC0 body and original example garment conversion. New photorealistic human not obtained. CPU render-submission timings are not GPU frame time, display FPS, or iPad hardware performance. No user photo or body analysis data used.'},null,2));
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
