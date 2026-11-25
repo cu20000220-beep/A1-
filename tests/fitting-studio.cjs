@@ -27,7 +27,7 @@ test('studio confines its optional real 3D asset reads to this origin and packag
   const html = fs.readFileSync(path.join(root, 'fitting-studio.html'), 'utf8');
   const view = fs.readFileSync(path.join(root, 'assets/fitting-studio-view.html'), 'utf8');
   const headers = fs.readFileSync(path.join(root, '_headers'), 'utf8');
-  const policy = headers.match(/^\/fitting-studio\*\n\s+Content-Security-Policy:\s*([^\r\n]+)/m)?.[1];
+  const policy = headers.match(/^\/fitting-studio\*\r?\n\s+Content-Security-Policy:\s*([^\r\n]+)/m)?.[1];
   assert.ok(policy);
   assert.match(policy, /(?:^|;)\s*connect-src 'self'(?:;|$)/);
   const scriptTokens = policy.match(/(?:^|;)\s*script-src ([^;]+)/)?.[1].trim().split(/\s+/);

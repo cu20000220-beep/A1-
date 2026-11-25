@@ -223,7 +223,7 @@
    source.addEventListener('click',event=>{if(!event.isTrusted||disposed||token!==revision||!D.safeProductUrl(p.sourceUrl)||source.href!==p.sourceUrl)event.preventDefault();});
    details.append(source);
    if(p.observedFeatures.length)details.append(node('p',p.observedFeatures.join(' · ')));
-   const fittingNote=node('p',I.t('피팅 자료와 이용 조건 미확인'));fittingNote.dataset.discoveryFittingNote='';details.append(fittingNote);
+   const fittingNote=node('p',I.t('피팅 자료와 이용 조건 미확인'));fittingNote.dataset.discoveryFittingNote='';content.append(fittingNote);
    const copy=node('button',I.t('상품 링크 복사'));copy.type='button';copy.dataset.discoveryCopy=p.id;
    const address=node('input');address.type='url';address.readOnly=true;address.value=p.productUrl;address.setAttribute('aria-label',I.t('상품 링크 복사'));address.className='product-discovery-address';
    const copyStatus=node('p');copyStatus.setAttribute('role','status');
