@@ -264,12 +264,20 @@
     clean.width = output.width;
     clean.height = output.height;
     clean.getContext('2d').drawImage(output, 0, 0);
-    clean.fittingLandmarks = [11, 12, 23, 24, 25, 26, 27, 28, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map(id => ({
-      x: points[id].x * source.width,
-      y: points[id].y * source.height - crop,
-      z: points[id].z,
-      visibility: points[id].visibility
-    }));
+    // The body analyzer accepts missing optional arm/hand landmarks. Preserve
+    // their array positions without inventing coordinates, so valid torso and
+    // leg measurements still reach recommendations and the rigid fitting fallback.
+    clean.fittingLandmarks = [11, 12, 23, 24, 25, 26, 27, 28, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map(id => {
+      const point = points[id];
+      if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y) ||
+          !Number.isFinite(point.visibility)) return null;
+      return {
+        x: point.x * source.width,
+        y: point.y * source.height - crop,
+        z: point.z,
+        visibility: point.visibility
+      };
+    });
     ctx.strokeStyle = '#c9ff85';
     ctx.fillStyle = '#c9ff85';
     ctx.lineWidth = Math.max(3, output.width / 180);
@@ -346,8 +354,8 @@
       if (token !== revision) return;
       const result = advisor.analyzePose(points, source.width, source.height);
       if (!result.ok) throw new Error(result.error);
-      analysis = result;
       drawResult(source, points);
+      analysis = result;
       renderAnalysisCopy();
       $('#ai-photo-preview').hidden = true;
       eraseCanvas($('#ai-preview-canvas'));
