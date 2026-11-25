@@ -5,7 +5,7 @@ import { createHumanoidMaterial } from './humanoid-surface.js';
 import { applyNaturalProfile, useEmbeddedImageElements } from './natural-avatar-profile.js';
 import { createNaturalFit } from './natural-avatar-fit.js';
 import { identifyNaturalTop, setNaturalTopColor } from './natural-avatar-outfit.js';
-import { createNovaTopPalette, lightNovaStage } from './nova-avatar-studio.js';
+import { createNovaIdle, createNovaTopPalette, lightNovaStage } from './nova-avatar-studio.js';
 
 // Renders reviewed meshes. Consented proportions are temporary and stay on-device.
 const root = document.querySelector('#gltf-proof-root');
@@ -151,16 +151,44 @@ function startProof() {
       option.hidden = bottom ? !styles || !nova : style ? !styles : natural ? option.value !== 'source' : option.value === 'source';
     }
   }
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  let idle = null, idleFrame = 0, idleObserver, idleVisible = false, idleTime = 0, lastIdleDraw = 0;
+  function animateIdle(time) {
+    idleFrame = 0;
+    if (!idle || !idleVisible || document.hidden || reducedMotion.matches || skinPose) return;
+    if (time - lastIdleDraw >= 1000 / 24) {
+      idleTime += Math.min(65, time - lastIdleDraw) / 1000;
+      lastIdleDraw = time;
+      render();
+    }
+    idleFrame = requestAnimationFrame(animateIdle);
+  }
+  function refreshIdle() {
+    cancelAnimationFrame(idleFrame);
+    idleFrame = 0;
+    lastIdleDraw = performance.now();
+    if (idle && idleVisible && !document.hidden && !reducedMotion.matches && !skinPose) idleFrame = requestAnimationFrame(animateIdle);
+    else if (idle && reducedMotion.matches) render();
+  }
+  document.addEventListener('visibilitychange', refreshIdle);
+  reducedMotion.addEventListener('change', refreshIdle);
   function render() {
     if (!renderer || !scene || !camera || disposed) return;
     const start = performance.now();
-    renderer.render(scene, camera);
+    const draw = () => renderer.render(scene, camera);
+    if (idle && !skinPose && !reducedMotion.matches) idle(idleTime, draw);
+    else draw();
     frameSamples.push(performance.now() - start); if (frameSamples.length > 120) frameSamples.shift();
     renderCount++; drawCalls = renderer.info.render.calls; triangles = renderer.info.render.triangles;
     lastMemory = { ...renderer.info.memory };
   }
   function clean() {
     disposed = true;
+    idle = null;
+    idleVisible = false;
+    idleTime = 0;
+    idleObserver?.disconnect();
+    refreshIdle();
     releaseFit(); topVertices=null; novaPalette=null; root.dataset.bodyFit='off';
     controller?.abort(); observer?.disconnect(); controls?.dispose();
     const geometries = new Set(), ownedMaterials = new Set(), textures = new Set(), skeletons = new Set();
@@ -406,6 +434,15 @@ function startProof() {
         }
       });
       scene.add(model);
+      if (look === 'nova') {
+        idle = createNovaIdle(model);
+        idleObserver = new IntersectionObserver(([entry]) => {
+          if (token !== generation || disposed) return;
+          idleVisible = entry.isIntersecting;
+          refreshIdle();
+        });
+        idleObserver.observe(canvas);
+      }
       const resize = () => { if (!renderer) return; const rect = canvas.getBoundingClientRect(); renderer.setSize(Math.max(1, rect.width), Math.max(1, rect.height), false); camera.aspect = Math.max(1, rect.width) / Math.max(1, rect.height); camera.updateProjectionMatrix(); render(); };
       observer = new ResizeObserver(resize); observer.observe(canvas); controls.update(); updateMaterial(); updateGarment(); resize();
       setState('ready'); capabilities(); status(textured()
