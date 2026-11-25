@@ -202,3 +202,15 @@ test('the approved catalog uses the same evidence after explicit preferences wit
   assert.deepEqual(Matching.rank([overBudget], prefs, { now, mode: 'approved', profile }).excluded,
     [{ id: wide.id, reason: 'over_budget' }]);
 });
+
+test('proportion ranking counts corroborating fit labels once and prefers manual evidence', () => {
+  const profile = Profile.build({ ...neutral, shoulderHipRatio: 1.45 }, { waistCircumferenceCm: 78, hipCircumferenceCm: 96 });
+  const duplicatedFit = garment(61, { category: 'bottoms', type: 'slacks', fit: 'wide', observedFeatures: ['루즈핏'] });
+  const waistband = garment(62, { category: 'bottoms', type: 'slacks', fit: 'straight', observedFeatures: ['허리 밴딩'] });
+  const ranked = search([duplicatedFit, waistband], '슬랙스', profile);
+  assert.deepEqual(ids(ranked), [waistband.id, duplicatedFit.id]);
+  assert.equal(ranked.candidates[1].proportionReasons.filter(reason => reason.attribute === 'fit').length, 2);
+  const approved = [duplicatedFit, waistband].map(product => ({ ...product, sourceVerified: true, stock: 'in_stock', expiresAt: now + 60000 }));
+  const prefs = { style: 'all', gender: 'all', currency: 'KRW', budget: 50000, occasion: 'all', size: '', color: 'any', avoid: [], bodyConsent: false };
+  assert.deepEqual(Matching.rank(approved, prefs, { now, profile }).matches.map(row => row.product.id), [waistband.id, duplicatedFit.id]);
+});

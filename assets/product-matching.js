@@ -58,7 +58,7 @@
    });
   }
   matches.sort((a,b)=>b.score-a.score||
-   (b.proportionReasons?.length ?? 0)-(a.proportionReasons?.length ?? 0)||
+   (recommendations?.weight(b.proportionReasons) ?? 0)-(recommendations?.weight(a.proportionReasons) ?? 0)||
    a.product.price-b.product.price||a.product.id.localeCompare(b.product.id));
   return {mode,preferences:p,matches,excluded,scoreMeaning:'condition-match-not-fit-probability'};
  }

@@ -205,7 +205,7 @@
    const matches=proportions?.evidence(product,profile)||[];
    const row=Object.freeze({product,reasons:Object.freeze(reasons),warnings:Object.freeze(warnings),canFit:false,
     ...(matches.length?{proportionReasons:Object.freeze(matches)}:{}),...(seasonEvidence?{seasonEvidence}:{})});
-   const proportionCount=matches.filter(reason=>p.fit==='any'||reason.attribute!=='fit').length;
+   const proportionCount=proportions?.weight(matches,{ignoreFit:p.fit!=='any'})||0;
    const seasonConfidence=seasonEvidence?.basis==='source-label'?2:seasonEvidence?1:0;
    const priceFreshness=!stale&&product.price!==null?1:0;
    (p.budget!==null&&product.price===null?budgetUnconfirmed:candidates).push({row,confirmed,purpose:suitability,style,proportionCount,seasonConfidence,priceFreshness});
