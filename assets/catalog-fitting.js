@@ -4,7 +4,7 @@
  function initialize(){
  const experience=window.A1Preview||(window.A1PublicLocal?.mode==='server-public-local'?window.A1PublicLocal:null)||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null);
  const C=window.A1ProductCatalog,I=window.A1I18n;
- if(!experience||!C||!I||!window.A1LabTemplates||window.A1CatalogFitting)return;
+ if(!experience||!C||!I||window.A1CatalogFitting)return;
  document.removeEventListener('a1:public-local-ready',initialize);document.removeEventListener('a1:public-beta-ready',initialize);
  let selected=null,selectedObservation=null,selectedImages=null,revision=0,controller,timer;
  I.register({
@@ -34,6 +34,7 @@
   // A public item ID is the only cross-page handoff. No private pixels/ratios.
   if(!document.querySelector('#ai-form')){location.assign('/#'+(kind==='observed'?'fit-observed-product':'fit-product')+'='+encodeURIComponent(id));return;}
   if(!document.querySelector('#lab-root')){
+   if(!window.A1LabTemplates)throw Error('catalog');
    const template=await window.A1LabTemplates.load('product');if(token!==revision)return;
    if(!document.querySelector('#lab-root')){
     const lab=document.importNode(template,true);
