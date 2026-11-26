@@ -84,5 +84,14 @@
    return Boolean(rule.fit&&rule.fit===product.fit||rule.type&&rule.type===product.type||rule.labels.some(label=>labels.has(label)));
   }));
  }
- return Object.freeze({guidance,evidence});
+ function weight(reasons, {ignoreFit=false}={}){
+  const strongest=new Map();
+  for(const {attribute,basis} of reasons){
+   if(ignoreFit&&attribute==='fit')continue;
+   const points=basis==='manual'?2:1;
+   strongest.set(attribute,Math.max(points,strongest.get(attribute)||0));
+  }
+  return [...strongest.values()].reduce((total,points)=>total+points,0);
+ }
+ return Object.freeze({guidance,evidence,weight});
 });

@@ -30,6 +30,26 @@ export function lightNovaStage(renderer, scene) {
   scene.add(floor);
 }
 
+export function createNovaIdle(model) {
+  const spine = model.getObjectByName('Spine');
+  const head = model.getObjectByName('Head');
+  const spinePose = new THREE.Quaternion();
+  const headPose = new THREE.Quaternion();
+  return (seconds, draw) => {
+    spinePose.copy(spine.quaternion);
+    if (head?.isBone) headPose.copy(head.quaternion);
+    spine.rotateX(.013 * Math.sin(seconds * 1.55));
+    spine.rotateZ(.018 * Math.sin(seconds * .76));
+    if (head?.isBone) head.rotateY(.042 * Math.sin(seconds * .61));
+    try { draw(); }
+    finally {
+      spine.quaternion.copy(spinePose);
+      if (head?.isBone) head.quaternion.copy(headPose);
+      model.updateMatrixWorld(true);
+    }
+  };
+}
+
 const colors = {navy:'#263850', terracotta:'#965848'};
 
 export function createNovaTopPalette(pair) {

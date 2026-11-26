@@ -360,7 +360,7 @@ function initializeProductLab(){
   }catch{I.setText(searchStatus,'짧은 의류 조건만 입력해주세요. 사진·연락처·이메일·링크·신체 수치는 넣지 마세요.');}
  });
  let localGarment=null,preparedGarment=null,localRevision=0,pendingGarment=null,localDisposed=false,localCatalogProduct=null,catalogOriginal=null;
- let outline=[],editingOutline=false,placementAspect=null,poseRequest=null,poseFit=null,poseLayer=null,handPatches=[];
+ let outline=[],editingOutline=false,transparentTrim=null,poseRequest=null,poseFit=null,poseLayer=null,handPatches=[];
  const poseIds=[11,12,23,24,25,26,27,28,13,14,15,16,17,18,19,20,21,22];
  const photoFitButton=$('#lab-local-photo-fit');
  I.register({
@@ -511,7 +511,8 @@ function initializeProductLab(){
   try{
    const points=await estimator.estimate(image,{signal:controller.signal});
    if(controller.signal.aborted)return;
-   const original=points?.map(p=>({...p,x:p.x*image.width-left,y:p.y*image.height-top}));
+   const offset=outline.length||!transparentTrim?{left,top}:transparentTrim;
+   const original=points?.map(p=>p&&({...p,x:p.x*image.width-offset.left,y:p.y*image.height-offset.top}));
    // The cutout must include the shoulder line. A masked lower-body item
    // might come from a full-body source with equally confident landmarks.
    const shoulders=original&&[original[11],original[12]];
@@ -530,7 +531,7 @@ function initializeProductLab(){
   }
  }
  function clearLocalPhoto({keepRights=false,silent=false}={}){
-  outline=[];editingOutline=false;placementAspect=null;outlinePanel.hidden=true;discardPoseFit();
+  outline=[];editingOutline=false;transparentTrim=null;outlinePanel.hidden=true;discardPoseFit();
   garmentPreview.removeAttribute('tabindex');garmentPreview.removeAttribute('aria-describedby');
   $('#lab-local-photo-remove-bg').closest('label').hidden=false;
   localRevision++;pendingGarment?.cancel();pendingGarment=null;
@@ -564,20 +565,22 @@ function initializeProductLab(){
   const band={bottoms:{y:.66,height:.60,width:.48},tops:{y:.30,height:.42,width:.70},outerwear:{y:.45,height:.70,width:.72},dresses:{y:.50,height:.82,width:.72}}[product.category];
   if(!band)return;const aspect=preparedGarment.width/preparedGarment.height;
   const points=source.fittingLandmarks;
-  if(points?.slice(0,4).every(p=>p.visibility>=.5)){
+  if(points?.length>=4&&points.slice(0,4).every(p=>p?.visibility>=.5)){
    const [s1,s2,h1,h2,k1,k2,a1,a2]=points;
    const midpoint=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
    const shoulder=midpoint(s1,s2),hip=midpoint(h1,h2);
-   const legs=[k1,k2,a1,a2].every(p=>p.visibility>=.5);
+   const legs=[k1,k2,a1,a2].every(p=>p?.visibility>=.5);
    const ankle=legs?midpoint(a1,a2):null,knee=legs?midpoint(k1,k2):null;
    const start=product.category==='bottoms'?hip:shoulder;
    const end=product.category==='bottoms'?ankle:product.category==='dresses'?knee:hip;
-   const width=(product.category==='bottoms'?Math.hypot(h2.x-h1.x,h2.y-h1.y)*1.24:Math.hypot(s2.x-s1.x,s2.y-s1.y)*1.33);
-   if(end&&end.y-start.y>8&&width>8){
+   const bodyWidth=(product.category==='bottoms'?Math.hypot(h2.x-h1.x,h2.y-h1.y)*1.24:Math.hypot(s2.x-s1.x,s2.y-s1.y)*1.33);
+   if(end&&end.y-start.y>8&&bodyWidth>8){
     const height=end.y-start.y;
-    placementAspect=Math.max(aspect*.65,Math.min(aspect*1.5,width/height));
-    $('#lab-local-photo-x').value=String(Math.round((start.x+end.x)*50/source.width));
-    $('#lab-local-photo-y').value=String(Math.round((start.y+end.y)*50/source.height));
+    // Uniform scaling preserves the cut and texture of the photographed item.
+    const width=Math.min(bodyWidth,height*aspect);
+    const halfHeight=width/aspect/2;
+    $('#lab-local-photo-x').value=String(Math.round((start.x+(end.x-start.x)*(halfHeight/height))/source.width*100));
+    $('#lab-local-photo-y').value=String(Math.round((start.y+halfHeight)/source.height*100));
     $('#lab-local-photo-scale').value=String(Math.round(width*100/source.width));
     $('#lab-local-photo-rotation').value=String(Math.round(Math.atan2(start.x-end.x,height)*180/Math.PI));
     return;
@@ -669,8 +672,26 @@ function initializeProductLab(){
    for(let x=0;x<w;x++){enqueue(x);enqueue((h-1)*w+x);}for(let y=0;y<h;y++){enqueue(y*w);enqueue(y*w+w-1);}
    while(start<end){const index=queue[start++],x=index%w,y=Math.floor(index/w);data[index*4+3]=0;if(x)enqueue(index-1);if(x+1<w)enqueue(index+1);if(y)enqueue(index-w);if(y+1<h)enqueue(index+w);}ctx.putImageData(image,0,0);
   }
-  if(preparedGarment)preparedGarment.width=preparedGarment.height=1;preparedGarment=canvas;
-  paintGarmentPreview(canvas);
+  let prepared=canvas,left=0,top=0;
+  transparentTrim=null;
+  if(localCatalogProduct){
+   const {width,height}=canvas,{data}=ctx.getImageData(0,0,width,height);
+   let minX=width,minY=height,maxX=-1,maxY=-1;
+   for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+    if(data[(y*width+x)*4+3]===0)continue;
+    minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);
+   }
+   if(maxX<0)throw Error('empty_garment');
+   if(minX||minY||maxX<width-1||maxY<height-1){
+    left=minX;top=minY;prepared=document.createElement('canvas');
+    prepared.width=maxX-left+1;prepared.height=maxY-top+1;
+    prepared.getContext('2d').drawImage(canvas,-left,-top);
+    canvas.width=canvas.height=1;
+   }
+  }
+  if(preparedGarment)preparedGarment.width=preparedGarment.height=1;
+  preparedGarment=prepared;paintGarmentPreview(prepared);
+  if(left||top)transparentTrim={left,top};
  }
  function drawLocalPhoto(showResult=false){
   if($('#ai-result').hidden){localMessage('먼저 사진 분석을 완료해주세요. 사진은 이 기기 안에서만 사용합니다.');if(showResult)reveal('#ai-form');return;}
@@ -696,7 +717,7 @@ function initializeProductLab(){
      ctx.rotate(controls.rotation-baseline.rotation);ctx.scale(zoom,zoom);
      ctx.drawImage(poseLayer,-baseline.x*localPhotoCanvas.width,-baseline.y*localPhotoCanvas.height);
     }else{
-     const width=localPhotoCanvas.width*controls.scale,height=width/(placementAspect||preparedGarment.width/preparedGarment.height);
+     const width=localPhotoCanvas.width*controls.scale,height=width/(preparedGarment.width/preparedGarment.height);
      ctx.rotate(controls.rotation);ctx.drawImage(preparedGarment,-width/2,-height/2,width,height);
     }
     ctx.restore();
