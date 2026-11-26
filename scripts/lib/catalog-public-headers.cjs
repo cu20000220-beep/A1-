@@ -21,7 +21,7 @@ function catalogPublicHeaders(template,products,imageContext){
   }
  }
  if(!origins.size)return template;
- const lines=template.split('\n');
+ const lines=template.split(/\r?\n/);
  function extend(route,blob,allowed){
   const start=lines.indexOf(route);if(start<0||lines.lastIndexOf(route)!==start)throw TypeError('catalog_policy_missing');
   let found=false;const initial="img-src 'self'"+(blob?' blob:':'')+';';

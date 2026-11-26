@@ -1,9 +1,9 @@
 'use strict';
 // Synthetic reviewed records exist only in memory and intercepted responses.
 // No test product, permission, image or price is written to the public catalog.
-const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const {compileCatalog}=require('../scripts/lib/product-catalog.cjs'),{catalogPublicHeaders}=require('../scripts/lib/catalog-public-headers.cjs');
-const root=path.resolve(__dirname,'..'),origin='https://catalog-fitting.a1fashion.pages.dev',out='/workspace/work/catalog-fitting';fs.mkdirSync(out,{recursive:true});
+const root=path.resolve(__dirname,'..'),origin='https://catalog-fitting.a1fashion.pages.dev',out=fs.mkdtempSync(path.join(os.tmpdir(),'a1-catalog-fitting-'));
 const itemId='SYNTHETIC-ONLY',purchase='https://www.musinsa.com/products/SYNTHETIC-ONLY';
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.jpg':'image/jpeg','.json':'application/json','.bin':'application/octet-stream'};
 function fixture(fitting=true,now=Date.now()){
@@ -23,8 +23,8 @@ async function routeContext(context,snapshot,calls,{cors=true}={}){
   for(const[k,v]of u.searchParams){assert.equal(k,'v');assert.match(v,/^[a-z0-9-]+$/);}
   if(u.pathname==='/assets/approved-products.json'){await route.fulfill({contentType:'application/json',body:JSON.stringify(snapshot)});return;}
   if(['/product-lab.html','/avatar-lab.html'].includes(u.pathname)){await route.fulfill({status:308,headers:{Location:u.pathname.slice(0,-5)},body:''});return;}
-  const relative=u.pathname==='/'?'index.html':['/product-lab','/avatar-lab','/stylist'].includes(u.pathname)?u.pathname.slice(1)+'.html':u.pathname.slice(1),file=path.resolve(root,relative);assert.ok(file.startsWith(root+'/'));
-  const section=u.pathname==='/product-lab'?'/product-lab*':u.pathname==='/stylist'?'/stylist*':null,policy=section?headers.split(section+'\n')[1].split('\n\n')[0].match(/Content-Security-Policy: (.*)/)[1]:null;
+  const relative=u.pathname==='/'?'index.html':['/product-lab','/avatar-lab','/stylist','/gltf-proof','/assets/fitting-studio-view'].includes(u.pathname)?u.pathname.slice(1)+'.html':u.pathname.slice(1),file=path.resolve(root,relative);assert.ok(file.startsWith(root+path.sep));
+  const section=u.pathname==='/product-lab'?'/product-lab*':u.pathname==='/stylist'?'/stylist*':u.pathname==='/fitting-studio.html'?'/fitting-studio*':null,policy=section?headers.split(section+'\n')[1].split('\n\n')[0].match(/Content-Security-Policy: (.*)/)[1]:null;
   await route.fulfill({body:fs.readFileSync(file),contentType:mime[path.extname(file)]||'application/octet-stream',...(policy?{headers:{'Content-Security-Policy':policy}}:{})});
  });
 }
@@ -32,7 +32,7 @@ async function prepare(context,snapshot,calls,{lang='ko',cors=true}={}){
  await routeContext(context,snapshot,calls,{cors});await context.addInitScript(pose);const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(origin+'/',{waitUntil:'networkidle'});await page.evaluate(lang=>A1I18n.setLanguage(lang),lang);await page.locator('#shopping-query').fill('남성 검정 슬랙스 5만원 이하');await page.locator('#shopping-search-form button').click();await page.waitForSelector('[data-catalog-id="'+itemId+'"]');return {page,errors};
 }
 async function analyze(page){await page.locator('#ai-photo').setInputFiles(path.join(root,'assets/photos/man.jpg'));await page.locator('#ai-analyze').click();await page.waitForFunction(()=>!document.querySelector('#ai-result').hidden);}
-(async()=>{const publishedBefore=fs.readFileSync(path.join(root,'assets/approved-products.json'),'utf8'),browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});try{
+(async()=>{const publishedBefore=fs.readFileSync(path.join(root,'assets/approved-products.json'),'utf8'),executablePath=process.env.A1_CHROMIUM_PATH||(fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),browser=await chromium.launch({executablePath,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});try{
  for(const[width,lang]of [[820,'ko'],[390,'en']]){
   const snapshot=fixture(),context=await browser.newContext({viewport:{width,height:1180},hasTouch:true,isMobile:true,locale:lang==='ko'?'ko-KR':'en-US'}),calls=[];const {page,errors}=await prepare(context,snapshot,calls,{lang});
   const buy=page.locator('[data-catalog-id="'+itemId+'"] [data-catalog-buy]');assert.equal(await buy.getAttribute('href'),purchase);await buy.evaluate(a=>{a.href='https://www.musinsa.com/products/UNREVIEWED-ITEM';});await buy.click();assert.equal(new URL(page.url()).origin,origin,'tampered known-merchant item URL must not navigate');await buy.evaluate((a,url)=>{a.href=url;},purchase);
@@ -40,9 +40,19 @@ async function analyze(page){await page.locator('#ai-photo').setInputFiles(path.
    // The stylist transfers only a public ID, then the main page requires a new
    // local analysis and separate personal-photo consent. No private handoff.
    await page.goto(origin+'/stylist',{waitUntil:'networkidle'});await page.evaluate(()=>A1I18n.setLanguage('en'));await page.locator('#stylist-message').fill('남성 검정 슬랙스 5만원 이하');await page.locator('#stylist-send').click();await page.waitForSelector('[data-stylist-catalog-fitting="'+itemId+'"]');await page.locator('[data-stylist-catalog-fitting="'+itemId+'"]').click();await page.waitForURL(origin+'/');await page.waitForFunction(id=>window.A1CatalogFitting?.current()?.id===id,itemId);assert.equal(new URL(page.url()).hash,'','public handoff fragment is removed');assert.equal(await page.locator('#ai-result').isVisible(),false);await analyze(page);
-  }else{await analyze(page);await page.locator('[data-catalog-fit="'+itemId+'"]').click();}
+  }else{
+   await page.locator('[data-catalog-fit="'+itemId+'"]').click();
+   const studio=page.locator('#catalog-fitting-studio-link:not([hidden])');await studio.waitFor();
+   assert.equal(await studio.getAttribute('href'),'fitting-studio.html#fit-product='+itemId);
+   const studioPage=await context.newPage();await studioPage.goto(origin+'/'+await studio.getAttribute('href'));
+   await studioPage.waitForFunction(id=>window.A1CatalogFitting?.current()?.id===id,itemId);
+   assert.equal(new URL(studioPage.url()).hash,'');assert.equal(await studioPage.locator('#ai-form').count(),1);
+   assert.equal(await studioPage.locator('[data-selected-catalog-buy="'+itemId+'"]').getAttribute('href'),purchase);
+   assert.equal(await studioPage.locator('#ai-result').isVisible(),false);await studioPage.close();
+   await analyze(page);
+  }
   await page.waitForSelector('#lab-selected-catalog:not([hidden])');await page.waitForFunction(()=>!document.querySelector('#lab-garment-photo-figure').hidden);assert.equal(await page.locator('.lab-card').count(),0,'catalog fitting must not turn on fictional garments');assert.match(await page.locator('#lab-selected-catalog').innerText(),/SYNTHETIC GARMENT/);assert.equal(await page.locator('#lab-local-photo-consent').isChecked(),false,'a reviewed garment image does not grant consent to use the personal image');
-  await page.locator('#lab-local-photo-fit').click();assert.equal(await page.locator('#lab-local-photo-result').isVisible(),false);await page.locator('#lab-local-photo-consent').check();await page.locator('#lab-local-photo-fit').click();await page.waitForSelector('#lab-local-photo-result:not([hidden])');
+  await page.locator('#lab-local-photo-fit').click();assert.equal(await page.locator('#lab-local-photo-result').isVisible(),false);await page.locator('#lab-local-photo-consent').check();await page.locator('#lab-local-photo-fit').click();await page.waitForSelector('#lab-local-photo-result:not([hidden])');assert.equal(await page.locator('#lab-local-photo-result').getAttribute('data-product-id'),itemId);
   const changed=await page.evaluate(()=>{const source=document.querySelector('#ai-clean-canvas'),result=document.querySelector('#lab-local-photo-canvas'),base=document.createElement('canvas');base.width=result.width;base.height=result.height;base.getContext('2d').drawImage(source,0,0,base.width,base.height);const a=base.getContext('2d').getImageData(0,0,base.width,base.height-50).data,b=result.getContext('2d').getImageData(0,0,result.width,result.height-50).data;let n=0;for(let i=0;i<a.length;i+=4)if(Math.abs(a[i]-b[i])+Math.abs(a[i+1]-b[i+1])+Math.abs(a[i+2]-b[i+2])>30)n++;return n;});assert.ok(changed>1000,'authorized raster must actually change fitting pixels, apart from the watermark');
   await page.locator('#lab-local-photo-result').screenshot({path:path.join(out,`catalog-overlay-${lang}-${width}.png`)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);assert.deepEqual(await page.evaluate(()=>Object.keys(sessionStorage)),[]);assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),['a1-fashion:language']);
   if(width===820){await page.locator('#ai-clear').click();assert.equal(await page.evaluate(()=>A1CatalogFitting.current()),null);assert.equal(await page.locator('#lab-selected-catalog').isVisible(),false);assert.equal(await page.locator('#lab-local-photo-canvas').evaluate(c=>c.width*c.height),1,'explicit delete erases all fitting pixels and public selection');await analyze(page);await page.locator('[data-catalog-fit="'+itemId+'"]').click();await page.waitForSelector('#lab-selected-catalog:not([hidden])');assert.equal(await page.locator('#lab-local-photo-consent').isChecked(),false,'a new selection never restores prior personal-photo consent');}
@@ -50,7 +60,7 @@ async function analyze(page){await page.locator('#ai-photo').setInputFiles(path.
   console.log(`SYNTHETIC catalog fitting ${lang} ${width}: reviewed image→separate personal-photo consent→real raster pixels→exact item purchase page; known-merchant guard and tampering checks passed. Merchant response intercepted, never published.`);await context.close();
  }
  // Display permission alone cannot create a fitting capability or import an ID.
- {const context=await browser.newContext(),calls=[];const {page,errors}=await prepare(context,fixture(false),calls);assert.equal(await page.locator('[data-catalog-fit]').count(),0);await page.evaluate(()=>A1CatalogFitting.open('FORGED-ITEM'));assert.match(await page.locator('#catalog-fitting-status').innerText(),/권한|permission/i);assert.equal(calls.filter(r=>r.url.includes('/fitting.jpg')).length,0);assert.deepEqual(errors,[]);await context.close();console.log('Display-only/forged catalog ID: no fitting control, no fitting-image request, permission error visible.');}
+ {const context=await browser.newContext(),calls=[];const {page,errors}=await prepare(context,fixture(false),calls);assert.equal(await page.locator('[data-catalog-fit]').count(),0);await page.evaluate(id=>A1CatalogFitting.open(id),itemId);assert.match(await page.locator('#catalog-fitting-status').innerText(),/권한|permission/i);await page.evaluate(()=>A1CatalogFitting.open('FORGED-ITEM'));assert.match(await page.locator('#catalog-fitting-status').innerText(),/상품 자료|product data/i);assert.equal(calls.filter(r=>r.url.includes('/fitting.jpg')).length,0);assert.deepEqual(errors,[]);await context.close();console.log('Display-only/forged catalog IDs: no fitting-image request and distinct permission/data messages.');}
  // Model the browser blocking a cross-origin image response. Intercepted
  // fulfill responses do not consistently enforce native CORS headers. An image
  // denial must show a local fallback, never trigger a proxy/bypass retry.

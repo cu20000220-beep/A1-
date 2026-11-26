@@ -52,7 +52,7 @@ test('public packaging includes only verified local product copies and fails clo
   assert.deepEqual(runtime.validateManifest(empty,freshFacts,{now:expiry}),[]);
   assert.equal(runtime.fittingProduct(empty,freshFacts,id,{now:expiry}),null);
   assert.equal(fs.existsSync(path.join(root,'dist/assets/catalog-images')),false);
-  assert.equal(fs.readFileSync(path.join(root,'dist/_headers'),'utf8'),fs.readFileSync(path.join(root,'_headers'),'utf8'));
+ assert.equal(fs.readFileSync(path.join(root,'dist/_headers'),'utf8'),fs.readFileSync(path.join(root,'_headers'),'utf8').replace(/\r\n/g,'\n'));
   assert.deepEqual(fs.readFileSync(manifestPath),originalManifest);
   const malformed=JSON.parse(originalManifest);
   malformed.products.find(image=>image.id===id).sha256='0'.repeat(64);
@@ -60,10 +60,15 @@ test('public packaging includes only verified local product copies and fails clo
   assert.notEqual(build(expiry).status,0,'expiry still rejects a corrupted approval record');
   assert.deepEqual(fs.readFileSync(outputManifest),sanitized,'the previous published build is preserved');
  });
- await t.test('wrong dimensions, hash-consistent non-images and symlink substitutions preserve the previous valid build',()=>{
+ await t.test('wrong dimensions, hash-consistent non-images and symlink substitutions preserve the previous valid build',async t=>{
   const before=fs.readFileSync(dest),manifestBytes=fs.readFileSync(manifestPath),source=path.join(dir,id+'.jpg');
   let changed=JSON.parse(manifestBytes);changed.products.find(p=>p.id===id).width++;fs.writeFileSync(manifestPath,JSON.stringify(changed));assert.notEqual(build().status,0);assert.deepEqual(fs.readFileSync(dest),before);
   const invalid=Buffer.from('<html>PRIVATE CONTENT THAT IS NOT A PRODUCT IMAGE</html>');fs.writeFileSync(source,invalid);changed=JSON.parse(manifestBytes);Object.assign(changed.products.find(p=>p.id===id),{sha256:sha(invalid),bytes:invalid.length,width:1,height:1});fs.writeFileSync(manifestPath,JSON.stringify(changed));assert.notEqual(build().status,0);assert.deepEqual(fs.readFileSync(dest),before);
-  fs.writeFileSync(manifestPath,manifestBytes);fs.unlinkSync(source);fs.symlinkSync(path.join(repo,'assets/photos/coat.jpg'),source);assert.notEqual(build().status,0);assert.deepEqual(fs.readFileSync(dest),before);assert.equal(fs.readFileSync(path.join(dir,'unregistered-personal.jpg'),'utf8'),marker);
+  assert.equal(fs.readFileSync(path.join(dir,'unregistered-personal.jpg'),'utf8'),marker);
+  await t.test('file symlink substitution is rejected',t=>{
+   fs.writeFileSync(manifestPath,manifestBytes);fs.unlinkSync(source);
+   try{fs.symlinkSync(path.join(repo,'assets/photos/coat.jpg'),source);}catch(error){if(process.platform!=='win32'||error.code!=='EPERM')throw error;t.skip('Windows account lacks file symlink permission');return;}
+   assert.notEqual(build().status,0);assert.deepEqual(fs.readFileSync(dest),before);
+  });
  });
 });
