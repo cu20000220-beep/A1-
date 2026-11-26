@@ -466,11 +466,14 @@ function startProof() {
         idleObserver.observe(canvas);
       }
       const resize = () => {
-        if (!renderer) return;
+        if (!renderer || token !== generation) return;
         const { width, height } = canvas.getBoundingClientRect();
         const w = Math.max(1, width), h = Math.max(1, height);
         const touchRatio = coarsePointer.matches ? Math.sqrt(touchPixelBudget / (w * h)) : Infinity;
-        renderer.setDrawingBufferSize(w, h, Math.min(window.devicePixelRatio || 1, 1.5, touchRatio));
+        const ratio = Math.min(window.devicePixelRatio || 1, 1.5, touchRatio);
+        // Use integer backing dimensions so the viewport stays the same when
+        // Three.js switches back from its shadow render target.
+        renderer.setDrawingBufferSize(Math.max(1, Math.floor(w * ratio)), Math.max(1, Math.floor(h * ratio)), 1);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         render();

@@ -321,7 +321,7 @@
    details.append(node('p',I.t('앱에서 접속이 제한되면 Safari에서 열기')),address,copy,copyStatus);
    content.append(details);return article;
   }
-  async function decorateImages(data,token,refresh){
+  async function decorateImages(data,token,refresh,showSummary){
    target.dataset.imageState='loading';
    const markUnavailable=()=>{for(const note of target.querySelectorAll('[data-discovery-fit-state="waiting"]'))setFitState(note,'rights-unconfirmed');};
    try{
@@ -362,11 +362,11 @@
      count++;
     }
     target.dataset.imageState='ready';target.dataset.imageCount=String(count);
-    if(!count)I.setText(imageStatus,'2D 피팅 이용 권한이 확인된 상품 이미지가 없습니다.');
+    if(!count&&showSummary)I.setText(imageStatus,'2D 피팅 이용 권한이 확인된 상품 이미지가 없습니다.');
    }catch(error){
     if(disposed||token!==revision)return;
     target.dataset.imageState='error';markUnavailable();
-    I.setText(imageStatus,error.message==='product_image_authorization_expired'?'2D 피팅 이용 권한이 확인된 상품 이미지가 없습니다.':'상품 이미지 자료를 준비하지 못했습니다. 상품 정보와 판매처 링크는 계속 사용할 수 있습니다.');
+    if(showSummary)I.setText(imageStatus,error.message==='product_image_authorization_expired'?'2D 피팅 이용 권한이 확인된 상품 이미지가 없습니다.':'상품 이미지 자료를 준비하지 못했습니다. 상품 정보와 판매처 링크는 계속 사용할 수 있습니다.');
    }
   }
   async function search(conditions,{profile=null,refresh=false,excludeProductUrls=[]}={}){
@@ -420,7 +420,7 @@
     }
     renderGroup(unknown,'가격 미확인 · 예산 충족 여부 미확정',liveUnconfirmed,true);
     renderGroup(references,'판매 여부 미확인 · 공식 상품 페이지 참고',referenceRows,false);
-    if(showImages&&(candidates.length||budgetUnconfirmed.length))decorateImages(data,token,refresh);
+    if(showImages&&(candidates.length||budgetUnconfirmed.length))decorateImages(data,token,refresh,!approved.length);
     return true;
    }catch{if(disposed||token!==revision)return false;target.dataset.state='error';grid.replaceChildren();unknown.replaceChildren();references.replaceChildren();I.setText(status,'상품 정보를 불러오지 못했습니다. 다시 시도하거나 판매처 검색을 이용하세요.');retry.hidden=false;return false;}
   }
