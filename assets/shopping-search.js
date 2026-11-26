@@ -103,7 +103,7 @@
  '소재 {material}':'Material {material}'
  });
  let conditions=null,metrics=null,bodyOriginalQuery=null,catalog={version:1,generatedAt:null,products:[]},catalogState='loading',matches=[],sponsored=[],unavailable=[],comparison=new Set(),offerSelection=null,expiryTimer,disposed=false,controller;
- let invalidQuery=false, submittedQuery='', discoveryUpdate=Promise.resolve(false);
+ let invalidQuery=false, submittedQuery='', discoveryUpdate=Promise.resolve(false), catalogUpdate=Promise.resolve();
  const node=(tag,text)=>{const n=document.createElement(tag);if(text)n.textContent=text;return n;},tx=(s,t)=>I.setText($(s),t);
 
  const discoveryTarget=$('#shopping-discovery');
@@ -115,6 +115,7 @@
  const activeConditions=()=>conditions||defaultConditions();
  const conversation=window.A1ShoppingConversation?.create($('#shopping-conversation'),{
   getConditions:activeConditions,getProfile:()=>proportionControl?.current(),
+  resultId:result=>result.approved?'shopping-products':'shopping-discovery',
   async search(filters){
    if(disposed)return {state:'cleared',count:0};
    conditions=filters;invalidQuery=false;bodyOriginalQuery=null;
@@ -128,12 +129,13 @@
    $('#shopping-query-status').textContent='';
    $('#shopping-style-advice').replaceChildren();
    render();renderCatalog();
+   await catalogUpdate;
    await discoveryUpdate;
-   if(destination()!=='KR')return {
-    state:catalogState==='ready'?'ready':catalogState,count:matches.length,unconfirmed:0,
-    products:matches.slice(0,3).map(row=>({name:row.product.name,proportionReasons:row.proportionReasons||[]}))
-   };
-   return discoveryView.summary();
+   if(disposed||conditions!==filters)return {state:'cleared',count:0};
+   const observed=destination()==='KR'?discoveryView.summary():{state:catalogState,count:0,unconfirmed:0};
+   if(!matches.length)return observed;
+   const products=matches.slice(0,3).map(row=>({name:row.product.name,proportionReasons:row.proportionReasons||[]}));
+   return {...observed,state:'ready',approved:true,count:matches.length+(observed.count||0),products:[...products,...(observed.products||[])].slice(0,3)};
   }
  });
  function readConditions(query){
@@ -153,7 +155,8 @@
  }
  function renderDiscovery(){
   if(disposed||invalidQuery||destination()!=='KR'){discoveryView.clear();discoveryUpdate=Promise.resolve(false);return;}
-  discoveryUpdate=discoveryView.search(activeConditions(),{profile:proportionControl?.current()});
+  const excludeProductUrls=new Set(matches.map(row=>new URL(row.product.productUrl).href));
+  discoveryUpdate=discoveryView.search(activeConditions(),{profile:proportionControl?.current(),excludeProductUrls});
  }
  const labels={within_budget:'예산 범위',style_match:'스타일 일치',color_match:'색상 일치',occasion_match:'용도 일치',listed_size_match:'사이즈 표기 일치',collection_match:'컬렉션 일치',fit_match:'판매처 표기 핏 일치',season_match:'판매처 표기 계절 일치',photo_ratio_reference:'사진상 비율 참고 규칙'};
  const measurements=()=>Object.fromEntries(['chest','waist','hips','inseam'].map(k=>[k,$('#shopping-measure-'+k).value]));
@@ -233,7 +236,10 @@
   return article;
  }
  function renderCatalog(){
+  renderApprovedCatalog();
   renderDiscovery();
+ }
+ function renderApprovedCatalog(){
   for(const id of ['shopping-products','shopping-sponsored','shopping-unavailable','shopping-price-unconfirmed'])$('#'+id)?.replaceChildren();$('#shopping-catalog-retry').hidden=catalogState!=='error';
   if(catalogState!=='ready'||invalidQuery){clearProductUI();return;}
   const now=Date.now();let registered;
@@ -258,10 +264,12 @@
   renderComparison();renderOfferComparison();
  }
  function scheduleExpiry(){clearTimeout(expiryTimer);const now=Date.now(),next=Math.min(...catalog.products.flatMap(p=>[p.expiresAt,p.checkedAt+86400000]).filter(t=>t>now));if(Number.isFinite(next))expiryTimer=setTimeout(()=>{if(!disposed){$('#shopping-style-advice').replaceChildren();renderCatalog();scheduleExpiry();}},Math.max(1,Math.min(2147483647,next-now+1)));}
- async function loadCatalog(){catalogState='loading';renderCatalog();controller?.abort();controller=new AbortController();const active=controller,timer=setTimeout(()=>active.abort(),10000);
+ function loadCatalog(){catalogState='loading';renderCatalog();controller?.abort();controller=new AbortController();const active=controller,timer=setTimeout(()=>active.abort(),10000);
+  catalogUpdate=(async()=>{
   try{const r=await fetch('/assets/approved-products.json',{credentials:'omit',cache:'no-store',redirect:'error',signal:active.signal});if(!r.ok||!/application\/json/i.test(r.headers.get('content-type')||''))throw Error('catalog_response');const text=await r.text();if(text.length>1000000)throw Error('catalog_size');const data=JSON.parse(text);C.validateSnapshot(data);if(disposed||controller!==active)return;catalog=data;catalogState='ready';
    scheduleExpiry();
   }catch{if(disposed||controller!==active)return;catalog={version:1,generatedAt:null,products:[]};catalogState='error';clearProductUI();}finally{clearTimeout(timer);if(!disposed&&controller===active)renderCatalog();}
+  })();
  }
  $('#shopping-catalog-retry').addEventListener('click',loadCatalog);
  $('#shopping-product-filters').addEventListener('input',()=>search(submittedQuery));

@@ -39,7 +39,7 @@ jobs:
           tests/preview-isolation.cjs
           tests/member-write-entitlements.cjs
           tests/free-beta.cjs tests/free-beta-policy.cjs tests/preview-experience.cjs tests/product-matching.cjs tests/avatar-geometry.cjs tests/human-head.cjs tests/lab-loader.cjs tests/shopping-query.cjs tests/product-catalog-import.cjs tests/source-adapters.cjs tests/offer-comparison.cjs tests/catalog-public-headers.cjs
-          tests/fullbody-asset-policy.cjs tests/gltf-package-inspector.cjs
+          tests/catalog-fitting.cjs tests/fullbody-asset-policy.cjs tests/gltf-package-inspector.cjs
           tests/fullbody-intake-cli.cjs
           tests/gltf-proof.cjs tests/gltf-proof-export.cjs
           tests/natural-avatar-asset.cjs tests/natural-proportion-fit.cjs

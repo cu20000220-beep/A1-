@@ -184,12 +184,59 @@ async function showFilters(page) {
   });
 }
 
-async function verify(browser, width, height, lang) {
+function approvedConversationFixture(domesticUrl) {
+  const now = Date.now();
+  const imageUrl = 'https://images.retailer.example/private-conversation-fixture.jpg';
+  const base = { approvalId: 'PRIVATE-CONVERSATION', brand: 'Private test brand', retailerName: 'Private fixture seller',
+    category: 'bottoms', type: 'slacks', color: 'black', gender: 'men', stock: 'in_stock', checkedAt: now - 1000,
+    expiresAt: now + 3600000, sizes: ['M'], sizeChart: null, styles: [], occasions: [], tags: [], sourceVerified: true,
+    imageUrl, sourceUrl: 'https://retailer.example/private-catalog' };
+  return { version: 1, generatedAt: now, products: [
+    { ...base, id: 'PRIVATE-DOMESTIC', name: '승인 흐름 시험 국내 슬랙스', productUrl: domesticUrl,
+      currency: 'KRW', price: 39900, shippingCountries: ['KR'] },
+    { ...base, id: 'PRIVATE-GB', name: '승인 흐름 시험 해외 슬랙스', productUrl: 'https://retailer.example/products/private-gb',
+      currency: 'GBP', price: 32, shippingCountries: ['GB'] }
+  ] };
+}
+
+async function verifyApprovedConversation(page, domesticUrl) {
+  const replies = page.locator('#shopping-conversation-replies article');
+  async function ask(question, expected) {
+    await page.locator('#shopping-conversation-input').fill(question);
+    await page.locator('#shopping-conversation-send').click();
+    const reply = replies.last();
+    await reply.getByText(expected, { exact: true }).waitFor();
+    return reply;
+  }
+  let reply = await ask('여성 네이비 가디건', '판매 여부 미확인 · 공식 상품 페이지 1개를 참고할 수 있습니다.');
+  assert.equal(await reply.locator('a').getAttribute('href'), '#shopping-discovery');
+
+  reply = await ask('남성 검정 슬랙스 5만원 이하', '승인 흐름 시험 국내 슬랙스');
+  assert.match(await reply.innerText(), /조건에 맞는 추천 후보 1개/);
+  assert.equal(await reply.locator('a').getAttribute('href'), '#shopping-products');
+  const approved = page.locator('#shopping-products [data-catalog-id="PRIVATE-DOMESTIC"]');
+  assert.equal(await approved.locator('[data-catalog-buy]').getAttribute('href'), domesticUrl);
+  assert.equal(await page.locator('#shopping-discovery [data-discovery-id="musinsa-1168906"]').count(), 0);
+  assert.equal(await page.locator('#shopping-discovery [data-discovery-references] [data-discovery-id="musinsa-4644434"]').count(), 1);
+
+  await showFilters(page);
+  await page.locator('#shopping-budget').fill('');
+  await page.locator('#shopping-currency').selectOption('GBP');
+  await page.locator('#shopping-destination').selectOption('GB');
+  reply = await ask('남성 검정 슬랙스', '승인 흐름 시험 해외 슬랙스');
+  assert.equal(await reply.locator('a').getAttribute('href'), '#shopping-products');
+  assert.equal(await page.locator('#shopping-discovery').isVisible(), false);
+  assert.equal(await page.locator('#shopping-products [data-catalog-id="PRIVATE-DOMESTIC"]').count(), 0);
+  assert.equal(await page.locator('#shopping-products [data-catalog-id="PRIVATE-GB"] [data-catalog-buy]').getAttribute('href'), 'https://retailer.example/products/private-gb');
+}
+
+async function verify(browser, width, height, lang, useApprovedFixture = false) {
   const context = await browser.newContext({ viewport: { width, height },
     hasTouch: true, isMobile: true, locale: lang === 'ko' ? 'ko-KR' : 'en-US' });
   const requests = [], pageErrors = [], routeErrors = [];
   const chosenId = 'musinsa-1168906';
   const chosenUrl = observations.products.find(p => p.id === chosenId).productUrl;
+  const catalog = useApprovedFixture ? approvedConversationFixture(chosenUrl) : null;
   try {
     await context.route('**/*', async route => {
       const request = route.request(), url = new URL(request.url());
@@ -197,6 +244,11 @@ async function verify(browser, width, height, lang) {
         assert.equal(request.method(), 'GET');
         assert.equal(request.postData(), null);
         if (url.origin !== origin) {
+          if (catalog && url.href === catalog.products[0].imageUrl && !request.isNavigationRequest()) {
+            assert.equal(request.headers().referer, undefined);
+            await route.fulfill({ contentType: 'image/jpeg', body: fs.readFileSync(path.join(root, 'assets/photos/coat.jpg')) });
+            return;
+          }
           // Metadata ranking and links can work even if a seller image is unavailable.
           // Never contact these hosts in the automated browser test.
           if (!request.isNavigationRequest() && approvedImageUrls.has(url.href)) {
@@ -216,6 +268,10 @@ async function verify(browser, width, height, lang) {
           assert.match(value,/^[a-z0-9-]+$/);
         }
         requests.push(url.pathname);
+        if (catalog && url.pathname === '/assets/approved-products.json') {
+          await route.fulfill({ contentType: 'application/json', json: catalog });
+          return;
+        }
         if (await pagesRedirect(route, url)) return;
         const file = path.resolve(root, pagesPath(url));
         assert.ok(file.startsWith(root + path.sep));
@@ -244,6 +300,13 @@ async function verify(browser, width, height, lang) {
     assert.equal(await page.locator('#main-fitting-studio #ai-photo').count(),1);
     assert.equal(await page.locator('#shopping-search').isVisible(), true);
     assert.equal(await page.locator('#avatar-root').count(), 0);
+    if (catalog) {
+      await verifyApprovedConversation(page, chosenUrl);
+      assert.deepEqual(pageErrors, []);
+      assert.deepEqual(routeErrors, []);
+      console.log('Private approved-catalog fixture: domestic and international chat matches, exact links, and historical-reference deduplication passed.');
+      return;
+    }
     if(lang==='ko'){
       await search(page,'여름 티셔츠');
       const summer=page.locator('#shopping-discovery [data-discovery-id]');
@@ -376,6 +439,7 @@ async function verify(browser, width, height, lang) {
     for (const [width,height] of (one ? [[390,844]] : [[820,1180],[1180,820],[390,844]])) {
       for (const lang of (one ? ['ko'] : ['ko','en'])) await verify(browser, width, height, lang);
     }
+    await verify(browser, 820, 1180, 'ko', true);
   } finally {
     await browser.close();
   }

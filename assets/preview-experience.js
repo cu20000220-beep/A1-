@@ -79,6 +79,7 @@
       ||a.hasAttribute('data-stylist-catalog-buy')&&a.closest('#stylist-chat')
       ||a.hasAttribute('data-selected-catalog-buy')&&a.closest('#lab-selected-catalog')
       ||a.hasAttribute('data-result-catalog-buy')&&a.closest('#lab-local-photo-result')
+      ||a.matches('[data-discovery-approved-buy],[data-discovery-approved-source]')&&a.closest('#avatar-recommendation-results [data-approved-recommendation]')&&window.A1ProductCatalog?.safeUrl(a.href)
       ||a.matches('[data-lab-catalog-buy],[data-lab-catalog-source]')&&a.closest('#lab-root .lab-approved-card')
       ||a.matches('[data-discovery-buy],[data-discovery-source]')&&a.closest('#shopping-discovery,[data-stylist-discovery],#lab-observed-products,#avatar-recommendation-results')&&window.A1ProductDiscovery?.safeProductUrl(a.href))return;
     const controlled=a.hasAttribute('data-public-retailer')||a.closest('#retailer-results,#preview-style-results,.stylist-search-links');

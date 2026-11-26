@@ -30,12 +30,23 @@ export function lightNovaStage(renderer, scene) {
   scene.add(floor);
 }
 
-export function createNovaIdle(model) {
+export function createNovaIdle(model, stage) {
   const spine = model.getObjectByName('Spine');
   const head = model.getObjectByName('Head');
   const spinePose = new THREE.Quaternion();
   const headPose = new THREE.Quaternion();
-  return (seconds, draw) => {
+  const stagePose = new THREE.Quaternion();
+  return (seconds, draw, fitted) => {
+    if (fitted) {
+      // Body and clothing are baked in the adjusted proportions. Moving the
+      // common parent keeps them in contact with the original head and hair.
+      stagePose.copy(stage.quaternion);
+      stage.rotateY(.016 * Math.sin(seconds * .76));
+      stage.rotateZ(.006 * Math.sin(seconds * 1.23));
+      try { draw(); }
+      finally { stage.quaternion.copy(stagePose); stage.updateMatrixWorld(true); }
+      return;
+    }
     spinePose.copy(spine.quaternion);
     if (head?.isBone) headPose.copy(head.quaternion);
     spine.rotateX(.013 * Math.sin(seconds * 1.55));

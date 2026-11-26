@@ -201,8 +201,9 @@
         }
       }
       if (count || unconfirmed || references) {
+        const targetId = typeof resultId === 'function' ? resultId(result) : resultId;
         const link = element('a', '추천 후보 보기');
-        link.href = '#' + resultId;
+        link.href = '#' + targetId;
         panel.append(link);
       }
       return true;

@@ -54,6 +54,9 @@ function policyFor(relative) {
 async function prepare(browser, profile, { delayedPath } = {}) {
   const context = await browser.newContext({ viewport: { width: profile.width, height: profile.height },
     hasTouch: profile.touch, isMobile: profile.touch, deviceScaleFactor: 1,
+    // Frame hashes compare the same geometry before and after recovery.
+    // The studio browser suite exercises motion separately.
+    reducedMotion: 'reduce',
     locale: profile.lang === 'ko' ? 'ko-KR' : 'en-US' });
   const calls = [], errors = [], violations = [], merchantNavigations = [];
   let allowMerchant = null, releaseDelay, noticeDelay;

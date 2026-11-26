@@ -30,13 +30,35 @@ function instrumentPage({realPose}){
  const nativeFetch=window.fetch;window.fetch=(input,options={})=>{const record={path:new URL(typeof input==='string'?input:input.url,location.href).pathname,method:options.method||'GET',credentials:options.credentials,cache:options.cache,redirect:options.redirect,mode:options.mode};__betaFetches.push(record);return nativeFetch(input,options).then(response=>{if(record.path==='/api/policy')__betaPolicyResponses.push({credentials:options.credentials,status:response.status,type:response.headers.get('Content-Type')});return response;});};
  if(!realPose)window.Pose=class{setOptions(){}onResults(fn){this.result=fn;}async initialize(){}async reset(){}async close(){}async send(){const p=Array.from({length:33},()=>({x:.5,y:.5,visibility:.99}));for(const[index,[x,y]]of Object.entries({11:[.3,.2],12:[.7,.2],23:[.36,.45],24:[.64,.45],25:[.36,.65],26:[.64,.65],27:[.36,.9],28:[.64,.9]}))p[index]={x,y,visibility:.99};this.result({poseLandmarks:p});}};
 }
-function staticHeaders(pathname){
+function staticHeaders(pathname,text=fs.readFileSync(path.join(dist,'_headers'),'utf8')){
  const headers={};let active=false;
- for(const line of fs.readFileSync(path.join(dist,'_headers'),'utf8').split('\n')){
+ for(const line of text.split(/\r?\n/)){
   if(line.startsWith('/')){const pattern=line.trim();active=pattern.endsWith('*')?pathname.startsWith(pattern.slice(0,-1)):pathname===pattern;continue;}
   const match=active&&line.match(/^\s+([^:]+):\s*(.*)$/);if(match)headers[match[1]]=match[2];
  }
  return headers;
+}
+function privateApprovedFixture(){
+ const {compileCatalog}=require('../scripts/lib/product-catalog.cjs');
+ const {PNG}=require('pngjs');
+ const now=Date.now(),products=[],sources=[],rasters=new Map();
+ for(const [market,currency,price,fit] of [['kr','KRW',49000,'wide'],['us','USD',49,'straight']]){
+  const id='PRIVATE-APPROVED-'+market.toUpperCase(),seller='Private retailer fixture '+market.toUpperCase(),domain=market+'.retailer.invalid';
+  const sourceUrl='https://'+domain+'/reviewed-feed',purchaseUrl='https://'+domain+'/products/test-slacks';
+  const imageUrl='https://images.retailer.invalid/'+market+'-slacks.png';
+  sources.push({id:'source-'+market,seller,domains:[domain],imageDomains:['images.retailer.invalid'],rightsConfirmed:true,displayApproved:true,fittingUseApproved:true,storageApproved:true,storageEvidenceRef:'Isolated synthetic storage fixture only',validUntil:new Date(now+3600000).toISOString(),evidenceRef:'Isolated synthetic browser fixture only',sourceUrl,retentionHours:1});
+  products.push({id,approvalId:'source-'+market,name:'PRIVATE TEST '+market.toUpperCase()+' SLACKS',brand:'Private test',retailer:seller,category:'bottoms',type:'slacks',fit,gender:'unisex',color:'black',styles:[],occasions:[],price,currency,sizes:['M'],sizeChart:null,imageUrl,fittingImageUrl:imageUrl,sourceUrl,purchaseUrl,permissionChecked:true,stock:'in_stock',lastChecked:new Date(now-1000).toISOString(),tags:[],material:'Cotton test label',shippingCountries:['KR','US']});
+  // A transparent striped trousers raster checks trim, alpha and aspects. It
+  // exists only in a route interception, never in a build or seller feed.
+  const png=new PNG({width:120,height:160});
+  for(let y=16;y<150;y++)for(let x=20;x<100;x++)if(y<56||x<55||x>=65){
+   const i=(y*png.width+x)*4,value=Math.floor(x/7)%2?65:125;
+   png.data[i]=value;png.data[i+1]=value;png.data[i+2]=value+25;png.data[i+3]=255;
+  }
+  rasters.set(imageUrl,PNG.sync.write(png));
+ }
+ const {snapshot}=compileCatalog({version:1,products},{version:1,sources},{now,inspect:true});
+ return {snapshot,rasters};
 }
 function environment(flag,stats){
  const env={A1_FREE_BETA_MODE:flag,AUTH_ISSUER:'https://private-auth.invalid/',AUTH_AUDIENCE:'private-browser-test',AUTH_JWKS_URL:'https://private-auth.invalid/keys'};
@@ -60,19 +82,28 @@ function privateGarmentFixture(){
    imageUrl,delivery:'local-copy',sha256,bytes,width,height,imageKind:'unverified',checkedAt:now}]
  }};
 }
-async function prepare(browser,handlers,{width=820,height=1180,touch=true,lang='ko',entry='/',host=origin,policyMode='true',serverFlag=policyMode==='false'?'false':'true',tamper=false,late=false,realPose=false,imageFixture=null}={}){
- const context=await browser.newContext({viewport:{width,height},hasTouch:touch,isMobile:touch,locale:lang==='ko'?'ko-KR':'en-US',serviceWorkers:'block'});
+async function prepare(browser,handlers,{width=820,height=1180,touch=true,dpr=1,lang='ko',entry='/',host=origin,policyMode='true',serverFlag=policyMode==='false'?'false':'true',tamper=false,late=false,realPose=false,imageFixture=null,approvedFixture=null}={}){
+ const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:dpr,hasTouch:touch,isMobile:touch,locale:lang==='ko'?'ko-KR':'en-US',reducedMotion:'reduce',serviceWorkers:'block'});
  const calls=[],errors=[],routeErrors=[],violations=[],apiResponses=[],stats={databaseCalls:0,forbiddenBindingReads:0};
  const env=environment(serverFlag,stats),privateEnv=environment('false',stats);privateEnv.A1_FREE_BETA_MODE=serverFlag;
  let release,notice;const gate=new Promise(r=>release=r),seen=new Promise(r=>notice=r);
  if(tamper)await context.addCookies([{name:'A1_FREE_BETA_MODE',value:'true',url:host},{name:'paid',value:'true',url:host},{name:'plan',value:'PREMIUM',url:host}]);
  const imageManifest=imageFixture?.manifest||JSON.parse(fs.readFileSync(path.join(dist,imageManifestPath),'utf8'));
  const allowedImages=new Set(imageManifest.products.map(row=>row.imageUrl));
- let garmentDeliveryBlocked=false,garmentPermissionRevoked=false;
+ const approvedHeaders=approvedFixture&&require('../scripts/lib/catalog-public-headers.cjs').catalogPublicHeaders(fs.readFileSync(path.join(dist,'_headers'),'utf8'),approvedFixture.snapshot.products);
+ let garmentDeliveryBlocked=false,garmentPermissionRevoked=false,permittedPurchase=null;
  await context.route('**/*',async route=>{
   const request=route.request(),url=new URL(request.url());calls.push({url:url.href,method:request.method(),postData:request.postData(),navigation:request.isNavigationRequest()});
   try{
    if(url.origin!==host){
+    if(approvedFixture&&url.href===permittedPurchase&&request.isNavigationRequest()){
+     assert.equal(request.method(),'GET');assert.equal(request.postData(),null);assert.ok(!request.headers().referer);
+     await route.fulfill({contentType:'text/html',body:'<!doctype html><title>Private intercepted exact product navigation</title>'});return;
+    }
+    if(approvedFixture?.rasters.has(url.href)){
+     assert.equal(request.method(),'GET');assert.equal(request.isNavigationRequest(),false);assert.equal(request.postData(),null);assert.ok(!request.headers().referer);
+     await route.fulfill({contentType:'image/png',body:approvedFixture.rasters.get(url.href),headers:{'Access-Control-Allow-Origin':host,'Cache-Control':'no-store'}});return;
+    }
     assert.equal(request.method(),'GET');assert.equal(request.isNavigationRequest(),false);assert.ok(allowedImages.has(url.href),'only exact manifest garment references can be privately intercepted');
     assert.equal(request.postData(),null);assert.ok(!request.headers().referer,'private garment raster has no referrer');
     await route.fulfill({contentType:'image/jpeg',body:fs.readFileSync(path.join(dist,'assets/photos/coat.jpg')),headers:{'Access-Control-Allow-Origin':host,'Cache-Control':'no-store'}});return;
@@ -97,6 +128,7 @@ async function prepare(browser,handlers,{width=820,height=1180,touch=true,lang='
     await route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:text});return;
    }
    assert.equal(request.method(),'GET');for(const[key,value]of url.searchParams){assert.equal(key,'v');assert.match(value,/^[a-z0-9-]+$/i);}
+   if(approvedFixture&&url.pathname==='/assets/approved-products.json'){assert.equal(url.search,'');await route.fulfill({json:approvedFixture.snapshot});return;}
    if(imageFixture&&url.pathname==='/'+observationsPath){assert.equal(url.search,'');await route.fulfill({json:imageFixture.observations});return;}
    if(imageFixture&&url.pathname==='/'+imageManifestPath){
     assert.equal(url.search,'');await route.fulfill({json:garmentPermissionRevoked?{version:1,authorization:null,products:[]}:imageFixture.manifest});return;
@@ -111,14 +143,14 @@ async function prepare(browser,handlers,{width=820,height=1180,touch=true,lang='
    const htmlRoute=/^\/(?:stylist|product-lab|fitting-studio|gltf-proof|global|account|assets\/fitting-studio-view)$/.test(url.pathname);
    const relative=url.pathname==='/'?'index.html':url.pathname.slice(1)+(htmlRoute?'.html':''),file=path.resolve(dist,relative);
    assert.ok(file.startsWith(dist+path.sep));if(relative==='favicon.ico'&&!fs.existsSync(file)){await route.fulfill({status:204,body:''});return;}
-   assert.ok(fs.existsSync(file),'built static resource exists: '+relative);await route.fulfill({contentType:mime[path.extname(file)]||'application/octet-stream',body:fs.readFileSync(file),headers:staticHeaders(url.pathname)});
+   assert.ok(fs.existsSync(file),'built static resource exists: '+relative);await route.fulfill({contentType:mime[path.extname(file)]||'application/octet-stream',body:fs.readFileSync(file),headers:staticHeaders(url.pathname,approvedHeaders||undefined)});
   }catch(error){routeErrors.push(error.message);await route.abort('blockedbyclient').catch(()=>{});}
  });
  await context.addInitScript(instrumentPage,{realPose});
  if(tamper)await context.addInitScript(()=>{window.A1_FREE_BETA_MODE=true;window.freeBetaMode=true;localStorage.setItem('A1_FREE_BETA_MODE','true');localStorage.setItem('plan','PREMIUM');});
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.exposeFunction('recordBetaCsp',v=>violations.push(v));await page.addInitScript(()=>document.addEventListener('securitypolicyviolation',e=>window.recordBetaCsp(e.effectiveDirective)));
  const trial={page,context,calls,errors,routeErrors,violations,apiResponses,stats,seen,release,host,
-  blockGarmentDelivery(){garmentDeliveryBlocked=true;},revokeGarmentPermission(){garmentPermissionRevoked=true;}};trials.push(trial);
+  blockGarmentDelivery(){garmentDeliveryBlocked=true;},revokeGarmentPermission(){garmentPermissionRevoked=true;},permitPurchase(url){permittedPurchase=url;}};trials.push(trial);
  await page.goto(host+entry,{waitUntil:'domcontentloaded'});
  if(host===origin&&!late&&policyMode!=='timeout')await page.waitForFunction(()=>__betaPolicyResponses.some(row=>row.credentials==='omit'));
  await page.evaluate(value=>A1I18n.setLanguage(value),lang);
@@ -410,6 +442,74 @@ async function verifyRecommendedProduct2D(trial,imageFixture){
  assertEmbeddedTransport(trial,initialUrl);
  networkClean(trial);
 }
+async function verifyApprovedJourney(trial,fixture){
+ const {page}=trial,embedded=await startEmbeddedPhoto(trial),{studio,photo,avatar,initialUrl}=embedded;
+ const results=avatar.locator('#avatar-recommendation-results');
+ const kr=fixture.snapshot.products.find(product=>product.currency==='KRW');
+ const us=fixture.snapshot.products.find(product=>product.currency==='USD');
+ const cards=results.locator('[data-approved-recommendation]');
+ const card=product=>cards.filter({has:page.locator('[data-discovery-approved-buy="'+product.id+'"]')});
+ const input=avatar.locator('#avatar-conversation-input'),send=avatar.locator('#avatar-conversation-send');
+ const apiBefore=trial.calls.filter(call=>new URL(call.url).pathname.startsWith('/api/')).length;
+ await input.fill('검정 슬랙스');await send.click();
+ await card(kr).waitFor();await card(us).waitFor();
+ assert.equal(await cards.count(),2);
+ for(const product of [kr,us]){
+  assert.equal(await card(product).getAttribute('data-approved-recommendation'),product.id);
+  assert.equal(await card(product).locator('[data-discovery-approved-buy]').getAttribute('href'),product.productUrl);
+  assert.equal(await card(product).locator('[data-discovery-approved-source]').getAttribute('href'),product.sourceUrl);
+  assert.match(await card(product).innerText(),new RegExp(product.currency));
+  assert.equal(await card(product).locator('[data-avatar-sample]').count(),0);
+ }
+ const measurements=avatar.locator('#avatar-proportion-input');
+ await measurements.locator('summary').click();
+ await measurements.locator('[data-proportion-field=shoulderWidthCm]').fill('53');
+ await measurements.locator('[data-proportion-field=hipWidthCm]').fill('39');
+ await measurements.locator('#avatar-proportion-apply').click();
+ await page.waitForFunction(id=>document.querySelector('#avatar-recommendation-results [data-approved-recommendation]')?.dataset.approvedRecommendation===id,kr.id);
+ assert.match(await card(kr).innerText(),/어깨.*골반|와이드핏/);
+
+ await measurements.locator('#avatar-proportion-reset').click();
+ await measurements.locator('[data-proportion-field=torsoCm]').fill('44');
+ await measurements.locator('[data-proportion-field=legCm]').fill('89');
+ await measurements.locator('#avatar-proportion-apply').click();
+ await page.waitForFunction(id=>document.querySelector('#avatar-recommendation-results [data-approved-recommendation]')?.dataset.approvedRecommendation===id,us.id);
+ assert.match(await card(us).innerText(),/다리.*몸통|일자 실루엣/);
+
+ const reply=avatar.locator('#avatar-conversation-replies .shopping-conversation-reply').last();
+ await input.fill('슬랙스를 보여줘');await send.click();
+ await reply.getByText(us.name,{exact:true}).waitFor();
+ assert.equal(trial.calls.filter(call=>new URL(call.url).pathname.startsWith('/api/')).length,apiBefore,'on-device dialogue does not call an API');
+ const action=card(us).locator('[data-discovery-approved-fit="'+us.id+'"]');
+ const lab=studio.locator('#main-fitting-lab #lab-local-photo-fitting'),result=lab.locator('#lab-local-photo-result');
+ const originalPhoto=await photo.locator('#ai-clean-canvas').evaluate(canvas=>canvas.toDataURL());
+ await action.click();
+ await lab.locator('#lab-selected-catalog[data-image-state="ready"]').waitFor();
+ assert.equal(await lab.locator('#lab-retailer-original-image').evaluate(image=>image.currentSrc),us.imageUrl);
+ const trim=await lab.locator('#lab-garment-photo-preview').evaluate(canvas=>{
+  const ctx=canvas.getContext('2d');
+  return {size:[canvas.width,canvas.height],stripes:[[0,0],[4,0],[37,70]].map(([x,y])=>Array.from(ctx.getImageData(x,y,1,1).data))};
+ });
+ assert.deepEqual(trim,{size:[80,134],stripes:[[125,125,150,255],[65,65,90,255],[0,0,0,0]]},'trimming preserves aspect, stripe colors and transparent pixels');
+ const selected=await page.evaluate(()=>A1CatalogFitting.current());
+ assert.equal(selected.id,us.id);assert.equal(selected.productUrl,us.productUrl);
+ assert.equal(await lab.locator('#lab-local-photo-consent').isChecked(),false);
+ assert.equal(await result.isVisible(),false);
+ await lab.locator('#lab-local-photo-consent').check();
+ await lab.locator('#lab-local-photo-fit').click();await result.waitFor();
+ assert.equal(await result.getAttribute('data-product-id'),us.id);
+ assert.notEqual(await lab.locator('#lab-local-photo-canvas').evaluate(canvas=>canvas.toDataURL()),originalPhoto);
+ assert.equal(await photo.locator('#ai-clean-canvas').evaluate(canvas=>canvas.toDataURL()),originalPhoto);
+ assert.equal(await page.evaluate(()=>__betaSelections),1);
+ const buy=result.locator('[data-result-catalog-buy="'+us.id+'"]');
+ assert.equal(await buy.getAttribute('href'),us.productUrl);
+ await buy.evaluate(link=>link.click());
+ assertEmbeddedTransport(trial,initialUrl);
+ await result.screenshot({path:path.join(out,'PRIVATE-approved-original-photo-fitting.png')});
+ trial.permitPurchase(us.productUrl);
+ await buy.click();await page.waitForURL(us.productUrl);
+ networkClean(trial);
+}
 (async()=>{
  for(const file of sources)assert.ok(fs.existsSync(path.join(root,file)),'final source exists: '+file);
  for(const file of sources.filter(file=>file!==imageManifestPath&&!file.startsWith('functions/')&&!file.startsWith('server/')&&!file.startsWith('scripts/')&&!file.startsWith('catalog/')))assert.equal(sha(fs.readFileSync(path.join(dist,file))),sha(fs.readFileSync(path.join(root,file))),'run build-site before testing: '+file);
@@ -418,6 +518,7 @@ async function verifyRecommendedProduct2D(trial,imageFixture){
  if(expired)assert.deepEqual(JSON.parse(builtImages),{version:1,authorization:null,products:[]},'run build-site with the current clock to remove expired merchant images');
  else assert.deepEqual(builtImages,sourceImages,'run build-site before testing: '+imageManifestPath);
  const imageFixture=privateGarmentFixture();
+ const approvedFixture=privateApprovedFixture();
  const before=Object.fromEntries(tracked.map(file=>[file,sha(fs.readFileSync(path.join(root,file)))]));
  const sourceHashes=Object.fromEntries(sources.map(file=>[file,sha(fs.readFileSync(path.join(root,file)))]));
  const distHashes=Object.fromEntries(['index.html','stylist.html','product-lab.html','assets/local-fashion-core.js','assets/public-beta-bootstrap.js',imageManifestPath,'_headers'].map(file=>[file,sha(fs.readFileSync(path.join(dist,file)))]));
@@ -426,6 +527,10 @@ async function verifyRecommendedProduct2D(trial,imageFixture){
  const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  const report={actualProductionContact:false,allBrowserRequestsIntercepted:true,realRetailerPixels:false,realRetailerDownloadVerified:false,realCdnCorsVerified:false,merchantAcceptanceVerified:false,nativeIpadSafari:false,analysisModes:['deterministic fixture','bundled local MediaPipe'],merchantImageAuthorizationExpired:expired,privateRasterFixture:'dist/assets/photos/coat.jpg served only to isolated 2D browser contexts from a synthetic same-origin image manifest and synthetic fresh stock for one product ID',actualPolicyHandler:true,actualStylistHandler:true,cases:[]};
  try{
+  {const profile={width:744,height:1133,touch:true,dpr:2},trial=await prepare(browser,handlers,{...profile,policyMode:'false',approvedFixture});
+   await verifyApprovedJourney(trial,approvedFixture);
+   report.cases.push({name:'approved-feed-photo-dialogue-cross-market-rerank-original-fitting-exact-purchase',profile,privateFixtureOnly:true,currencies:['KRW','USD'],separateConsent:true,profileReranking:true,samePhoto:true,merchantNavigationIntercepted:true,passed:true});
+   await trial.context.close();}
   if(expired){
    const trial=await prepare(browser,handlers);
    await verifyExpiredImages(trial);

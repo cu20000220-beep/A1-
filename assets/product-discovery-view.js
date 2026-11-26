@@ -2,7 +2,7 @@
 'use strict';
 (() => {
  function initialize(){
- const experience=window.A1Preview||(window.A1PublicLocal?.mode==='server-public-local'?window.A1PublicLocal:null)||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null),D=window.A1ProductDiscovery,I=window.A1I18n;
+ const experience=window.A1Preview||(window.A1PublicLocal?.mode==='server-public-local'?window.A1PublicLocal:null)||(window.A1PublicBeta?.mode==='server-free-beta-local'?window.A1PublicBeta:null),D=window.A1ProductDiscovery,C=window.A1ProductCatalog,I=window.A1I18n;
  if(!experience||!D||!I||window.A1ProductDiscoveryView)return;
  document.removeEventListener('a1:public-local-ready',initialize);document.removeEventListener('a1:public-beta-ready',initialize);
  I.register({
@@ -11,6 +11,10 @@
   '실제 상품사진 · 운영자 이용 승인':'Actual product photo · operator-authorized use',
   '내 사진에 이 상품 2D 배치':'Place this product on my photo in 2D',
   '실제 판매 확인 {count}개':'Products verified for sale ({count})',
+  '판매 확인 상품 · 체형 맞춤 추천':'In-stock products for your proportions',
+  '판매자 승인 상품 정보를 불러오지 못했습니다. 다시 불러오거나 판매처 검색을 이용하세요.':'Approved seller listings could not load. Reload them or use retailer search.',
+  '표시 가격 · 배송과 최종 결제 금액은 판매처에서 확인하세요.':'Listed price. Check delivery and the final amount with the seller.',
+  '상품의 판매 또는 이미지 이용 조건이 변경되었습니다. 상품 정보를 다시 불러오세요.':'Sale or image terms have changed. Reload the listing.',
   '판매 여부 미확인 · 공식 상품 페이지 참고':'Official product references · availability unconfirmed',
   '현재 재고 확인 · 판매처 구매 페이지':'Open the seller’s purchase page',
   '판매 여부 미확인으로 피팅할 수 없습니다.':'Fitting is unavailable because current stock is unconfirmed.',
@@ -65,6 +69,7 @@
   '{ratio} ({basis}) · {attribute} 비교 제안 {feature}':'{ratio} ({basis}) · Consider {feature} when comparing {attribute}'
  });
  let loading=null,snapshot=null,requestController=null,loadGeneration=0,imageLoading=null,imageManifest=null,imageController=null;
+ let approvedLoading=null,approvedSnapshot=null,approvedController=null;
  const reasonLabels={
   type_matches:'상품 종류 일치',category_matches:'카테고리 일치',color_matches:'색상 일치',
   collection_matches:'컬렉션 일치',fit_matches:'핏 표기 일치',size_matches:'사이즈 표기 일치',
@@ -139,11 +144,40 @@
   })();imageLoading=pending;
   try{return await pending;}finally{clearTimeout(timer);if(imageController===active)imageController=null;if(imageLoading===pending)imageLoading=null;}
  }
- function create(target,{showImages=true,requireProportionEvidence=false}={}){
+ async function loadApproved(refresh){
+  if(!C)return null;
+  if(refresh&&!approvedLoading)approvedSnapshot=null;
+  if(approvedSnapshot)return approvedSnapshot;
+  if(approvedLoading)return approvedLoading;
+  const path='/assets/approved-products.json',active=new AbortController();
+  approvedController=active;
+  const timer=setTimeout(()=>active.abort(),10000);
+  const pending=(async()=>{
+   const response=await fetch(path,{credentials:'omit',cache:'no-store',redirect:'error',signal:active.signal});
+   const url=new URL(response.url||path,location.origin);
+   if(!response.ok||!/^application\/json(?:;|$)/i.test(response.headers.get('content-type')||'')||url.origin!==location.origin||url.pathname!==path||url.search)throw Error('catalog_response');
+   const text=await response.text();if(text.length>1_000_000)throw Error('catalog_size');
+   const value=JSON.parse(text);C.validateSnapshot(value);
+   if(active.signal.aborted||approvedController!==active)throw new DOMException('Catalog read was cleared.','AbortError');
+   approvedSnapshot=value;return value;
+  })();approvedLoading=pending;
+  try{return await pending;}finally{clearTimeout(timer);if(approvedController===active)approvedController=null;if(approvedLoading===pending)approvedLoading=null;}
+ }
+ function approvedRecommendations(data,conditions,profile,now){
+  if(!data)return [];
+  const products=C.validateSnapshot(data,now);
+  const currencies=conditions.budget!==null||conditions.currency!=='KRW'?[conditions.currency]:[...new Set(products.map(product=>product.currency))];
+  const matches=currencies.flatMap(currency=>C.search(data,{...conditions,currency},{now,size:conditions.size||'',profile}).matches);
+  const weight=window.A1ProportionRecommendations?.weight;
+  return matches.sort((a,b)=>b.score-a.score
+   ||(weight?.(b.proportionReasons||[],{ignoreFit:conditions.fit!=='any'})||0)-(weight?.(a.proportionReasons||[],{ignoreFit:conditions.fit!=='any'})||0)
+   ||b.product.checkedAt-a.product.checkedAt||a.product.id.localeCompare(b.product.id));
+ }
+ function create(target,{showImages=true,requireProportionEvidence=false,includeApproved=false}={}){
   if(!target||target.dataset.discoveryView)return null;
   target.dataset.discoveryView='true';target.classList.add('product-discovery-view');
-  let revision=0,disposed=false,last=null,lastProfile=null,reported=null;
-  const heading=node('h3'),notice=node('p'),status=node('p'),imageStatus=node('p'),grid=node('div'),unknown=node('section'),references=node('section'),retry=node('button');
+  let revision=0,disposed=false,last=null,lastProfile=null,lastExcluded=[],reported=null;
+  const heading=node('h3'),notice=node('p'),status=node('p'),imageStatus=node('p'),approvedGroup=node('section'),grid=node('div'),unknown=node('section'),references=node('section'),retry=node('button');
   const fallback=node('a');fallback.hidden=true;
   const retailerSearch=document.querySelector('#shopping-search-results');
   fallback.href=retailerSearch?'#shopping-search-results':'index.html#shopping-search';
@@ -156,7 +190,8 @@
   retry.type='button';retry.hidden=true;I.setText(retry,'상품 정보 다시 불러오기');
   imageStatus.setAttribute('role','status');imageStatus.className='product-discovery-image-status';
   references.className='product-discovery-unknown';references.hidden=true;references.dataset.discoveryReferences='';
-  target.replaceChildren(heading,notice,status,fallback,imageStatus,retry,grid,unknown,references);target.hidden=true;
+  approvedGroup.hidden=true;
+  target.replaceChildren(heading,notice,status,fallback,imageStatus,retry,approvedGroup,grid,unknown,references);target.hidden=true;
   const fitStatusText={
    waiting:'상품 원본 이미지 확인 중입니다.',
    available:'상품 원본을 이용해 내 사진에서 2D로 비교합니다.',
@@ -165,6 +200,49 @@
    'image-unavailable':'상품사진을 불러오지 못했습니다. 판매처 링크는 계속 사용할 수 있습니다.'
   };
   function setFitState(note,state){note.dataset.discoveryFitState=state;note.textContent=I.t(fitStatusText[state]);}
+  function approvedCard(row,token,data){
+   const product=row.product,article=node('article');article.className='product-discovery-card';article.dataset.approvedRecommendation=product.id;article.dataset.i18nIgnore='';
+   const content=node('div');content.className='product-discovery-content';
+   const image=node('img');image.className='product-discovery-photo';image.alt=product.name;image.loading='lazy';image.decoding='async';image.referrerPolicy='no-referrer';
+   image.addEventListener('error',()=>{image.hidden=true;article.prepend(node('p',I.t('상품사진을 불러오지 못했습니다. 판매처 링크는 계속 사용할 수 있습니다.')));},{once:true});
+   image.src=product.imageUrl;
+   const seller=node('p',product.brand+' · '+product.retailerName);seller.className='product-discovery-brand';
+   const price=node('p',product.price.toLocaleString(I.locale)+' '+product.currency);price.className='product-discovery-price';
+   const checked=new Date(product.checkedAt),date=node('time',I.t('페이지 확인 {date}',{date:checked.toLocaleDateString(I.locale)}));date.dateTime=checked.toISOString();
+   content.append(seller,node('h4',product.name),price,date,node('p',I.t('표시 가격 · 배송과 최종 결제 금액은 판매처에서 확인하세요.')));
+   if(product.material)content.append(node('p',I.t('소재 {material}',{material:product.material})));
+   const evidence=(row.proportionReasons||[]).map(reason=>proportionText(reason,{evidence:true})).filter(Boolean);
+   if(evidence.length){
+    const group=node('div'),list=node('ul');group.className='product-discovery-proportion';group.dataset.proportionReasons='';
+    for(const text of evidence)list.append(node('li',text));
+    group.append(node('strong',I.t('체형을 참고한 이유')),list);content.append(group);
+   }
+   const actions=node('div');actions.className='product-discovery-actions';
+   const current=()=>!disposed&&token===revision&&target.isConnected;
+   const itemLink=(field,label)=>{
+    const url=product[field],link=node('a',I.t(label)),buy=field==='productUrl';link.href=url;link.referrerPolicy='no-referrer';
+    link.rel=(buy&&product.commercial?.affiliate?'sponsored ':'')+'noopener noreferrer';
+    link.dataset[buy?'discoveryApprovedBuy':'discoveryApprovedSource']=product.id;
+    link.addEventListener('click',event=>{
+     if(event.isTrusted&&current()){
+      try{const latest=C.validateSnapshot(data).find(row=>row.id===product.id);if(latest?.stock==='in_stock'&&latest[field]===url&&link.href===new URL(url).href)return;}catch{}
+     }
+     event.preventDefault();
+    });return link;
+   };
+   actions.append(itemLink('productUrl','현재 재고 확인 · 판매처 구매 페이지'),itemLink('sourceUrl','출처 상품 페이지'));
+   const feedback=node('p');feedback.setAttribute('role','status');
+   if(C.fittingProduct(data,product.id)){
+    const fit=node('button',I.t('내 사진에 이 상품 2D 배치'));fit.type='button';fit.dataset.discoveryApprovedFit=product.id;
+    fit.addEventListener('click',async event=>{
+     if(!event.isTrusted||!current())return;
+     const fitting=window.A1CatalogFitting;
+     if(!C.fittingProduct(data,product.id)||!fitting){I.setText(feedback,'상품의 판매 또는 이미지 이용 조건이 변경되었습니다. 상품 정보를 다시 불러오세요.');return;}
+     fit.disabled=true;try{await fitting.open(product.id);}finally{if(current())fit.disabled=!C.fittingProduct(data,product.id);}
+    });actions.append(fit);
+   }else I.setText(feedback,'상품 원본 이미지의 2D 피팅 이용 권한을 확인하지 못했습니다.');
+   content.append(actions,feedback);article.append(image,content);return article;
+  }
   function card(row,token,available){
    const p=row.product,article=node('article');article.className='product-discovery-card';article.dataset.discoveryId=p.id;article.dataset.i18nIgnore='';article.dataset.saleState=available?'available':'unconfirmed';
    const content=node('div');content.className='product-discovery-content';article.append(content);
@@ -291,32 +369,48 @@
     I.setText(imageStatus,error.message==='product_image_authorization_expired'?'2D 피팅 이용 권한이 확인된 상품 이미지가 없습니다.':'상품 이미지 자료를 준비하지 못했습니다. 상품 정보와 판매처 링크는 계속 사용할 수 있습니다.');
    }
   }
-  async function search(conditions,{profile=null,refresh=false}={}){
+  async function search(conditions,{profile=null,refresh=false,excludeProductUrls=[]}={}){
    if(disposed)return false;const token=++revision;last=conditions?{...conditions}:null;
    if(!last){clear();return false;}
-   lastProfile=validProfile(profile);
+   lastProfile=validProfile(profile);lastExcluded=[...excludeProductUrls];
    reported=null;
    target.hidden=false;target.dataset.state='loading';target.dataset.imageState='idle';
    delete target.dataset.count;delete target.dataset.snapshotCount;delete target.dataset.imageCount;
-   imageStatus.textContent='';grid.replaceChildren();unknown.replaceChildren();unknown.hidden=true;references.replaceChildren();references.hidden=true;retry.hidden=true;fallback.hidden=true;I.setText(status,'상품 정보를 불러오는 중입니다.');
-   if(last.currency&&last.currency!=='KRW'){target.dataset.state='unsupported';fallback.hidden=false;I.setText(status,'추천 상품의 가격은 원화로 확인했습니다. KRW를 선택하거나 판매처 검색을 이용하세요.');return false;}
+   imageStatus.textContent='';approvedGroup.replaceChildren();approvedGroup.hidden=true;grid.replaceChildren();unknown.replaceChildren();unknown.hidden=true;references.replaceChildren();references.hidden=true;retry.hidden=true;fallback.hidden=true;I.setText(status,'상품 정보를 불러오는 중입니다.');
+   const usesObservations=!last.currency||last.currency==='KRW';
+   if(!usesObservations&&!includeApproved){target.dataset.state='unsupported';fallback.hidden=false;I.setText(status,'추천 상품의 가격은 원화로 확인했습니다. KRW를 선택하거나 판매처 검색을 이용하세요.');return false;}
    try{
-    const data=await load(refresh);if(disposed||token!==revision||!target.isConnected)return false;
-    const result=D.search(data,last,{profile:lastProfile});
+    const [observed,registered]=await Promise.allSettled([usesObservations?load(refresh):null,includeApproved?loadApproved(refresh):null]);
+    if(disposed||token!==revision||!target.isConnected)return false;
+    const data=observed.value,catalog=registered.value;
+    if(!data&&!catalog)throw Error('discovery_unavailable');
+    const result=data?D.search(data,last,{profile:lastProfile}):{candidates:[],budgetUnconfirmed:[],snapshotCount:0};
     const relevant=rows=>requireProportionEvidence&&lastProfile?rows.filter(row=>row.proportionReasons?.length):rows;
-    const candidates=relevant(result.candidates),budgetUnconfirmed=relevant(result.budgetUnconfirmed);
-    const now=Date.now(),live=row=>D.currentlyAvailable(row.product,{now});
+    const now=Date.now();
+    const approved=relevant(approvedRecommendations(catalog,last,lastProfile,now));
+    const excluded=new Set([...lastExcluded,...approved.map(row=>new URL(row.product.productUrl).href)]);
+    const unique=rows=>relevant(rows).filter(row=>!excluded.has(new URL(row.product.productUrl).href));
+    const candidates=unique(result.candidates),budgetUnconfirmed=unique(result.budgetUnconfirmed);
+    const live=row=>D.currentlyAvailable(row.product,{now});
     const sale=candidates.filter(live),liveUnconfirmed=budgetUnconfirmed.filter(live);
     const referenceRows=[...candidates,...budgetUnconfirmed].filter(row=>!live(row));
+    const saleRows=[...approved,...sale];
     reported=Object.freeze({
-     state:'ready',count:sale.length,unconfirmed:liveUnconfirmed.length,referenceCount:referenceRows.length,
-     products:Object.freeze((sale.length?sale:referenceRows).slice(0,3).map(row=>Object.freeze({name:row.product.name,proportionReasons:row.proportionReasons||[]})))
+     state:'ready',count:saleRows.length,unconfirmed:liveUnconfirmed.length,referenceCount:referenceRows.length,
+     products:Object.freeze((saleRows.length?saleRows:referenceRows).slice(0,3).map(row=>Object.freeze({name:row.product.name,proportionReasons:row.proportionReasons||[]})))
     });
     target.dataset.state='ready';target.dataset.count=String(candidates.length);target.dataset.snapshotCount=String(result.snapshotCount);
-    fallback.hidden=Boolean(sale.length||liveUnconfirmed.length);
-    if(!result.snapshotCount)I.setText(status,'추천 상품 정보가 없습니다. 판매처 검색에서 옷을 찾을 수 있습니다.');
-    else if(!candidates.length&&!budgetUnconfirmed.length)I.setText(status,requireProportionEvidence&&lastProfile?'현재 조건에서 신체 비율과 연결할 수 있는 상품 특성이 확인되지 않았습니다. 찾는 옷이나 용도를 바꿔 물어보세요.':'현재 조건에 맞는 상품이 없습니다. 조건을 바꾸거나 판매처 검색을 이용하세요.');
-    else I.setText(status,'실제 판매 확인 {count}개',{count:sale.length+liveUnconfirmed.length});
+    fallback.hidden=Boolean(saleRows.length||liveUnconfirmed.length);
+    if(!result.snapshotCount&&!catalog?.products.length)I.setText(status,'추천 상품 정보가 없습니다. 판매처 검색에서 옷을 찾을 수 있습니다.');
+    else if(!approved.length&&!candidates.length&&!budgetUnconfirmed.length)I.setText(status,requireProportionEvidence&&lastProfile?'현재 조건에서 신체 비율과 연결할 수 있는 상품 특성이 확인되지 않았습니다. 찾는 옷이나 용도를 바꿔 물어보세요.':'현재 조건에 맞는 상품이 없습니다. 조건을 바꾸거나 판매처 검색을 이용하세요.');
+    else I.setText(status,'실제 판매 확인 {count}개',{count:saleRows.length+liveUnconfirmed.length});
+    if(approved.length){
+     const list=node('div');list.className='product-discovery-grid';
+     for(const row of approved)list.append(approvedCard(row,token,catalog));
+     approvedGroup.append(node('h4',I.t('판매 확인 상품 · 체형 맞춤 추천')),list);approvedGroup.hidden=false;
+    }else if(registered.status==='rejected'){
+     approvedGroup.append(node('p',I.t('판매자 승인 상품 정보를 불러오지 못했습니다. 다시 불러오거나 판매처 검색을 이용하세요.')));approvedGroup.hidden=false;retry.hidden=false;
+    }
     for(const row of sale)grid.append(card(row,token,true));
     function renderGroup(section,title,rows,available){
      section.hidden=!rows.length;if(!rows.length)return;
@@ -330,14 +424,14 @@
     return true;
    }catch{if(disposed||token!==revision)return false;target.dataset.state='error';grid.replaceChildren();unknown.replaceChildren();references.replaceChildren();I.setText(status,'상품 정보를 불러오지 못했습니다. 다시 시도하거나 판매처 검색을 이용하세요.');retry.hidden=false;return false;}
   }
-  function clear(){revision++;last=lastProfile=reported=null;target.hidden=true;target.dataset.state='cleared';delete target.dataset.count;delete target.dataset.snapshotCount;grid.replaceChildren();unknown.replaceChildren();references.replaceChildren();status.textContent='';imageStatus.textContent='';delete target.dataset.imageState;delete target.dataset.imageCount;retry.hidden=true;}
+  function clear(){revision++;last=lastProfile=reported=null;lastExcluded=[];target.hidden=true;target.dataset.state='cleared';delete target.dataset.count;delete target.dataset.snapshotCount;approvedGroup.replaceChildren();grid.replaceChildren();unknown.replaceChildren();references.replaceChildren();status.textContent='';imageStatus.textContent='';delete target.dataset.imageState;delete target.dataset.imageCount;retry.hidden=true;}
   function dispose(){clear();disposed=true;document.removeEventListener('a1:language-changed',language);window.removeEventListener('pagehide',clear);}
-  function language(){if(last&&!disposed)search(last,{profile:lastProfile});}
-  retry.addEventListener('click',()=>{if(last)search(last,{refresh:true,profile:lastProfile});});document.addEventListener('a1:language-changed',language);
+  function language(){if(last&&!disposed)search(last,{profile:lastProfile,excludeProductUrls:lastExcluded});}
+  retry.addEventListener('click',()=>{if(last)search(last,{refresh:true,profile:lastProfile,excludeProductUrls:lastExcluded});});document.addEventListener('a1:language-changed',language);
   window.addEventListener('pagehide',clear);
   return Object.freeze({target,search,clear,dispose,summary(){return reported||{state:target.dataset.state,count:0,unconfirmed:0};}});
  }
- window.addEventListener('pagehide',()=>{loadGeneration++;requestController?.abort();requestController=null;loading=null;snapshot=null;imageController?.abort();imageController=null;imageLoading=null;imageManifest=null;});
+ window.addEventListener('pagehide',()=>{loadGeneration++;requestController?.abort();requestController=null;loading=null;snapshot=null;imageController?.abort();imageController=null;imageLoading=null;imageManifest=null;approvedController?.abort();approvedController=null;approvedLoading=null;approvedSnapshot=null;});
  window.A1ProductDiscoveryView=Object.freeze({create,proportionText});
  }
  if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',initialize,{once:true});

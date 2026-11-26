@@ -91,7 +91,7 @@ else document.addEventListener('a1:public-local-ready', openProof);
 
 function startProof() {
   const $ = selector => document.querySelector(selector);
-  let renderer, scene, camera, controls, model, observer, controller, naturalRig;
+  let renderer, scene, camera, controls, model, avatarStage, observer, controller, naturalRig;
   let requestedFit=null, requestedProfile=null, requestedSample='source';
   let fitted=null, topVertices=null, novaPalette=null, portrait=false, fullView=null;
   const naturalStyles={navy:'기본 티셔츠 · 네이비',terracotta:'기본 티셔츠 · 테라코타',relaxed:'여유 있는 티셔츠 · 화이트'};
@@ -152,12 +152,16 @@ function startProof() {
     }
   }
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const coarsePointer = matchMedia('(pointer: coarse)');
+  const touchPixelBudget = 720000;
+  let shadowDirty = true, shadowPose = null;
   let idle = null, idleFrame = 0, idleObserver, idleVisible = false, idleTime = 0, lastIdleDraw = 0;
   function animateIdle(time) {
     idleFrame = 0;
     if (!idle || !idleVisible || document.hidden || reducedMotion.matches || skinPose) return;
-    if (time - lastIdleDraw >= 1000 / 24) {
-      idleTime += Math.min(65, time - lastIdleDraw) / 1000;
+    const interval = 1000 / (coarsePointer.matches ? 12 : 24);
+    if (time - lastIdleDraw >= interval) {
+      idleTime += Math.min(interval * 2, time - lastIdleDraw) / 1000;
       lastIdleDraw = time;
       render();
     }
@@ -173,10 +177,16 @@ function startProof() {
   document.addEventListener('visibilitychange', refreshIdle);
   reducedMotion.addEventListener('change', refreshIdle);
   function render() {
-    if (!renderer || !scene || !camera || disposed) return;
+    if (!renderer || state !== 'ready' || disposed) return;
     const start = performance.now();
+    const motionTime = idle && !skinPose && !reducedMotion.matches ? idleTime : null;
+    if (renderer.shadowMap.enabled && (shadowDirty || motionTime !== shadowPose)) {
+      renderer.shadowMap.needsUpdate = true;
+      shadowDirty = false;
+      shadowPose = motionTime;
+    }
     const draw = () => renderer.render(scene, camera);
-    if (idle && !skinPose && !reducedMotion.matches) idle(idleTime, draw);
+    if (motionTime !== null) idle(motionTime, draw, Boolean(fitted));
     else draw();
     frameSamples.push(performance.now() - start); if (frameSamples.length > 120) frameSamples.shift();
     renderCount++; drawCalls = renderer.info.render.calls; triangles = renderer.info.render.triangles;
@@ -187,6 +197,8 @@ function startProof() {
     idle = null;
     idleVisible = false;
     idleTime = 0;
+    shadowDirty = true;
+    shadowPose = null;
     idleObserver?.disconnect();
     refreshIdle();
     releaseFit(); topVertices=null; novaPalette=null; root.dataset.bodyFit='off';
@@ -203,7 +215,7 @@ function startProof() {
     skeletons.forEach(skeleton => skeleton.dispose()); textures.forEach(texture => { texture.dispose(); texture.source?.data?.close?.(); });
     geometries.forEach(geometry => geometry.dispose()); ownedMaterials.forEach(material => material.dispose());
     if (renderer) { try { renderer.clear(); renderer.dispose(); lastMemory = { ...renderer.info.memory }; renderer.forceContextLoss(); } catch { /* A lost context is already unavailable. */ } }
-    renderer = scene = camera = controls = model = observer = naturalRig = null; materials.clear();
+    renderer = scene = camera = controls = model = avatarStage = observer = naturalRig = null; materials.clear();
     drawCalls = triangles = 0;
   }
   function failed(code) {
@@ -280,7 +292,7 @@ function startProof() {
       fitted = createNaturalFit(model, requestedFit, {topVertices, relaxed:choice === 'relaxed',profile,bottomFit});
       if (!fitted) throw Error('photo_fit_unavailable');
       for (const {source} of fitted.parts) source.visible=false;
-      scene.add(fitted.group);
+      avatarStage.add(fitted.group);
       garment=garmentSelect.value=choice;
       root.dataset.bodyFit='applied';
     } catch {
@@ -316,6 +328,7 @@ function startProof() {
     if (state==='ready' && textured()) updateGarment();
   }
   function updateGarment() {
+    shadowDirty = true;
     if (textured()) {
       updateFit();
       capabilities();
@@ -328,6 +341,7 @@ function startProof() {
     render();
   }
   function updateMaterial() {
+    shadowDirty = true;
     materialMode = $('#gltf-material').value;
     for (const [mesh, pair] of materials) mesh.material = mesh.name === 'Body' && look === 'humanoid'
       ? pair[materialMode === 'basic' ? 'humanoidBasic' : 'humanoid'] : pair[materialMode];
@@ -337,7 +351,9 @@ function startProof() {
   function view(yaw) {
     const distance = camera.position.distanceTo(controls.target);
     camera.position.set(Math.sin(yaw) * distance, controls.target.y, Math.cos(yaw) * distance);
-    controls.update(); render();
+    // A changed camera already draws through OrbitControls' change event.
+    // An explicit request for the current view refreshes the frame once.
+    if (!controls.update()) render();
   }
   portraitButton.addEventListener('click', () => {
     if (state!=='ready' || look!=='nova') return;
@@ -357,9 +373,9 @@ function startProof() {
       controls.minDistance=fullView.minDistance;
       fullView=null;
     }
-    controls.update();render();
+    controls.update();
   });
-  function zoom(factor) { camera.position.sub(controls.target).multiplyScalar(factor).clampLength(controls.minDistance, controls.maxDistance).add(controls.target); controls.update(); render(); }
+  function zoom(factor) { camera.position.sub(controls.target).multiplyScalar(factor).clampLength(controls.minDistance, controls.maxDistance).add(controls.target); controls.update(); }
   async function initialize() {
     if (!canOpen()) return;
     const token = ++generation; clean(); disposed = false; setState('loading');
@@ -378,7 +394,6 @@ function startProof() {
       if (!context) throw Error('webgl2_unavailable');
       renderer = new THREE.WebGLRenderer({ canvas, context, antialias: true });
       renderer.debug.onShaderError = () => queueMicrotask(() => { if (!disposed && token === generation) failed('renderer_start'); });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.18;
       scene = new THREE.Scene(); scene.background = new THREE.Color('#e9e9e1');
@@ -388,8 +403,15 @@ function startProof() {
       controls.minPolarAngle = 0.3; controls.maxPolarAngle = Math.PI * 0.65;
       controls.touches.ONE = THREE.TOUCH.ROTATE; controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
       controls.addEventListener('change', render); controls.listenToKeyEvents(canvas);
-      if (look==='nova') lightNovaStage(renderer,scene);
-      else {
+      avatarStage = scene;
+      if (look === 'nova') {
+        lightNovaStage(renderer, scene);
+        // The key light and the floor are fixed. Orbiting the camera can use
+        // the same shadow map until geometry or the idle pose changes.
+        renderer.shadowMap.autoUpdate = false;
+        avatarStage = new THREE.Group();
+        scene.add(avatarStage);
+      } else {
         scene.add(new THREE.HemisphereLight('#fff9ef', '#536455', 2.3));
         for (const [color, intensity, position] of [['#fff3dd', 3.2, [2.4, 3.4, 3]], ['#dfecff', 1.6, [-2, 1.8, 1]], ['#ffffff', 2.3, [0, 2.6, -3]]]) {
           const light = new THREE.DirectionalLight(color, intensity); light.position.set(...position); scene.add(light);
@@ -433,9 +455,9 @@ function startProof() {
           if (mesh.name==='outfit_top') novaPalette=createNovaTopPalette(pair);
         }
       });
-      scene.add(model);
+      avatarStage.add(model);
       if (look === 'nova') {
-        idle = createNovaIdle(model);
+        idle = createNovaIdle(model, avatarStage);
         idleObserver = new IntersectionObserver(([entry]) => {
           if (token !== generation || disposed) return;
           idleVisible = entry.isIntersecting;
@@ -443,9 +465,20 @@ function startProof() {
         });
         idleObserver.observe(canvas);
       }
-      const resize = () => { if (!renderer) return; const rect = canvas.getBoundingClientRect(); renderer.setSize(Math.max(1, rect.width), Math.max(1, rect.height), false); camera.aspect = Math.max(1, rect.width) / Math.max(1, rect.height); camera.updateProjectionMatrix(); render(); };
-      observer = new ResizeObserver(resize); observer.observe(canvas); controls.update(); updateMaterial(); updateGarment(); resize();
-      setState('ready'); capabilities(); status(textured()
+      const resize = () => {
+        if (!renderer) return;
+        const { width, height } = canvas.getBoundingClientRect();
+        const w = Math.max(1, width), h = Math.max(1, height);
+        const touchRatio = coarsePointer.matches ? Math.sqrt(touchPixelBudget / (w * h)) : Infinity;
+        renderer.setDrawingBufferSize(w, h, Math.min(window.devicePixelRatio || 1, 1.5, touchRatio));
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        render();
+      };
+      observer = new ResizeObserver(resize);
+      observer.observe(canvas);
+      controls.update(); updateMaterial(); updateGarment();
+      setState('ready'); resize(); capabilities(); status(textured()
         ? naturalStatus()
         : '전신·예시 티셔츠를 표시했습니다. 회전과 의류 변경을 확인할 수 있습니다.');
     } catch (error) { if (token === generation && !signal.aborted) failed(error.message); }
@@ -462,6 +495,8 @@ function startProof() {
     skinPose = $('#gltf-skin-proof').checked;
     if (naturalRig) { naturalRig.spine.quaternion.copy(naturalRig.spineNeutralQuaternion); if (skinPose) naturalRig.spine.rotateZ(0.08); }
     else model.getObjectByName('Spine').rotation.z = skinPose ? 0.12 : 0;
+    shadowDirty = true;
+    refreshIdle();
     render();
   });
   for (const [name, yaw] of [['front', 0], ['side', Math.PI / 2], ['back', Math.PI]]) $('#gltf-' + name).addEventListener('click', () => view(yaw));

@@ -1,6 +1,6 @@
 'use strict';
 // Real image interactions plus the existing 3D viewer embedded in the studio.
-// This does not establish personalized fit, retail stock or native Safari quality.
+// Pose figures here are test inputs. They do not establish retail fit or native Safari quality.
 const { chromium } = require('playwright');
 const { PNG } = require('pngjs');
 const assert = require('node:assert/strict');
@@ -62,7 +62,7 @@ function deployedPolicy() {
 async function prepare(browser, profile, { blocked = false, blockedView = false } = {}) {
   let blockSheet = blocked, blockView = blockedView;
   const context = await browser.newContext({ viewport: { width: profile.width, height: profile.height },
-    hasTouch: profile.touch, isMobile: profile.touch, deviceScaleFactor: 1,
+    hasTouch: profile.touch, isMobile: profile.touch, deviceScaleFactor: profile.dpr || 1,
     locale: profile.lang === 'ko' ? 'ko-KR' : 'en-US' });
   const requests = [], errors = [], consoleErrors = [], violations = [];
   await context.route('**/*', async route => {
@@ -192,7 +192,8 @@ async function truthAndLinks(page, lang) {
       console.log(`Style studio ${prefix}: actual photographic image cells, two avatars, four directions, five styles, 2D truth labels, links and privacy passed.`);
       await context.close();
     }
-    const three = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' });
+    const touchProfile = { width: 744, height: 1133, dpr: 2, touch: true, lang: 'ko' };
+    const three = await prepare(browser, touchProfile);
     assert.equal(three.requests.includes('/assets/fitting-studio-view'), false, 'the image studio remains lazy');
     await three.page.locator('[data-studio-mode="three"]').click();
     await three.page.waitForFunction(() => window.A1GltfProof?.snapshot().state === 'ready', null, { timeout: 30000 });
@@ -205,12 +206,40 @@ async function truthAndLinks(page, lang) {
     assert.equal(actual.bones, 73); assert.ok(actual.memoryTextures > 10); assert.ok(actual.triangles > 15000);
     assert.equal(await three.page.locator('#studio-root').isVisible(), false);
     assert.equal(await three.page.locator('#gltf-garment').isDisabled(), true, 'stock outfit is not presented as product fitting');
+    const canvas = three.page.locator('#gltf-canvas');
+    await canvas.scrollIntoViewIfNeeded();
+    await three.page.waitForFunction(() => A1GltfProof.snapshot().renderCount > 1);
+    const buffer = await canvas.evaluate(element => ({ width: element.width, height: element.height,
+      devicePixelRatio, coarsePointer: matchMedia('(pointer: coarse)').matches }));
+    assert.equal(buffer.devicePixelRatio, 2);
+    assert.equal(buffer.coarsePointer, true);
+    assert.ok(buffer.width * buffer.height <= 720000, 'limit high-DPR touch drawing-buffer pixels');
+    const idle = await three.page.evaluate(async () => {
+      const first = A1GltfProof.snapshot().renderCount, start = performance.now();
+      await new Promise(resolve => setTimeout(resolve, 650));
+      return { frames: A1GltfProof.snapshot().renderCount - first, milliseconds: performance.now() - start };
+    });
+    assert.ok(idle.frames > 0 && idle.frames <= Math.ceil(idle.milliseconds * .012) + 1, 'touch idle draws at most 12 frames per second');
+    await three.page.emulateMedia({ reducedMotion: 'reduce' });
+    await three.page.waitForFunction(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const quiet = await three.page.evaluate(async () => {
+      // Allow the preference change to draw its neutral pose before sampling.
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const first = A1GltfProof.snapshot().renderCount;
+      await new Promise(resolve => setTimeout(resolve, 240));
+      return A1GltfProof.snapshot().renderCount - first;
+    });
+    assert.equal(quiet, 0, 'reduced motion stops passive rendering');
+    await three.page.evaluate(() => A1GltfProof.setBodyFit({ shoulderHipRatio: 1.25, legTorsoRatio: 1.6 }));
+    assert.equal(await three.page.evaluate(() => A1GltfProof.snapshot().bodyFitted), true);
+    assert.ok(imageDetails(await canvas.screenshot()).colors > 150, 'fitted avatar retains textured pixels under the touch render budget');
+    await three.page.evaluate(() => A1GltfProof.setBodyFit(null));
     const viewFrames = [];
     for (const view of ['front', 'side', 'back']) {
       await three.page.locator('#gltf-' + view).click();
       const bytes = await three.page.locator('#gltf-canvas').screenshot();
       assert.ok(imageDetails(bytes).colors > 150, 'real textured 3D geometry must render');
-      fs.writeFileSync(path.join(out, 'ko-820-3d-' + view + '.png'), bytes);
+      fs.writeFileSync(path.join(out, 'ko-744-3d-' + view + '.png'), bytes);
       viewFrames.push(sha(bytes));
     }
     assert.equal(new Set(viewFrames).size, 3);
@@ -230,7 +259,8 @@ async function truthAndLinks(page, lang) {
     }, null, { timeout: 30000 });
     assert.ok(three.requests.includes('/assets/natural-avatar/sample.glb'), 'the old comparison asset loads on explicit selection');
     assert.deepEqual(three.errors, []); assert.deepEqual(three.consoleErrors, []); assert.deepEqual(three.violations, []);
-    reports.push({ actualInline3D: true, look: actual.look, bones: actual.bones, triangles: actual.triangles, viewFrames, cleanup: stopped, requests: three.requests });
+    reports.push({ actualInline3D: true, look: actual.look, bones: actual.bones, triangles: actual.triangles,
+      touchProfile, buffer, idle, reducedMotionFrames: quiet, viewFrames, cleanup: stopped, requests: three.requests });
     await three.context.close();
     const viewFailure = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' }, { blockedView: true });
     await viewFailure.page.locator('[data-studio-mode="three"]').click();
@@ -271,9 +301,9 @@ async function truthAndLinks(page, lang) {
     reports.push({ failureMode: 'modelSheetBlocked', recoveryAction, status: failureStatus, manualRecovery: true, requests: failure.requests });
     await failure.context.close();
     }
-    const sources = ['fitting-studio.html', 'assets/fitting-studio.js', 'assets/fitting-studio.css', 'assets/fitting-studio-3d.js', 'assets/fitting-studio-3d.css', 'assets/fitting-studio-view.html', 'assets/lab-loader.js', 'assets/gltf-proof.js', 'assets/nova-avatar/avatar.glb', 'assets/studio/hero.png', 'assets/studio/male-sheet.png', 'assets/studio/female-sheet.png'];
+    const sources = ['fitting-studio.html', 'assets/fitting-studio.js', 'assets/fitting-studio.css', 'assets/fitting-studio-3d.js', 'assets/fitting-studio-3d.css', 'assets/fitting-studio-view.html', 'assets/lab-loader.js', 'assets/gltf-proof.js', 'assets/nova-avatar-studio.js', 'assets/nova-avatar/avatar.glb', 'assets/studio/hero.png', 'assets/studio/male-sheet.png', 'assets/studio/female-sheet.png'];
     fs.writeFileSync(path.join(out, 'browser-result.json'), JSON.stringify({ sourceHashes: Object.fromEntries(sources.map(file => [file, sha(fs.readFileSync(path.join(root, file)))])),
       reports, environment: { browser: 'Linux Chromium', nativeIpadSafari: false },
-      scope: 'Generated 2D style images and a separate, actual stock 3D model rendered in the same page. No personalized photo fitting, exact sizing, image-to-3D reconstruction, retail stock or native iPad Safari certification.' }, null, 2) + '\n');
+      scope: 'Generated 2D style images; stock and proportion-adjusted textured 3D model. No exact sizing, image-to-3D reconstruction, retail stock or native iPad Safari certification.' }, null, 2) + '\n');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -162,7 +162,7 @@
    });
   }
   const target = document.createElement('section'); target.id = 'avatar-recommendation-results';
-  recommendations = window.A1ProductDiscoveryView?.create(target, {requireProportionEvidence:true});
+  recommendations = window.A1ProductDiscoveryView?.create(target, {requireProportionEvidence:true,includeApproved:true});
   if (recommendations) {
    chatTarget=document.createElement('section');chatTarget.id='avatar-conversation';chatTarget.hidden=true;
    conversation=window.A1ShoppingConversation?.create(chatTarget,{
