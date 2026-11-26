@@ -146,6 +146,47 @@ const path = require('node:path');
     assert.equal(await cancelled.locator('#ai-summary').innerText(), '');
     assert.ok(await cancelled.locator('#ai-result').isHidden(), 'Language switches cannot resurrect cleared private analysis');
     await cancelled.close();
+    // Regression: valid torso/leg landmarks still produce a usable result
+    // when the pose engine omits optional arm and hand coordinates.
+    const partial = await browser.newPage({ locale: 'ko-KR' });
+    await partial.addInitScript(() => {
+      const landmarks = Array(29);
+      for (const [id, [x, y]] of Object.entries({
+        11: [.30, .20], 12: [.70, .20],
+        23: [.36, .45], 24: [.64, .45],
+        25: [.36, .65], 26: [.64, .65],
+        27: [.36, .90], 28: [.64, .90]
+      })) landmarks[id] = { x, y, z: 0, visibility: .99 };
+      window.Pose = class {
+        setOptions() {}
+        onResults(callback) { this.callback = callback; }
+        async initialize() {}
+        async reset() {}
+        async send() { this.callback({ poseLandmarks: landmarks }); }
+        async close() {}
+      };
+    });
+    await partial.goto(base);
+    await partial.locator('#ai-photo').setInputFiles(photo('man.jpg'));
+    await partial.locator('#ai-analyze').click();
+    await partial.waitForFunction(() => document.querySelector('#ai-output').getAttribute('aria-busy') === 'false');
+    assert.ok(await partial.locator('#ai-result').isVisible());
+    assert.match(await partial.locator('#ai-status').innerText(), /완료했습니다/);
+    const partialResult = await partial.evaluate(() => ({
+      proportions: window.A1PhotoProportions.proportions(),
+      fitting: document.querySelector('#ai-clean-canvas').fittingLandmarks
+    }));
+    assert.ok(Number.isFinite(partialResult.proportions.shoulderHipRatio));
+    assert.ok(Number.isFinite(partialResult.proportions.legTorsoRatio));
+    assert.equal(Object.hasOwn(partialResult.proportions, 'armLegRatio'), false);
+    assert.equal(partialResult.fitting.length, 18);
+    assert.ok(partialResult.fitting.slice(0, 8).every(Boolean));
+    assert.ok(partialResult.fitting.slice(8).every(point => point === null));
+    await partial.locator('#ai-clear').click();
+    assert.equal(await partial.evaluate(() => window.A1PhotoProportions.proportions()), null);
+    assert.equal(await partial.locator('#ai-clean-canvas').evaluate(c => c.width * c.height), 1);
+    await partial.close();
+
     console.log('PASS: real ML inference, lazy local model loading, download retry, non-person rejection, free results with no protected recommendation or store links, privacy/deletion, mobile/tablet layouts, WebGL failure.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
