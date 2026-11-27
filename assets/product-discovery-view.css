@@ -345,3 +345,7 @@
 .shopping-conversation-form button[hidden] { display: none; }
 .shopping-conversation-form button[type=submit] { background: #28472f; color: #fff; }
 .shopping-conversation-reply { margin-top: 8px; padding: 10px 12px; border-radius: 6px; background: #e9f0e7; overflow-wrap: anywhere; }
+[data-conversation-comparison] h5 { margin: 0; font-size: 15px; }
+[data-conversation-comparison] dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; font-size: 13px; }
+[data-conversation-comparison] dt { color: #4e5b50; }
+[data-conversation-comparison] dd { margin: 0; }

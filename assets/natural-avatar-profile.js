@@ -3,6 +3,31 @@ import { Box3, DoubleSide, Quaternion, TextureLoader, Vector3 } from './vendor/t
 // Original A1 presentation code for the fixed, reviewed stock sample. It changes
 // the displayed pose and hair alpha handling, never body measurements/identity.
 const applied = new WeakMap();
+const relaxedFingerAngles = {
+  Index: [.09, .14, .08], Middle: [.12, .17, .10],
+  Ring: [.14, .19, .12], Pinky: [.17, .21, .14]
+};
+
+function relaxNovaFingers(model, side) {
+  const bone = name => model.getObjectByName(side + 'Hand' + name);
+  const anchors = ['', 'Middle1', 'Index1', 'Pinky1', 'Thumb2'].map(bone);
+  if (anchors.some(anchor => !anchor?.isBone)) return;
+  const [wrist, middle, indexBase, pinkyBase, thumb] = anchors.map(anchor => anchor.getWorldPosition(new Vector3()));
+  const lengthwise = middle.clone().sub(wrist).normalize();
+  const widthwise = pinkyBase.sub(indexBase).normalize();
+  const palm = new Vector3().crossVectors(widthwise, lengthwise).normalize();
+  if (thumb.sub(middle).dot(palm) < 0) palm.negate();
+  const bendingAxis = new Vector3().crossVectors(lengthwise, palm).normalize();
+  const parentRotation = new Quaternion(), bend = new Quaternion(), localAxis = new Vector3();
+  for (const [finger, angles] of Object.entries(relaxedFingerAngles)) {
+    for (const [index, angle] of angles.entries()) {
+      const joint = bone(finger + (index + 1));
+      if (!joint?.isBone || !joint.parent) continue;
+      localAxis.copy(bendingAxis).applyQuaternion(joint.parent.getWorldQuaternion(parentRotation).invert());
+      joint.quaternion.premultiply(bend.setFromAxisAngle(localAxis, angle));
+    }
+  }
+}
 
 export function useEmbeddedImageElements(loader, manager) {
   // GLTFLoader's ImageBitmapLoader fetches blob: URLs, which requires a wider
@@ -61,6 +86,8 @@ export function applyNaturalProfile(model, { nova = false } = {}) {
     pointBone(side + 'ForeArm', side + 'ForeArm1', nova ? [sign * (left ? .045 : .10), -.98, left ? .19 : .16] : [sign * .15, -.98, .10]);
   }
   if (nova) {
+    relaxNovaFingers(model, 'Left');
+    relaxNovaFingers(model, 'Right');
     const head = model.getObjectByName('Head');
     if (head?.isBone) { head.rotateY(.09); head.rotateZ(-.035); }
     model.updateMatrixWorld(true);

@@ -105,6 +105,14 @@ test('local style chat asks for supported explicit conditions before recommendin
  assert.doesNotMatch(JSON.stringify(fulfilled), /PRIVATE|170/);
 });
 
+test('comparison uses existing clothing filters without changing currency or transmitting input', () => {
+ const previous = { ...Chat.refine('검정 슬랙스'), currency: 'USD', size: 'M' };
+ assert.deepEqual(Chat.refine('추천 상품 비교해줘', previous), previous);
+ assert.deepEqual(Chat.refine('compare these', previous), previous);
+ assert.throws(() => Chat.refine('비교해줘 https://example.test/sample', previous), /private_query/);
+ assert.throws(() => Chat.refine('5만원 이하', previous), /budget_currency/);
+});
+
 test('a chat follow-up narrows real snapshot results and preserves retailer evidence', () => {
  const Discovery = require('../assets/product-discovery.js');
  const Profile = require('../assets/proportion-profile.js');

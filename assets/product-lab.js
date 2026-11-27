@@ -360,7 +360,7 @@ function initializeProductLab(){
   }catch{I.setText(searchStatus,'짧은 의류 조건만 입력해주세요. 사진·연락처·이메일·링크·신체 수치는 넣지 마세요.');}
  });
  let localGarment=null,preparedGarment=null,localRevision=0,pendingGarment=null,localDisposed=false,localCatalogProduct=null,catalogOriginal=null;
- let outline=[],editingOutline=false,transparentTrim=null,poseRequest=null,poseFit=null,poseLayer=null,handPatches=[];
+ let outline=[],editingOutline=false,transparentTrim=null,poseRequest=null,poseFit=null,poseLayer=null,handPatches=null;
  const poseIds=[11,12,23,24,25,26,27,28,13,14,15,16,17,18,19,20,21,22];
  const photoFitButton=$('#lab-local-photo-fit');
  I.register({
@@ -488,8 +488,8 @@ function initializeProductLab(){
  }
  function releasePoseLayers(){
   if(poseLayer){poseLayer.width=poseLayer.height=1;poseLayer=null;}
-  for(const {canvas} of handPatches)canvas.width=canvas.height=1;
-  handPatches=[];
+  for(const {canvas} of handPatches||[])canvas.width=canvas.height=1;
+  handPatches=null;
  }
  function discardPoseFit(){
   poseRequest?.abort();poseRequest=null;poseFit=null;photoFitButton.disabled=false;
@@ -498,11 +498,16 @@ function initializeProductLab(){
   const value=id=>Number($('#lab-local-photo-'+id).value);
   return {x:value('x')/100,y:value('y')/100,scale:value('scale')/100,rotation:value('rotation')*Math.PI/180,opacity:value('opacity')/100};
  }
+ function fittingPose(source){
+  const target=[];
+  source?.fittingLandmarks?.forEach((point,index)=>{target[poseIds[index]]=point;});
+  return target;
+ }
  async function preparePoseFit(left,top){
   const renderer=window.A1GarmentMesh,estimator=window.A1GarmentPose;
   if(!renderer||!estimator||localCatalogProduct&&!['tops','outerwear'].includes(localCatalogProduct.category))return;
-  const target=[];
-  $('#ai-clean-canvas')?.fittingLandmarks?.forEach((point,index)=>{target[poseIds[index]]=point;});
+  if(localCatalogProduct?.imageKind==='isolated-garment')return;
+  const target=fittingPose($('#ai-clean-canvas'));
   if(!renderer.usablePose(target))return;
   const controller=new AbortController(), image=localGarment, garment=preparedGarment, baseline=fittingControls();
   const deadline=setTimeout(()=>controller.abort(),25000);
@@ -575,14 +580,17 @@ function initializeProductLab(){
    const end=product.category==='bottoms'?ankle:product.category==='dresses'?knee:hip;
    const bodyWidth=(product.category==='bottoms'?Math.hypot(h2.x-h1.x,h2.y-h1.y)*1.24:Math.hypot(s2.x-s1.x,s2.y-s1.y)*1.33);
    if(end&&end.y-start.y>8&&bodyWidth>8){
-    const height=end.y-start.y;
+    const dx=end.x-start.x,dy=end.y-start.y;
     // Uniform scaling preserves the cut and texture of the photographed item.
-    const width=Math.min(bodyWidth,height*aspect);
-    const halfHeight=width/aspect/2;
-    $('#lab-local-photo-x').value=String(Math.round((start.x+(end.x-start.x)*(halfHeight/height))/source.width*100));
-    $('#lab-local-photo-y').value=String(Math.round((start.y+halfHeight)/source.height*100));
-    $('#lab-local-photo-scale').value=String(Math.round(width*100/source.width));
-    $('#lab-local-photo-rotation').value=String(Math.round(Math.atan2(start.x-end.x,height)*180/Math.PI));
+    const width=Math.min(bodyWidth,Math.hypot(dx,dy)*aspect);
+    const scale=$('#lab-local-photo-scale'),rotation=$('#lab-local-photo-rotation');
+    scale.value=String(Math.round(width*100/source.width));
+    rotation.value=String(Math.round(Math.atan2(-dx,dy)*180/Math.PI));
+    // Position the crop's actual rotated top edge at the body anchor,
+    // accounting for the slider's rounding and allowed rotation range.
+    const {scale:scaledWidth,rotation:angle}=fittingControls(),halfHeight=source.width*scaledWidth/aspect/2;
+    $('#lab-local-photo-x').value=String(Math.round((start.x-Math.sin(angle)*halfHeight)/source.width*100));
+    $('#lab-local-photo-y').value=String(Math.round((start.y+Math.cos(angle)*halfHeight)/source.height*100));
     return;
    }
   }
@@ -711,7 +719,6 @@ function initializeProductLab(){
      if(!poseLayer){
       poseLayer=document.createElement('canvas');poseLayer.width=localPhotoCanvas.width;poseLayer.height=localPhotoCanvas.height;
       window.A1GarmentMesh.paintMesh(poseLayer.getContext('2d'),preparedGarment,poseFit.mesh,scale);
-      handPatches=window.A1GarmentMesh.foregroundHands(source,poseFit.target);
      }
      const {baseline}=poseFit,zoom=controls.scale/baseline.scale;
      ctx.rotate(controls.rotation-baseline.rotation);ctx.scale(zoom,zoom);
@@ -721,7 +728,11 @@ function initializeProductLab(){
      ctx.rotate(controls.rotation);ctx.drawImage(preparedGarment,-width/2,-height/2,width,height);
     }
     ctx.restore();
-    if(poseFit)for(const {canvas,left,top} of handPatches)ctx.drawImage(canvas,left*scale,top*scale,canvas.width*scale,canvas.height*scale);
+    if(!handPatches&&(poseFit||localCatalogProduct)){
+     const target=poseFit?.target||fittingPose(source);
+     handPatches=window.A1GarmentMesh?.foregroundHands(source,target)||[];
+    }
+    for(const {canvas,left,top} of handPatches||[])ctx.drawImage(canvas,left*scale,top*scale,canvas.width*scale,canvas.height*scale);
    }
    const footer=Math.max(28,localPhotoCanvas.width/25);ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(0,localPhotoCanvas.height-footer,localPhotoCanvas.width,footer);ctx.fillStyle='#253b25';ctx.font=Math.max(11,localPhotoCanvas.width/45)+'px sans-serif';ctx.fillText('LOCAL PHOTO OVERLAY / NOT AI TRY-ON',8,localPhotoCanvas.height-footer*.3);
    if(localCatalogProduct)$('#lab-local-photo-result').dataset.productId=localCatalogProduct.id;

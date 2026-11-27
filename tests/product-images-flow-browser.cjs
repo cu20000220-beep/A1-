@@ -4,6 +4,7 @@
 // photograph. These checks do not establish CDN access, retail photo quality,
 // native iPad Safari, natural AI synthesis or merchant-issued image permission.
 const {chromium}=require('playwright');
+const {PNG}=require('pngjs');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),os=require('node:os');
 const root=path.resolve(__dirname,'..'),origin='https://product-images-flow.a1fashion.pages.dev';
 const out=process.env.A1_PRODUCT_IMAGES_EVIDENCE||'/workspace/work/product-images-flow';fs.mkdirSync(out,{recursive:true});
@@ -12,14 +13,15 @@ const sourceImage='https://image.msscdn.net/thumbnails/images/goods_img/20190927
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const privateRoots=new Set();
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.glb':'model/gltf-binary','.wasm':'application/wasm'};
-function manifest(mode){
+function manifest(mode,imageKind='unverified'){
  const checkedAt=Date.now()-1000,recordedAt=mode==='expired'?checkedAt-3600000:checkedAt;
- return {version:1,authorization:{basis:'operator-attestation',reference:'private-browser-fixture',recordedAt,validUntil:recordedAt+3600000,display:true,local2DFitting:true,externalProcessing:false},products:[{id,productUrl:merchant,sourceImageUrl:sourceImage,imageUrl:sourceImage,delivery:'remote-reference',sha256:null,bytes:null,width:null,height:null,imageKind:'unverified',checkedAt}]};
+ return {version:1,authorization:{basis:'operator-attestation',reference:'private-browser-fixture',recordedAt,validUntil:recordedAt+3600000,display:true,local2DFitting:true,externalProcessing:false},products:[{id,productUrl:merchant,sourceImageUrl:sourceImage,imageUrl:sourceImage,delivery:'remote-reference',sha256:null,bytes:null,width:null,height:null,imageKind,checkedAt}]};
 }
-function privateObservations(stockMode){
+function privateObservations(stockMode,isolatedImage){
  const facts=JSON.parse(fs.readFileSync(path.join(root,'assets/observed-products.json'),'utf8')),checkedAt=Date.now()-2000;
  const row=facts.products.find(product=>product.id===id);facts.observedAt=Math.max(facts.observedAt,checkedAt);
  Object.assign(row,{stock:stockMode==='unknown'?'unknown':'in_stock',checkedAt:stockMode==='stale'?checkedAt-86400000:checkedAt});
+ if(isolatedImage)Object.assign(row,{name:'Private synthetic test top',type:'shirt',category:'tops',observedFeatures:[]});
  return facts;
 }
 function privateLocalCopy(){
@@ -39,8 +41,8 @@ function mockPose(){
  window.Pose=class{setOptions(){}onResults(fn){this.result=fn;}async initialize(){}async reset(){}async close(){}async send(){const p=Array.from({length:33},()=>({x:.5,y:.5,visibility:.99}));for(const[index,[x,y]]of Object.entries({11:[.3,.2],12:[.7,.2],23:[.36,.45],24:[.64,.45],25:[.36,.65],26:[.64,.65],27:[.36,.9],28:[.64,.9]}))p[index]={x,y,visibility:.99};this.result({poseLandmarks:p});}};
 }
 function policy(relative,headers){const route=relative==='fitting-studio.html'?'/fitting-studio*':relative==='product-lab.html'?'/product-lab*':relative==='stylist.html'?'/stylist*':null;if(!route)return null;const lines=headers.split('\n'),at=lines.indexOf(route);assert.ok(at>=0);const line=lines.slice(at+1).find(value=>/Content-Security-Policy:/.test(value));return line.slice(line.indexOf(':')+1).trim();}
-async function prepare(browser,{entry='/',width=820,lang='ko',manifestMode='ready',imageMode='ready',stockMode='fresh',localCopy=null}={}){
- const observations=localCopy?.observations??privateObservations(stockMode),approvedImages=localCopy?.manifest??manifest(manifestMode);
+async function prepare(browser,{entry='/',width=820,lang='ko',manifestMode='ready',imageMode='ready',stockMode='fresh',localCopy=null,isolatedImage=null}={}){
+ const observations=localCopy?.observations??privateObservations(stockMode,isolatedImage),approvedImages=localCopy?.manifest??manifest(manifestMode,isolatedImage?'isolated-garment':'unverified');
  const baseHeaders=fs.readFileSync(path.join(root,'_headers'),'utf8');
  const headers=manifestMode==='ready'?require('../scripts/lib/catalog-public-headers.cjs').catalogPublicHeaders(baseHeaders,[],{manifest:approvedImages,observations,now:Date.now()}):baseHeaders;
  const context=await browser.newContext({viewport:{width,height:1180},hasTouch:true,isMobile:true,locale:lang==='ko'?'ko-KR':'en-US'}),calls=[],errors=[],violations=[],consoleErrors=[];
@@ -50,7 +52,7 @@ async function prepare(browser,{entry='/',width=820,lang='ko',manifestMode='read
    if(request.isNavigationRequest()){assert.equal(permitMerchant,true);assert.equal(url.href,merchant);await route.fulfill({contentType:'text/html',body:'<!doctype html><title>PRIVATE navigation intercept</title>Merchant server acceptance was not tested.'});return;}
    assert.equal(url.href,sourceImage,'only the exact public garment URL may leave the origin');assert.equal(request.postData(),null);assert.ok(!request.headers()['referer'],'no garment request referrer');
    if(imageMode==='error'){await route.fulfill({status:404,contentType:'text/plain',body:'PRIVATE missing image fixture'});return;}
-   await route.fulfill({body:fs.readFileSync(path.join(root,'assets/photos/coat.jpg')),contentType:'image/jpeg',headers:imageMode==='cors-denied'?{'Access-Control-Allow-Origin':'https://different-origin.invalid','Cache-Control':'no-store'}:{'Access-Control-Allow-Origin':origin,'Cache-Control':'no-store'}});return;
+   await route.fulfill({body:isolatedImage??fs.readFileSync(path.join(root,'assets/photos/coat.jpg')),contentType:isolatedImage?'image/png':'image/jpeg',headers:imageMode==='cors-denied'?{'Access-Control-Allow-Origin':'https://different-origin.invalid','Cache-Control':'no-store'}:{'Access-Control-Allow-Origin':origin,'Cache-Control':'no-store'}});return;
   }
   assert.ok(!url.pathname.startsWith('/api/'),'Preview API isolation is never relaxed');
   for(const[key,value]of url.searchParams){assert.equal(key,'v');assert.match(value,/^[a-z0-9-]+$/i);}
@@ -91,11 +93,59 @@ async function selectOutline(page){
 async function selectImage(page){await readyImage(page);await card(page).locator('[data-discovery-fit="'+id+'"]').click();await page.waitForSelector('#lab-selected-catalog:not([hidden])');await page.waitForFunction(()=>!document.querySelector('#lab-garment-photo-figure').hidden);await selectOutline(page);}
 async function pixel(page){return page.locator('#lab-local-photo-canvas').evaluate(c=>c.toDataURL());}
 function cleanNetwork(trial){for(const request of trial.calls){assert.doesNotMatch(request.url,/shoulderHipRatio|legTorsoRatio|bodyPhoto|metrics|base64|memberEmail/);assert.equal(request.method,'GET');}assert.deepEqual(trial.errors,[]);assert.deepEqual(trial.violations,[]);}
+async function isolatedGarmentFitting(browser){
+ const textile=new PNG({width:120,height:180});
+ for(let p=0;p<textile.data.length;p+=4)textile.data.set([24,(p/4)%12<6?126:150,208,255],p);
+ const trial=await prepare(browser,{width:744,isolatedImage:PNG.sync.write(textile)}),{page}=trial;
+ try{
+  await analyze(page);
+  assert.equal(await page.evaluate(()=>{
+   const source=document.querySelector('#ai-clean-canvas'),ctx=source.getContext('2d'),w=source.width,h=source.height;
+   ctx.fillStyle='#202020';ctx.fillRect(0,0,w,h);
+   ctx.fillStyle='rgb(246,120,54)';ctx.fillRect(.406*w,.318*h,.13*w,.055*h);
+   const p=(x,y,z=0)=>({x:x*w,y:y*h,z,visibility:1});
+   const target={11:p(.20,.16),12:p(.56,.16),23:p(.47,.58),24:p(.77,.58),25:p(.47,.72),26:p(.73,.72),27:p(.46,.86),28:p(.70,.86),
+    13:p(.23,.26),14:p(.72,.30),15:p(.42,.345,-.25),16:p(.81,.48,.1),17:p(.49,.342),19:p(.496,.345),21:p(.504,.348)};
+   source.fittingLandmarks=[11,12,23,24,25,26,27,28,13,14,15,16,17,18,19,20,21,22].map(id=>target[id]||null);
+   window.__isolatedPoseCalls=0;
+   window.A1GarmentPose={estimate:async()=>{window.__isolatedPoseCalls++;return null;}};
+   return A1GarmentMesh.usablePose(target);
+  }),true,'the body pose is complete enough to trigger source estimation for model-worn images');
+  await readyImage(page);await card(page).locator('[data-discovery-fit]').click();
+  await page.waitForSelector('#lab-garment-photo-figure:not([hidden])');
+  const placement=await page.evaluate(()=>{
+   const source=document.querySelector('#ai-clean-canvas'),value=id=>document.querySelector('#lab-local-photo-'+id).valueAsNumber;
+   const angle=value('rotation')*Math.PI/180,halfHeight=value('scale')/100*source.width*1.5/2;
+   const topX=value('x')/100*source.width+Math.sin(angle)*halfHeight;
+   const topY=value('y')/100*source.height-Math.cos(angle)*halfHeight;
+   return {xError:Math.abs(topX/source.width-.38),yError:Math.abs(topY/source.height-.16),angle,poseCalls:window.__isolatedPoseCalls};
+  });
+  assert.ok(placement.angle<-.25&&placement.xError<=.006&&placement.yError<=.006,'the rotated crop starts at the body’s shoulder anchor');
+  assert.equal(placement.poseCalls,0,'no person-pose model is run on a known isolated garment');
+  await page.locator('#ai-clean-canvas').evaluate(source=>{source.fittingLandmarks[11]=null;});
+  assert.equal(await page.locator('#lab-local-photo-result').isVisible(),false);
+  await page.locator('#lab-local-photo-consent').check();await page.locator('#lab-local-photo-fit').click();
+  await page.waitForSelector('#lab-local-photo-result:visible');
+  const {frontHand,fabric}=await page.locator('#lab-local-photo-canvas').evaluate(canvas=>{
+   const ctx=canvas.getContext('2d'),sample=(x,y)=>Array.from(ctx.getImageData(Math.round(x*canvas.width),Math.round(y*canvas.height),1,1).data);
+   return {frontHand:sample(.497,.345),fabric:sample(.565,.345)};
+  });
+  assert.deepEqual(frontHand,[246,120,54,255],'the near hand remains in front of the garment even without the opposite wrist');
+  assert.equal(fabric[0],24);assert.equal(fabric[2],208);assert.equal(fabric[3],255);
+  assert.ok(fabric[1]>=123&&fabric[1]<=153,`texture interpolation should preserve the neighboring stripe colors: ${fabric}`);
+  assert.equal(await page.locator('#lab-local-photo-result [data-result-catalog-buy]').getAttribute('href'),merchant);
+  await page.locator('#lab-local-photo-consent').uncheck();
+  assert.equal(await page.locator('#lab-local-photo-canvas').evaluate(c=>c.width*c.height),1);
+  cleanNetwork(trial);
+  return {name:'isolated-garment-pose-anchor-and-foreground-hand-pixels',placement,frontHand,fabric,privateFixtureOnly:true,passed:true};
+ }finally{await trial.context.close();}
+}
 (async()=>{
  const before=Object.fromEntries(['assets/approved-products.json','catalog/source-approvals.json','assets/observed-products.json','assets/product-images.json'].map(file=>[file,sha(fs.readFileSync(path.join(root,file)))]));
  const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
- const report={realRetailerPixels:false,realRetailerDownloadVerified:false,merchantAcceptanceVerified:false,nativeIpadSafari:false,analysisMocked:true,privateRasterFixture:'assets/photos/coat.jpg at exact official CDN URL or temporary local intake output; not a retailer photo',cases:[]};
+ const report={realRetailerPixels:false,realRetailerDownloadVerified:false,merchantAcceptanceVerified:false,nativeIpadSafari:false,analysisMocked:true,privateRasterFixture:'assets/photos/coat.jpg and a synthetic striped test raster; no retailer photos used',cases:[]};
  try{
+  report.cases.push(await isolatedGarmentFitting(browser));
   for(const profile of[{entry:'/',width:820,lang:'ko'},{entry:'/fitting-studio',width:390,lang:'en'}]){
    const trial=await prepare(browser,profile),{page}=trial;await analyze(page);await readyImage(page);assert.equal(await card(page).locator('img.product-discovery-photo').evaluate(img=>img.complete&&img.naturalWidth>0),true);
    assert.equal(await card(page).getAttribute('data-sale-state'),'available');const body=await page.locator('#ai-clean-canvas').evaluate(c=>c.toDataURL());await selectImage(page);

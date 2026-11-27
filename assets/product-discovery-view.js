@@ -79,6 +79,11 @@
  };
  const warningLabels={color_unconfirmed:'색상 미확인',collection_unconfirmed:'컬렉션 미확인',fit_unconfirmed:'핏 정보 미확인',size_unconfirmed:'사이즈 미확인',style_unconfirmed:'스타일 세부 정보 미확인',occasion_unconfirmed:'용도 정보 미확인',observation_stale:'확인 후 24시간 경과 · 판매처 재확인 필요'};
  const visibleWarnings=new Set(['color_unconfirmed','collection_unconfirmed','fit_unconfirmed','size_unconfirmed']);
+ const fitLabels={semiwide:'세미와이드',oversized:'오버사이즈',relaxed:'여유핏',wide:'와이드핏',straight:'일자 실루엣',slim:'슬림핏',regular:'레귤러핏'};
+ function summarize(row,available){
+  const {name,retailerName,price,currency,fit,material,checkedAt}=row.product;
+  return Object.freeze({name,retailerName,price,currency,fit:fitLabels[fit],material,checkedAt,available,proportionReasons:row.proportionReasons||[]});
+ }
  const proportionLabels={
   ratio:{
    shoulderHip:'어깨와 골반 너비 비율',legTorso:'다리와 몸통 길이 비율',waistHip:'허리와 엉덩이 둘레 비율',
@@ -294,7 +299,7 @@
    if(warnings.children.length)details.append(warnings);
    details.append(node('p',p.priceNote),node('p',p.sourceNote));
    details.append(node('p',p.material?I.t('소재 {material}',{material:p.material}):I.t('소재 미확인')));
-   const fitName={semiwide:'세미와이드',oversized:'오버사이즈',relaxed:'여유핏',wide:'와이드핏',straight:'일자 실루엣',slim:'슬림핏',regular:'레귤러핏'}[p.fit];
+   const fitName=fitLabels[p.fit];
    if(fitName)details.append(node('p',I.t('판매처 표시 핏 {fit}',{fit:I.t(fitName)})));
    if(p.sizeChart?.rows?.length){
     const measurements=node('ul');
@@ -397,7 +402,7 @@
     const saleRows=[...approved,...sale];
     reported=Object.freeze({
      state:'ready',count:saleRows.length,unconfirmed:liveUnconfirmed.length,referenceCount:referenceRows.length,
-     products:Object.freeze((saleRows.length?saleRows:referenceRows).slice(0,3).map(row=>Object.freeze({name:row.product.name,proportionReasons:row.proportionReasons||[]})))
+     products:Object.freeze((saleRows.length?saleRows:referenceRows).slice(0,3).map(row=>summarize(row,Boolean(saleRows.length))))
     });
     target.dataset.state='ready';target.dataset.count=String(candidates.length);target.dataset.snapshotCount=String(result.snapshotCount);
     fallback.hidden=Boolean(saleRows.length||liveUnconfirmed.length);
@@ -432,7 +437,7 @@
   return Object.freeze({target,search,clear,dispose,summary(){return reported||{state:target.dataset.state,count:0,unconfirmed:0};}});
  }
  window.addEventListener('pagehide',()=>{loadGeneration++;requestController?.abort();requestController=null;loading=null;snapshot=null;imageController?.abort();imageController=null;imageLoading=null;imageManifest=null;approvedController?.abort();approvedController=null;approvedLoading=null;approvedSnapshot=null;});
- window.A1ProductDiscoveryView=Object.freeze({create,proportionText});
+ window.A1ProductDiscoveryView=Object.freeze({create,proportionText,summarize});
  }
  if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',initialize,{once:true});
  document.addEventListener('a1:public-local-ready',initialize);document.addEventListener('a1:public-beta-ready',initialize);initialize();

@@ -134,7 +134,7 @@
    if(disposed||conditions!==filters)return {state:'cleared',count:0};
    const observed=destination()==='KR'?discoveryView.summary():{state:catalogState,count:0,unconfirmed:0};
    if(!matches.length)return observed;
-   const products=matches.slice(0,3).map(row=>({name:row.product.name,proportionReasons:row.proportionReasons||[]}));
+   const products=matches.slice(0,3).map(row=>window.A1ProductDiscoveryView.summarize(row,true));
    return {...observed,state:'ready',approved:true,count:matches.length+(observed.count||0),products:[...products,...(observed.products||[])].slice(0,3)};
   }
  });

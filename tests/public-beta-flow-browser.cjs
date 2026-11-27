@@ -254,10 +254,29 @@ async function resetEmbeddedPhoto(page,{photo,avatar,analysisConsent}){
  await photo.locator('#ai-clear').click();
  assert.equal(await avatar.isVisible(),false);
  assert.equal(await page.locator('#avatar-recommendation-results').isVisible(),false);
+ assert.equal(await page.locator('#avatar-conversation-replies [data-conversation-comparison]').count(),0);
  assert.equal(await analysisConsent.isChecked(),false);
  assert.equal(await photo.locator('#ai-clean-canvas').evaluate(canvas=>canvas.width*canvas.height),1);
  assert.equal(await page.evaluate(()=>window.A1GltfProof.snapshot().bodyFitted),false);
  assert.equal(await page.evaluate(()=>__betaUrls.size),0);
+}
+
+async function compareInAvatarChat(trial,avatar,message,expectedAvailability){
+ const {page,calls}=trial;
+ const reply=avatar.locator('#avatar-conversation-replies .shopping-conversation-reply').last();
+ const comparison=reply.locator('[data-conversation-comparison]');
+ const before=calls.length;
+ await avatar.locator('#avatar-conversation-input').fill(message);
+ await avatar.locator('#avatar-conversation-send').click();
+ await comparison.waitFor();
+ assert.equal(await comparison.getAttribute('data-conversation-comparison'),expectedAvailability);
+ assert.equal(await reply.locator('a[href="#avatar-recommendation-results"]').count(),1);
+ assert.equal(await page.locator('#avatar-recommendation-results').isVisible(),true);
+ assert.ok(!(await reply.innerText()).includes(message),'a request to compare is not echoed as a new reply');
+ assert.ok(calls.slice(before).every(call=>call.method==='GET'&&!new URL(call.url).pathname.startsWith('/api/')
+  &&!decodeURIComponent(call.url).includes(message)&&!(call.postData||'').includes(message)),
+ 'comparison does not send the raw request or call an API');
+ return comparison.innerText();
 }
 
 async function verifyPhotoToAvatar(trial){
@@ -304,9 +323,19 @@ async function verifyPhotoToAvatar(trial){
  await page.waitForFunction(()=>{const ids=[...document.querySelectorAll('#avatar-recommendation-results [data-discovery-id]')].map(card=>card.dataset.discoveryId);return ids.length===2&&ids.includes('musinsa-1168906')&&ids.includes('musinsa-4644434');});
  await replies.getByText(/검정.*슬랙스/).first().waitFor();
  await replies.getByText(/판매 여부 미확인.*공식 상품 페이지/).first().waitFor();
+ const historicalNames=await cards.locator('h4').allTextContents();
+ const historicalComparison=await compareInAvatarChat(trial,avatar,'compare these','historical');
+ assert.match(historicalComparison,/판매 미확인 상품의 확인 당시 정보 비교/);
+ for(const name of historicalNames)assert.ok(historicalComparison.includes(name),'comparison keeps the same reference products');
+ assert.equal(historicalComparison.match(/49,900/g)?.length,2,'each observation retains its listed price');
+ assert.doesNotMatch(historicalComparison,/통화가 달라/);
  await input.fill('와이드핏으로');await send.click();
  await page.waitForFunction(id=>{const cards=document.querySelectorAll('#avatar-recommendation-results [data-discovery-id]');return cards.length===1&&cards[0].dataset.discoveryId===id;},id);
  await replies.getByText(/와이드/).first().waitFor();
+ await input.fill('추천 상품 비교해줘');await send.click();
+ const singleCandidateReply=replies.locator('.shopping-conversation-reply').last();
+ await singleCandidateReply.getByText(/비교할 후보가 두 개 미만/).waitFor();
+ assert.equal(await singleCandidateReply.locator('[data-conversation-comparison]').count(),0);
  await avatar.locator('#avatar-conversation').screenshot({path:path.join(out,'PRIVATE-production-local-style-chat.png')});
  await input.fill('흰색으로');await send.click();
  await replies.getByText(/현재 확인된 상품 중 이 조건과 맞는 후보가 없습니다/).waitFor();
@@ -461,6 +490,18 @@ async function verifyApprovedJourney(trial,fixture){
   assert.match(await card(product).innerText(),new RegExp(product.currency));
   assert.equal(await card(product).locator('[data-avatar-sample]').count(),0);
  }
+ const approvedComparison=await compareInAvatarChat(trial,avatar,'추천 상품 비교해줘','current');
+ assert.match(approvedComparison,/통화가 달라 가격 순위를 매기지 않습니다/);
+ assert.match(approvedComparison,/와이드|wide/i);
+ assert.match(approvedComparison,/일자|스트레이트|straight/i);
+ assert.match(approvedComparison,/어깨.*골반|다리.*몸통/);
+ for(const product of [kr,us]){
+  assert.ok(approvedComparison.includes(product.name));
+  assert.ok(approvedComparison.includes(product.retailerName));
+  assert.ok(approvedComparison.includes(product.material));
+  assert.ok(approvedComparison.includes(product.price.toLocaleString('ko-KR')+' '+product.currency));
+  assert.ok(approvedComparison.includes(new Date(product.checkedAt).toLocaleDateString('ko-KR')));
+ }
  const measurements=avatar.locator('#avatar-proportion-input');
  await measurements.locator('summary').click();
  await measurements.locator('[data-proportion-field=shoulderWidthCm]').fill('53');
@@ -529,7 +570,7 @@ async function verifyApprovedJourney(trial,fixture){
  try{
   {const profile={width:744,height:1133,touch:true,dpr:2},trial=await prepare(browser,handlers,{...profile,policyMode:'false',approvedFixture});
    await verifyApprovedJourney(trial,approvedFixture);
-   report.cases.push({name:'approved-feed-photo-dialogue-cross-market-rerank-original-fitting-exact-purchase',profile,privateFixtureOnly:true,currencies:['KRW','USD'],separateConsent:true,profileReranking:true,samePhoto:true,merchantNavigationIntercepted:true,passed:true});
+   report.cases.push({name:'approved-feed-photo-dialogue-cross-market-rerank-original-fitting-exact-purchase',profile,privateFixtureOnly:true,currencies:['KRW','USD'],comparisonWithoutCurrencyRanking:true,separateConsent:true,profileReranking:true,samePhoto:true,merchantNavigationIntercepted:true,passed:true});
    await trial.context.close();}
   if(expired){
    const trial=await prepare(browser,handlers);
@@ -555,7 +596,7 @@ async function verifyApprovedJourney(trial,fixture){
   {const trial=await prepare(browser,handlers,{entry:'/stylist'}),{page}=trial;await ready(page);await sendStylist(page);await page.waitForFunction(()=>document.querySelector('[data-stylist-public-beta] [data-stylist-discovery]')?.dataset.state==='ready');assert.equal(await page.locator('[data-stylist-discovery] [data-discovery-id]').count(),2);const post=trial.apiResponses.find(row=>row.path==='/api/stylist'&&row.method==='POST');assert.equal(post.status,200);assert.equal(post.data.mode,'DEMO');assert.equal(post.data.freeBetaMode,true);assert.deepEqual(post.data.products,[]);assert.equal(post.data.usage,null);assert.equal(post.data.comparison,null);assert.deepEqual(post.data.discounts,[]);assert.equal(await page.locator('.stylist-product').count(),0);await page.locator('#stylist-clear').click();assert.equal(await page.locator('[data-stylist-discovery]').count(),0);networkClean(trial);report.cases.push({name:'production-anonymous-actual-server-DEMO-then-separate-public-facts',frontendDemoFallback:false,passed:true});await trial.context.close();}
   {const profile={width:1366,height:900,touch:false},trial=await prepare(browser,handlers,{...profile,policyMode:'false'});
    await verifyPhotoToAvatar(trial);
-   report.cases.push({name:'production-homepage-embedded-desktop-studio-photo-automatic-nova-evidence-ranked-outfit-and-dialogue',profile,serverFreeBeta:false,samePage:true,standaloneHtmlRequests:0,realGeometry:true,privatePoseFixture:true,manualProportionsRerank:true,separateExampleWardrobe:true,localFollowUps:true,passed:true});
+   report.cases.push({name:'production-homepage-embedded-desktop-studio-photo-automatic-nova-evidence-ranked-outfit-and-dialogue',profile,serverFreeBeta:false,samePage:true,standaloneHtmlRequests:0,realGeometry:true,privatePoseFixture:true,manualProportionsRerank:true,separateExampleWardrobe:true,localFollowUps:true,historicalComparison:true,comparisonClearedWithAnalysis:true,passed:true});
    await trial.context.close();}
   {const profile={width:820,height:1180,touch:true},trial=await prepare(browser,handlers,{...profile,policyMode:'false',realPose:true});
    await verifyRealInference(trial);

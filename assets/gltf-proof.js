@@ -405,7 +405,7 @@ function startProof() {
       controls.addEventListener('change', render); controls.listenToKeyEvents(canvas);
       avatarStage = scene;
       if (look === 'nova') {
-        lightNovaStage(renderer, scene);
+        lightNovaStage(renderer, scene, { compactShadows: coarsePointer.matches });
         // The key light and the floor are fixed. Orbiting the camera can use
         // the same shadow map until geometry or the idle pose changes.
         renderer.shadowMap.autoUpdate = false;
@@ -450,6 +450,9 @@ function startProof() {
         if (mesh.name === 'Body') { pair.humanoid = createHumanoidMaterial(standard); pair.humanoidBasic = createHumanoidMaterial(standard, { unlit: true }); }
         materials.set(mesh, pair);
         if (look==='nova') {
+          // Fog blends the studio floor into the backdrop without fading the avatar's textures.
+          standard.fog=false;
+          basic.fog=false;
           mesh.castShadow=!standard.transparent;
           mesh.receiveShadow=true;
           if (mesh.name==='outfit_top') novaPalette=createNovaTopPalette(pair);

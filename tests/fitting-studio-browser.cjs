@@ -195,6 +195,20 @@ async function truthAndLinks(page, lang) {
     const touchProfile = { width: 744, height: 1133, dpr: 2, touch: true, lang: 'ko' };
     const three = await prepare(browser, touchProfile);
     assert.equal(three.requests.includes('/assets/fitting-studio-view'), false, 'the image studio remains lazy');
+    await three.page.evaluate(() => {
+      const gl = WebGL2RenderingContext.prototype;
+      window.__studioDepthSizes = [];
+      for (const method of ['texImage2D', 'texStorage2D']) {
+        const allocate = gl[method];
+        gl[method] = function (...args) {
+          const [target, , format, width, height] = args;
+          if (this.canvas.id === 'gltf-canvas' && target === this.TEXTURE_2D && format === this.DEPTH_COMPONENT24 && width > 1 && height > 1) {
+            window.__studioDepthSizes.push([width, height]);
+          }
+          return allocate.apply(this, args);
+        };
+      }
+    });
     await three.page.locator('[data-studio-mode="three"]').click();
     await three.page.waitForFunction(() => window.A1GltfProof?.snapshot().state === 'ready', null, { timeout: 30000 });
     const actual = await three.page.evaluate(() => A1GltfProof.snapshot());
@@ -214,6 +228,9 @@ async function truthAndLinks(page, lang) {
     assert.equal(buffer.devicePixelRatio, 2);
     assert.equal(buffer.coarsePointer, true);
     assert.ok(buffer.width * buffer.height <= 720000, 'limit high-DPR touch drawing-buffer pixels');
+    const shadowAllocations = await three.page.evaluate(() => window.__studioDepthSizes);
+    assert.ok(shadowAllocations.length > 0 && shadowAllocations.every(([w, h]) => w === 512 && h === 512),
+      'touch WebGL allocates the compact depth shadow map');
     const idle = await three.page.evaluate(async () => {
       const first = A1GltfProof.snapshot().renderCount, start = performance.now();
       await new Promise(resolve => setTimeout(resolve, 650));
@@ -260,7 +277,7 @@ async function truthAndLinks(page, lang) {
     assert.ok(three.requests.includes('/assets/natural-avatar/sample.glb'), 'the old comparison asset loads on explicit selection');
     assert.deepEqual(three.errors, []); assert.deepEqual(three.consoleErrors, []); assert.deepEqual(three.violations, []);
     reports.push({ actualInline3D: true, look: actual.look, bones: actual.bones, triangles: actual.triangles,
-      touchProfile, buffer, idle, reducedMotionFrames: quiet, viewFrames, cleanup: stopped, requests: three.requests });
+      touchProfile, buffer, shadowAllocations, idle, reducedMotionFrames: quiet, viewFrames, cleanup: stopped, requests: three.requests });
     await three.context.close();
     const viewFailure = await prepare(browser, { width: 820, height: 1180, touch: true, lang: 'ko' }, { blockedView: true });
     await viewFailure.page.locator('[data-studio-mode="three"]').click();
@@ -301,7 +318,7 @@ async function truthAndLinks(page, lang) {
     reports.push({ failureMode: 'modelSheetBlocked', recoveryAction, status: failureStatus, manualRecovery: true, requests: failure.requests });
     await failure.context.close();
     }
-    const sources = ['fitting-studio.html', 'assets/fitting-studio.js', 'assets/fitting-studio.css', 'assets/fitting-studio-3d.js', 'assets/fitting-studio-3d.css', 'assets/fitting-studio-view.html', 'assets/lab-loader.js', 'assets/gltf-proof.js', 'assets/nova-avatar-studio.js', 'assets/nova-avatar/avatar.glb', 'assets/studio/hero.png', 'assets/studio/male-sheet.png', 'assets/studio/female-sheet.png'];
+    const sources = ['fitting-studio.html', 'assets/fitting-studio.js', 'assets/fitting-studio.css', 'assets/fitting-studio-3d.js', 'assets/fitting-studio-3d.css', 'assets/fitting-studio-view.html', 'assets/lab-loader.js', 'assets/gltf-proof.js', 'assets/nova-avatar-studio.js', 'assets/natural-avatar-profile.js', 'assets/nova-avatar/avatar.glb', 'assets/studio/hero.png', 'assets/studio/male-sheet.png', 'assets/studio/female-sheet.png'];
     fs.writeFileSync(path.join(out, 'browser-result.json'), JSON.stringify({ sourceHashes: Object.fromEntries(sources.map(file => [file, sha(fs.readFileSync(path.join(root, file)))])),
       reports, environment: { browser: 'Linux Chromium', nativeIpadSafari: false },
       scope: 'Generated 2D style images; stock and proportion-adjusted textured 3D model. No exact sizing, image-to-3D reconstruction, retail stock or native iPad Safari certification.' }, null, 2) + '\n');

@@ -130,12 +130,14 @@
   }
 
   function foregroundHands(source, points) {
+    const reliableDepth = point => visible(point) && Number.isFinite(point.z);
+    if (![points?.[11], points?.[12]].every(reliableDepth)) return [];
     const ctx = source.getContext('2d'), patches = [];
     const shoulderDepth = (points[11].z + points[12].z) / 2;
     const shoulderWidth = length(difference(points[11], points[12]));
     for (const id of [15, 16]) {
       const wrist = points[id], tips = [points[id + 2], points[id + 4], points[id + 6]];
-      if (!(wrist.z < shoulderDepth - .05) || !tips.every(visible)) continue;
+      if (!reliableDepth(wrist) || !(wrist.z < shoulderDepth - .05) || !tips.every(visible)) continue;
       const hand = mix(midpoint(tips[0], tips[1]), tips[2], 1 / 3);
       const forward = difference(hand, wrist), size = length(forward);
       if (size < 6 || size > shoulderWidth * .33) continue;
